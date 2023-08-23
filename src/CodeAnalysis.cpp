@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <string>
 // Clang Findfile
 // C-API
 // Include After?
@@ -26,6 +27,7 @@ CXChildVisitResult visitor(CXCursor cursor, CXCursor parent,
   // clang_visitChildren(cursor, visitor, client_data);
 
   // return CXChildVisit_Continue;
+  // return 0;
 }
 
 int main(int argc, char** argv) {
@@ -39,9 +41,14 @@ int main(int argc, char** argv) {
         "file]\n");
     return 1;
   }
+  std::string compile_commands_path = argv[1];
+  std::string source_file_path = argv[2];
+  std::cout << compile_commands_path << std::endl;
+  std::cout << source_file_path << std::endl;
 
   // Parse compile_commands.json, whose format begins with json array.
-  auto llvm_json_input = llvm::MemoryBuffer::getFileOrSTDIN(argv[1]);
+  auto llvm_json_input = llvm::MemoryBuffer::getFileOrSTDIN(
+      "/home/tz/MigrationHint/build/compile_commands.json");
   auto compile_commands_json =
       llvm::json::parse(llvm_json_input.get()->getBuffer())->getAsArray();
 
@@ -49,7 +56,8 @@ int main(int argc, char** argv) {
   // Traverse compile_commands.json
   if (compile_commands_json) {
     for (auto& compile_command : *compile_commands_json) {
-      if (auto P = compile_command.getAsObject()) {
+      llvm::outs() << compile_command << "\n";
+      if (compile_command.getAsObject()) {
         auto file_path =
             compile_command.getAsObject()->getString("file").getValue().str();
         auto args_array = compile_command.getAsObject()
@@ -60,8 +68,10 @@ int main(int argc, char** argv) {
         // if(file_path)
         std::cout << file_path << std::endl;
         std::cout << args_array << std::endl;
+      } else {
+        std::cout << ++cnt << std::endl;
+        std::cout << "Expect to be an object" << std::endl;
       }
-      std::cout << ++cnt << std::endl;
     }
   }
   // compile_commands_json->getAsArray();
