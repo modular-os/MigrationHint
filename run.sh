@@ -11,7 +11,7 @@ JSON_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/compile_commands.
 JSON_PATH=/home/tz/MigrationHint/tmp/tmp.json
 # Compile
 pushd $BUILD
-    cmake .. -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    cmake .. -G Ninja
     ninja
     ./CodeAnalysis ${JSON_PATH} ${SRC}/CodeAnalysis.cpp
 popd
