@@ -8,10 +8,10 @@ LIB=$BASE_PATH/lib
 INCLUDE=$BASE_PATH/include
 
 JSON_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/compile_commands.json 
-JSON_PATH=/home/tz/MigrationHint/build/compile_commands.json
+JSON_PATH=/home/tz/MigrationHint/tmp/tmp.json
 # Compile
 pushd $BUILD
-    cmake ..
+    cmake .. -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
     ninja
-    ./CodeAnalysis ${JSON_PATH} ${SRC}
+    ./CodeAnalysis ${JSON_PATH} ${SRC}/CodeAnalysis.cpp
 popd

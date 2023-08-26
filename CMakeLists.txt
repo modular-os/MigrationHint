@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 # 添加编译选项
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 # 设置文件目录
 set(SOURCE_DIR src)
@@ -23,16 +23,20 @@ include_directories(${INCLUDE_DIR} )
 add_executable(CodeAnalysis ${SOURCES})
 
 # 链接libclang库
-find_package(Clang REQUIRED)
+# set(Clang_DIR "/home/tz/applications/llvm/llvm16_install/lib/cmake/clang")
+find_package(Clang REQUIRED CONFIG)
 target_include_directories(CodeAnalysis PRIVATE ${CLANG_INCLUDE_DIRS})
+# target_include_directories(CodeAnalysis PRIVATE "/home/tz/applications/llvm/llvm16_install/include")
 target_link_libraries(CodeAnalysis PRIVATE ${CLANG_LIBRARIES})
 
 # 链接llvm工具库
+# set(LLVM_DIR "/home/tz/applications/llvm/llvm16_install/lib/cmake/llvm")
 find_package(LLVM REQUIRED CONFIG)
 ## Add llvm components as needed, include libLLVMCore&libLLVMSupport。
 llvm_map_components_to_libnames(LLVM_LIBS core support)
-target_link_libraries(CodeAnalysis PRIVATE ${LLVM_LIBS})
 target_include_directories(CodeAnalysis PRIVATE ${LLVM_INCLUDE_DIRS})
+# target_include_directories(CodeAnalysis PRIVATE "/home/tz/applications/llvm/llvm16_install/include")
+target_link_libraries(CodeAnalysis PRIVATE ${LLVM_LIBS})
 
 # 输出编译跳转命令compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
