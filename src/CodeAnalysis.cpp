@@ -1,54 +1,105 @@
-#include <llvm/Support/JSON.h>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/raw_ostream.h>
+// #include <llvm/Support/JSON.h>
+// #include <llvm/Support/MemoryBuffer.h>
+// #include <llvm/Support/raw_ostream.h>
 
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <ostream>
-#include <string>
+// #include <cstdio>
+// #include <fstream>
+// #include <iostream>
+// #include <ostream>
+// #include <string>
 
-// #include "clang/Tooling/CompilationDatabase.h"
-#include "clang/Tooling/JSONCompilationDatabase.h"
-// Clang Findfile
-// C-API
-// Include After?
-// Libtooling?
+// // #include "clang/Tooling/CompilationDatabase.h"
+// #include "clang/Tooling/JSONCompilationDatabase.h"
+// // Clang Findfile
+// // C-API
+// // Include After?
+// // Libtooling?
 
-int main(int argc, char **argv) {
-  /*
-   * Usage:
-   ** CodeAnalysis [path to compile_commands.json] [path to source file]
-   */
-  if (argc != 3) {
-    std::printf(
-        "Usage: CodeAnalysis [path to compile_commands.json] [path to source "
-        "file]\n");
-    return 1;
-  }
-  std::string compile_commands_path = argv[1];
-  std::string source_file_path = argv[2];
-  std::cout << compile_commands_path << std::endl;
-  std::cout << source_file_path << std::endl;
+// int main(int argc, char **argv) {
+//   /*
+//    * Usage:
+//    ** CodeAnalysis [path to compile_commands.json] [path to source file]
+//    */
+//   if (argc != 3) {
+//     std::printf(
+//         "Usage: CodeAnalysis [path to compile_commands.json] [path to source
+//         " "file]\n");
+//     return 1;
+//   }
+//   std::string compile_commands_path = argv[1];
+//   std::string source_file_path = argv[2];
+//   std::cout << compile_commands_path << std::endl;
+//   std::cout << source_file_path << std::endl;
 
-  // Parse compile_commands.json, whose format begins with json array.
-  std::string dbErrorMessages;
-  std::unique_ptr<clang::tooling::JSONCompilationDatabase> compilation_database(
-      clang::tooling::JSONCompilationDatabase::loadFromFile(
-          compile_commands_path, dbErrorMessages,
-          clang::tooling::JSONCommandLineSyntax::AutoDetect));
-  auto compile_commands = compilation_database->getAllCompileCommands();
-  // traverse compile_commands
-  for (auto &it : compile_commands) {
-    // std::cout << it.CommandLine << std::endl;
-    // Output the command line content
-    for (auto &it2 : it.CommandLine) {
-      std::cout << it2 << std::endl;
-    }
-    // Output the filename and directory
-    std::cout << it.Filename << std::endl;
-    std::cout << it.Directory << std::endl << std::endl;
-  }
+//   // Parse compile_commands.json, whose format begins with json array.
+//   std::string dbErrorMessages;
+//   std::unique_ptr<clang::tooling::JSONCompilationDatabase>
+//   compilation_database(
+//       clang::tooling::JSONCompilationDatabase::loadFromFile(
+//           compile_commands_path, dbErrorMessages,
+//           clang::tooling::JSONCommandLineSyntax::AutoDetect));
+//   auto compile_commands = compilation_database->getAllCompileCommands();
+//   // traverse compile_commands
+//   for (auto &it : compile_commands) {
+//     // std::cout << it.CommandLine << std::endl;
+//     // Output the command line content
+//     for (auto &it2 : it.CommandLine) {
+//       std::cout << it2 << std::endl;
+//     }
+//     // Output the filename and directory
+//     std::cout << it.Filename << std::endl;
+//     std::cout << it.Directory << std::endl << std::endl;
+//   }
 
-  return 0;
+//   return 0;
+// }
+#include <clang/Frontend/FrontendActions.h>
+#include <clang/Tooling/CommonOptionsParser.h>
+#include <clang/Tooling/Tooling.h>
+#include <llvm/Support/CommandLine.h>
+// using namespace clang;
+// using namespace clang::tooling;
+// using namespace llvm;
+
+// class HeadFileDependencyAction : public ASTFrontendAction {
+// public:
+//     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance
+//     &CI, StringRef file) override {
+//         return
+//         std::make_unique<HeadFileDependencyConsumer>(CI.getSourceManager());
+//     }
+// };
+
+// class HeadFileDependencyConsumer : public ASTConsumer {
+// public:
+//     explicit HeadFileDependencyConsumer(SourceManager &SM) : SM(SM) {}
+
+//     virtual void HandleTranslationUnit(ASTContext &Context) override {
+//         for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
+//             if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
+//                 auto FileName =
+//                 SM.getFileEntryForID(ID->getFileID())->getName();
+//                 llvm::outs() << FileName.str() << "\n";
+//             }
+//         }
+//     }
+
+// private:
+//     SourceManager &SM;
+// };
+
+// Apply a custom category to all command-line options so that they are the
+// only ones displayed.
+static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
+
+int main(int argc, const char **argv) {
+  llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
+      clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
+                                                  llvm::cl::OneOrMore);
+  // Data base can also be imported manually with JSONCompilationDatabase
+  clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
+                                 OptionsParser->getSourcePathList());
+
+  // return
+  // Tool.run(newFrontendActionFactory<HeadFileDependencyAction>().get());
 }
