@@ -12,3 +12,4 @@ build/*
 tmp/*
 bin/*
 lib/*
+log/*
