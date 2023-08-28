@@ -9,32 +9,31 @@
 // using namespace clang::tooling;
 // using namespace llvm;
 
-// class HeadFileDependencyAction : public ASTFrontendAction {
-// public:
-//     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance
-//     &CI, StringRef file) override {
-//         return
-//         std::make_unique<HeadFileDependencyConsumer>(CI.getSourceManager());
-//     }
-// };
+class HeadFileDependencyAction : public clang::ASTFrontendAction {
+public:
+    virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance
+    &CI, llvm::StringRef file) override {
+        return
+        std::make_unique<HeadFileDependencyAction>(CI.getSourceManager());
+    }
+};
 
-// class HeadFileDependencyConsumer : public ASTConsumer {
-// public:
-//     explicit HeadFileDependencyConsumer(SourceManager &SM) : SM(SM) {}
+class HeadFileDependencyConsumer : public clang::ASTConsumer {
+public:
+    explicit HeadFileDependencyConsumer(clang::SourceManager &SM) : SM(SM) {}
 
-//     virtual void HandleTranslationUnit(ASTContext &Context) override {
-//         for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
-//             if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
-//                 auto FileName =
-//                 SM.getFileEntryForID(ID->getFileID())->getName();
-//                 llvm::outs() << FileName.str() << "\n";
-//             }
-//         }
-//     }
+    virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
+        for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
+            if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
+                auto FileName = ID->getFileName();
+                llvm::outs() << FileName.str() << "\n";
+            }
+        }
+    }
 
-// private:
-//     SourceManager &SM;
-// };
+private:
+    clang::SourceManager &SM;
+};
 
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
