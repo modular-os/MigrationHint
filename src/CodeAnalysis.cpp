@@ -86,13 +86,26 @@ class ExternalCallMatcher
       std::string FilePath = SM.getFilename(CallerLoc).str();
       unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
       unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
+      if (SM.isMacroBodyExpansion(CallerLoc)) {
+        auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+        FilePath = SM.getFilename(ExpansionLoc).str();
+        LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
+        ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
+
+#ifdef DEBUG
+        llvm::outs() << "Is expanded from macro: ";
+#endif
+      }
+      llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber
+                   << "\n";
 #ifdef DEBUG
       llvm::outs() << "Function call found at: " << FilePath << ":"
                    << LineNumber << ":" << ColumnNumber << "\n";
 #endif
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
-        if (FilePath == "") {
+        // if (FilePath == "")
+        {
           auto CalleeLoc = FD->getLocation();
           printFuncDecl(FD, CalleeLoc, SM);
         }
@@ -129,21 +142,25 @@ StatementMatcher CallMatcher =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 int main(int argc, const char **argv) {
-    /*
-     * Usage:
-     ** CodeAnalysis [path to compile_commands.json] [path to source file]
-     */
-    if (argc < 2) {
-      // std::printf(
-      //     "Usage: CodeAnalysis [path to compile_commands.json] [path to
-      //     source " "file]\n");
-      llvm::outs() << "Usage: CodeAnalysis [path to source file]\n"
-      << "Example: CodeAnalysis ./test.cpp\n"
-      << "Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.\n"
-      << "        2. The compile_commands.json file should be named as compile_commands.json.\n"
-      << "        3. You can input any number of source file as you wish.\n";
-      return 1;
-    }
+  /*
+   * Usage:
+   ** ./CodeAnalysis [path to source file]
+   */
+  if (argc < 2) {
+    // std::printf(
+    //     "Usage: CodeAnalysis [path to compile_commands.json] [path to
+    //     source " "file]\n");
+    llvm::outs()
+        << "Usage: ./CodeAnalysis [path to source file]\n"
+        << "Example: CodeAnalysis ./test.cpp\n"
+        << "Notice: 1. The compile_commands.json file should be in the same "
+           "directory as the source file or in the parent directory of the "
+           "source file.\n"
+        << "        2. The compile_commands.json file should be named as "
+           "compile_commands.json.\n"
+        << "        3. You can input any number of source file as you wish.\n";
+    return 1;
+  }
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
       clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
                                                   llvm::cl::OneOrMore);

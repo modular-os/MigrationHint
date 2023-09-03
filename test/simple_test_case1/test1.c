@@ -21,7 +21,6 @@ int mul(int a0[],int a1[], int a2[],int b0[],int b1[],int b2[],int c0[],int c1[]
     return 0;
 
 }
-void hi(){}
 
 int main()
 {

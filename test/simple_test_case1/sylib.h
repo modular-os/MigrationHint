@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+void hi();
+
 /* Timing function implementation */
 void _sysy_starttime(int lineno);
 void _sysy_stoptime(int lineno);
