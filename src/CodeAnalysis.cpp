@@ -1,3 +1,8 @@
+#include <clang/AST/AST.h>
+#include <clang/AST/ASTContext.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/Frontend/ASTUnit.h>
+#include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
@@ -39,6 +44,9 @@
 //     clang::SourceManager &SM;
 // };
 
+// Basic Infrastructure
+std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
@@ -47,9 +55,18 @@ class ExternalCallMatcher
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       auto FD = CE->getDirectCallee();
       if (FD) {
+        // output the basic information of the function declaration
+        auto loc = FD->getLocation();
+        auto &SM = *Result.SourceManager;
+        llvm::outs() << "========================================\n";
+        std::string FilePath = SM.getFilename(loc).str();
+        unsigned LineNumber = SM.getSpellingLineNumber(loc);
+        unsigned ColumnNumber = SM.getSpellingColumnNumber(loc);
+        llvm::outs() << "Function declaration found at: " << FilePath << ":"
+                     << LineNumber << ":" << ColumnNumber << "\n";
+
         /// Determine whether this declaration came from an AST file (such as
         /// a precompiled header or module) rather than having been parsed.
-
         llvm::outs() << "----------------------------------------\n";
         if (!FD->isFromASTFile()) {
           llvm::outs() << "Found external function call: "
@@ -63,8 +80,7 @@ class ExternalCallMatcher
       } else {
         llvm::outs() << "No function declaration found for call\n";
       }
-    }
-    else {
+    } else {
       llvm::outs() << "No call expression found\n";
     }
   }
