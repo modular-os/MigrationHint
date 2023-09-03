@@ -113,16 +113,7 @@ class ExternalCallMatcher
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
-        // if (FilePath == "")
-        auto CallerPath = SM.getFilename(CE->getRParenLoc()).str();
-        auto CalleePath = SM.getFilename(FD->getLocation()).str();
-
-        // Judge whether the caller is expanded from macro
-        if (SM.isMacroBodyExpansion(CE->getRParenLoc())) {
-          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CE->getRParenLoc());
-          CallerPath = SM.getFilename(ExpansionLoc).str();
-        }
-        if (CallerPath != CalleePath) {
+        if (!SM.isInMainFile(FD->getLocation())) {
           // auto CalleeLoc = FD->getLocation();
           printCaller(CE, SM);
           printFuncDecl(FD, SM);
