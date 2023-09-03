@@ -50,8 +50,8 @@
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 
 void printFuncDecl(const clang::FunctionDecl *FD,
-                   const clang::SourceLocation Loc,
                    const clang::SourceManager &SM) {
+  auto Loc = FD->getLocation();
   std::string FilePath = SM.getFilename(Loc).str();
   unsigned LineNumber = SM.getSpellingLineNumber(Loc);
   unsigned ColumnNumber = SM.getSpellingColumnNumber(Loc);
@@ -74,6 +74,23 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::outs() << ")\n";
 }
 
+void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
+  auto CallerLoc = CE->getRParenLoc();
+  std::string FilePath = SM.getFilename(CallerLoc).str();
+  unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
+  unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
+  if (SM.isMacroBodyExpansion(CallerLoc)) {
+    auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+    FilePath = SM.getFilename(ExpansionLoc).str();
+    LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
+    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
+#ifdef DEBUG
+        llvm::outs() << "Is expanded from macro: ";
+#endif
+  }
+  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
+}
+
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
@@ -82,32 +99,13 @@ class ExternalCallMatcher
     auto &SM = *Result.SourceManager;
     llvm::outs() << "========================================\n";
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
-      auto CallerLoc = CE->getRParenLoc();
-      std::string FilePath = SM.getFilename(CallerLoc).str();
-      unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
-      unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
-      if (SM.isMacroBodyExpansion(CallerLoc)) {
-        auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-        FilePath = SM.getFilename(ExpansionLoc).str();
-        LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
-        ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
-
-#ifdef DEBUG
-        llvm::outs() << "Is expanded from macro: ";
-#endif
-      }
-      llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber
-                   << "\n";
-#ifdef DEBUG
-      llvm::outs() << "Function call found at: " << FilePath << ":"
-                   << LineNumber << ":" << ColumnNumber << "\n";
-#endif
+      printCaller(CE, SM);
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
         // if (FilePath == "")
         {
-          auto CalleeLoc = FD->getLocation();
-          printFuncDecl(FD, CalleeLoc, SM);
+          // auto CalleeLoc = FD->getLocation();
+          printFuncDecl(FD, SM);
         }
 #ifdef DEBUG
         /// Determine whether this declaration came from an AST file (such as
