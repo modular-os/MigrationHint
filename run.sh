@@ -13,7 +13,7 @@ JSON_PATH=/home/tz/MigrationHint/tmp/tmp.json
 
 TARGET_PROJ_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15
 TARGET_SOURCE=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
-TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
+# TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Not Matched commands
@@ -39,4 +39,4 @@ popd
 # clang -cc1 -analyze -analyzer-checker=debug.ViewCFG ${TARGET_SOURCE} 2>&1 | tee log/zswap_cfg.txt
 
 # clang-query /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
-# clang-query /home/tz/MigrationHint/tmp/tmp.c
+# clang-query /home/tz/MigrationHint/test/simple_test_case1/test1.c

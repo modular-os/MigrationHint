@@ -1,5 +1,6 @@
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
@@ -7,6 +8,7 @@
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
 #include <string>
@@ -47,24 +49,54 @@
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 
+void printFuncDecl(const clang::FunctionDecl *FD,
+                   const clang::SourceLocation Loc,
+                   const clang::SourceManager &SM) {
+  std::string FilePath = SM.getFilename(Loc).str();
+  unsigned LineNumber = SM.getSpellingLineNumber(Loc);
+  unsigned ColumnNumber = SM.getSpellingColumnNumber(Loc);
+
+  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
+
+  llvm::outs() << FD->getReturnType().getAsString() << " "
+               << FD->getNameAsString() << "(";
+  if (int paramNum = FD->getNumParams()) {
+    for (auto &it : FD->parameters()) {
+      llvm::outs() << it->getType().getAsString();
+      if (it->getNameAsString() != "") {
+        llvm::outs() << " " << it->getNameAsString();
+      }
+      if (--paramNum) {
+        llvm::outs() << ", ";
+      }
+    }
+  }
+  llvm::outs() << ")\n";
+}
+
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) {
+    auto &SM = *Result.SourceManager;
+    llvm::outs() << "========================================\n";
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
-      auto FD = CE->getDirectCallee();
-      if (FD) {
+      auto CallerLoc = CE->getRParenLoc();
+      std::string FilePath = SM.getFilename(CallerLoc).str();
+      unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
+      unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
+#ifdef DEBUG
+      llvm::outs() << "Function call found at: " << FilePath << ":"
+                   << LineNumber << ":" << ColumnNumber << "\n";
+#endif
+      if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
-        auto loc = FD->getLocation();
-        auto &SM = *Result.SourceManager;
-        llvm::outs() << "========================================\n";
-        std::string FilePath = SM.getFilename(loc).str();
-        unsigned LineNumber = SM.getSpellingLineNumber(loc);
-        unsigned ColumnNumber = SM.getSpellingColumnNumber(loc);
-        llvm::outs() << "Function declaration found at: " << FilePath << ":"
-                     << LineNumber << ":" << ColumnNumber << "\n";
-
+        if (FilePath == "") {
+          auto CalleeLoc = FD->getLocation();
+          printFuncDecl(FD, CalleeLoc, SM);
+        }
+#ifdef DEBUG
         /// Determine whether this declaration came from an AST file (such as
         /// a precompiled header or module) rather than having been parsed.
         llvm::outs() << "----------------------------------------\n";
@@ -77,6 +109,7 @@ class ExternalCallMatcher
           llvm::outs() << "Found external C function call: "
                        << FD->getQualifiedNameAsString() << "\n";
         }
+#endif
       } else {
         llvm::outs() << "No function declaration found for call\n";
       }
