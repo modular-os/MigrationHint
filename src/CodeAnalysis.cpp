@@ -60,7 +60,12 @@ class ExternalCallMatcher
           llvm::outs() << "Found external C function call: "
                        << FD->getQualifiedNameAsString() << "\n";
         }
+      } else {
+        llvm::outs() << "No function declaration found for call\n";
       }
+    }
+    else {
+      llvm::outs() << "No call expression found\n";
     }
   }
 };
@@ -72,7 +77,7 @@ static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 // Setting AST Matchers for call expr
 using namespace clang::ast_matchers;
 StatementMatcher CallMatcher =
-    callExpr(callee(functionDecl().bind("externalCall")));
+    callExpr(callee(functionDecl())).bind("externalCall");
 
 int main(int argc, const char **argv) {
   //   /*

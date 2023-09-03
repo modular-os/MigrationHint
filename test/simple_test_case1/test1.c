@@ -21,6 +21,7 @@ int mul(int a0[],int a1[], int a2[],int b0[],int b1[],int b2[],int c0[],int c1[]
     return 0;
 
 }
+void hi(){}
 
 int main()
 {
@@ -30,6 +31,7 @@ int main()
     int a0[3];int a1[3]; int a2[3];int b0[3];int b1[3];int b2[3];int c0[6];int c1[3];int c2[3];
     int i;
     i=0;
+    hi();
     while(i<M)
     {
         a0[i]=i;
