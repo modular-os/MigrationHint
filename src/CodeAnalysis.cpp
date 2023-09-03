@@ -85,10 +85,22 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
 #ifdef DEBUG
-        llvm::outs() << "Is expanded from macro: ";
+    llvm::outs() << "Is expanded from macro: ";
 #endif
   }
-  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
+  if (SM.isInExternCSystemHeader(CallerLoc)) {
+    llvm::outs() << "Is in system header\n";
+  }
+  if (SM.isWrittenInBuiltinFile(CallerLoc)) {
+    llvm::outs() << "Is in builtin file\n";
+  }
+
+  if (FilePath == "") {
+    llvm::outs() << "Caller file path found\n";
+  } else {
+    llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber
+                 << "\n";
+  }
 }
 
 class ExternalCallMatcher
@@ -99,12 +111,20 @@ class ExternalCallMatcher
     auto &SM = *Result.SourceManager;
     llvm::outs() << "========================================\n";
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
-      printCaller(CE, SM);
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
         // if (FilePath == "")
-        {
+        auto CallerPath = SM.getFilename(CE->getRParenLoc()).str();
+        auto CalleePath = SM.getFilename(FD->getLocation()).str();
+
+        // Judge whether the caller is expanded from macro
+        if (SM.isMacroBodyExpansion(CE->getRParenLoc())) {
+          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CE->getRParenLoc());
+          CallerPath = SM.getFilename(ExpansionLoc).str();
+        }
+        if (CallerPath != CalleePath) {
           // auto CalleeLoc = FD->getLocation();
+          printCaller(CE, SM);
           printFuncDecl(FD, SM);
         }
 #ifdef DEBUG
