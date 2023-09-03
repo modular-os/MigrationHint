@@ -81,22 +81,48 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-    FilePath = SM.getFilename(ExpansionLoc).str();
+    // FilePath = SM.getFilename(ExpansionLoc).str();
+    {
+      // TODO: Find the printK Reference Location
+      FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
+    }
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
-#ifdef DEBUG
-    llvm::outs() << "Is expanded from macro: ";
-#endif
+    // if (FilePath == "") {
+    //   llvm::outs() << "Wrong macro parsing ways.\n";
+    // }
+  } else if (SM.isMacroArgExpansion(CallerLoc)) {
+    llvm::outs() << "Is in macro arg expansion\n";
+    auto ExpansionLoc = SM.getImmediateExpansionRange(CE->getBeginLoc());
+    FilePath = SM.getFilename(ExpansionLoc.getBegin()).str();
+    {
+      // FilePath =
+      // SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
+    }
+    LineNumber = SM.getSpellingLineNumber(ExpansionLoc.getBegin());
+    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc.getBegin());
   }
+#ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {
     llvm::outs() << "Is in system header\n";
   }
   if (SM.isWrittenInBuiltinFile(CallerLoc)) {
     llvm::outs() << "Is in builtin file\n";
   }
+  if (SM.isInSystemHeader(CallerLoc)) {
+    llvm::outs() << "Is in system header\n";
+  }
+  if (SM.isMacroArgExpansion(CallerLoc) or SM.isMacroBodyExpansion(CallerLoc) or
+      SM.isInSystemMacro(CallerLoc)) {
+    llvm::outs() << SM.isMacroBodyExpansion(CallerLoc) << " "
+                 << SM.isMacroArgExpansion(CallerLoc) << " "
+                 << SM.isInSystemMacro(CallerLoc) << " "
+                 << "Is in macro arg expansion\n";
+  }
+#endif
 
   if (FilePath == "") {
-    llvm::outs() << "Caller file path found\n";
+    llvm::outs() << "Caller file path not found\n";
   } else {
     llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber
                  << "\n";
