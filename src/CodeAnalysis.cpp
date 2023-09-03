@@ -129,16 +129,21 @@ StatementMatcher CallMatcher =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 int main(int argc, const char **argv) {
-  //   /*
-  //    * Usage:
-  //    ** CodeAnalysis [path to compile_commands.json] [path to source file]
-  //    */
-  //   if (argc != 3) {
-  //     std::printf(
-  //         "Usage: CodeAnalysis [path to compile_commands.json] [path to
-  //         source " "file]\n");
-  //     return 1;
-  //   }
+    /*
+     * Usage:
+     ** CodeAnalysis [path to compile_commands.json] [path to source file]
+     */
+    if (argc < 2) {
+      // std::printf(
+      //     "Usage: CodeAnalysis [path to compile_commands.json] [path to
+      //     source " "file]\n");
+      llvm::outs() << "Usage: CodeAnalysis [path to source file]\n"
+      << "Example: CodeAnalysis ./test.cpp\n"
+      << "Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.\n"
+      << "        2. The compile_commands.json file should be named as compile_commands.json.\n"
+      << "        3. You can input any number of source file as you wish.\n";
+      return 1;
+    }
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
       clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
                                                   llvm::cl::OneOrMore);
