@@ -5,39 +5,74 @@
 
 #include <iostream>
 #include <string>
+
+#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
 // using namespace clang;
 // using namespace clang::tooling;
 // using namespace llvm;
 
-class HeadFileDependencyAction : public clang::ASTFrontendAction {
-public:
-    virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance
-    &CI, llvm::StringRef file) override {
-        return
-        std::make_unique<HeadFileDependencyAction>(CI.getSourceManager());
-    }
-};
+// class HeadFileDependencyAction : public clang::ASTFrontendAction {
+// public:
+//     virtual std::unique_ptr<clang::ASTConsumer>
+//     CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef file)
+//     override {
+//         return
+//         std::make_unique<HeadFileDependencyAction>(CI.getSourceManager());
+//     }
+// };
 
-class HeadFileDependencyConsumer : public clang::ASTConsumer {
-public:
-    explicit HeadFileDependencyConsumer(clang::SourceManager &SM) : SM(SM) {}
+// class HeadFileDependencyConsumer : public clang::ASTConsumer {
+// public:
+//     explicit HeadFileDependencyConsumer(clang::SourceManager &SM) : SM(SM) {}
 
-    virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
-        for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
-            if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
-                auto FileName = ID->getFileName();
-                llvm::outs() << FileName.str() << "\n";
-            }
+//     virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
+//         for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
+//             if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
+//                 auto FileName = ID->getFileName();
+//                 llvm::outs() << FileName.str() << "\n";
+//             }
+//         }
+//     }
+
+// private:
+//     clang::SourceManager &SM;
+// };
+
+class ExternalCallMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) {
+    if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
+      auto FD = CE->getDirectCallee();
+      if (FD) {
+        /// Determine whether this declaration came from an AST file (such as
+        /// a precompiled header or module) rather than having been parsed.
+
+        llvm::outs() << "----------------------------------------\n";
+        if (!FD->isFromASTFile()) {
+          llvm::outs() << "Found external function call: "
+                       << FD->getQualifiedNameAsString() << "\n";
         }
-    }
 
-private:
-    clang::SourceManager &SM;
+        if (FD->isExternC()) {
+          llvm::outs() << "Found external C function call: "
+                       << FD->getQualifiedNameAsString() << "\n";
+        }
+      }
+    }
+  }
 };
 
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
 static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
+
+// Setting AST Matchers for call expr
+using namespace clang::ast_matchers;
+StatementMatcher CallMatcher =
+    callExpr(callee(functionDecl().bind("externalCall")));
 
 int main(int argc, const char **argv) {
   //   /*
@@ -90,6 +125,10 @@ int main(int argc, const char **argv) {
   llvm::outs() << "[Debug] End of source file lists"
                << "\n";
 #endif
-  // return
+
+  ExternalCallMatcher Matcher;
+  clang::ast_matchers::MatchFinder Finder;
+  Finder.addMatcher(CallMatcher, &Matcher);
+  return Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   // Tool.run(newFrontendActionFactory<HeadFileDependencyAction>().get());
 }

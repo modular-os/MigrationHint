@@ -22,7 +22,9 @@ TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I.
 pushd $BUILD
     cmake .. -G Ninja
     ninja
+    set -x
     ./bin/CodeAnalysis ${TARGET_SOURCE} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    set +x
 popd
 
 # Generate ast for target file
@@ -34,3 +36,6 @@ popd
 
 # View CFG
 # clang -cc1 -analyze -analyzer-checker=debug.ViewCFG ${TARGET_SOURCE} 2>&1 | tee log/zswap_cfg.txt
+
+# clang-query /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
+# clang-query /home/tz/MigrationHint/tmp/tmp.c
