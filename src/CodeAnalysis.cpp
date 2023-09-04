@@ -19,33 +19,6 @@
 // using namespace clang::tooling;
 // using namespace llvm;
 
-// class HeadFileDependencyAction : public clang::ASTFrontendAction {
-// public:
-//     virtual std::unique_ptr<clang::ASTConsumer>
-//     CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef file)
-//     override {
-//         return
-//         std::make_unique<HeadFileDependencyAction>(CI.getSourceManager());
-//     }
-// };
-
-// class HeadFileDependencyConsumer : public clang::ASTConsumer {
-// public:
-//     explicit HeadFileDependencyConsumer(clang::SourceManager &SM) : SM(SM) {}
-
-//     virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
-//         for (const auto &F : Context.getTranslationUnitDecl()->decls()) {
-//             if (const auto *ID = dyn_cast<clang::InclusionDirective>(F)) {
-//                 auto FileName = ID->getFileName();
-//                 llvm::outs() << FileName.str() << "\n";
-//             }
-//         }
-//     }
-
-// private:
-//     clang::SourceManager &SM;
-// };
-
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 
@@ -83,7 +56,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
     // FilePath = SM.getFilename(ExpansionLoc).str();
     {
-      // TODO: Find the printK Reference Location
+      // TODO: Find the macro(printK, rb_tree_infrastructure, etc.)
+      //  Reference Location
       FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
     }
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
