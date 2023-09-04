@@ -1,5 +1,6 @@
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/AST/Expr.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/ASTUnit.h>
@@ -11,6 +12,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
+#include <map>
 #include <string>
 
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -21,6 +23,7 @@
 
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+// std::vector<const clang::CallExpr *> test_vec;
 
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
@@ -126,17 +129,24 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
+  void onStartOfTranslationUnit() override {
+    llvm::outs() << "In onStartOfTranslationUnit\n";
+    test_vec.clear();
+    llvm::outs().flush();
+  }
+
   virtual void run(
-      const clang::ast_matchers::MatchFinder::MatchResult &Result) {
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    llvm::outs() << "========================================\n";
+    // llvm::outs() << "========================================\n";
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
         if (!SM.isInMainFile(FD->getLocation())) {
           // auto CalleeLoc = FD->getLocation();
-          printCaller(CE, SM);
-          printFuncDecl(FD, SM);
+          test_vec.push_back(CE);
+          // printCaller(CE, SM);
+          // printFuncDecl(FD, SM);
         }
 #ifdef DEBUG
         /// Determine whether this declaration came from an AST file (such as
@@ -159,6 +169,22 @@ class ExternalCallMatcher
       llvm::outs() << "No call expression found\n";
     }
   }
+
+  void onEndOfTranslationUnit() override {
+    llvm::outs() << test_vec.size() << " " << "In onEndOfTranslationUnit\n";
+    llvm::outs().flush();
+    auto &SM = ASTs[0]->getSourceManager();
+    for (auto &it : test_vec) {
+      llvm::outs() << "========================================\n";
+      llvm::outs().flush();
+      auto FD = it->getDirectCallee();
+      printCaller(it, SM);
+      printFuncDecl(FD, SM);
+    }
+  }
+
+ private:
+  std::vector<const clang::CallExpr *> test_vec;
 };
 
 // Apply a custom category to all command-line options so that they are the
@@ -230,9 +256,21 @@ int main(int argc, const char **argv) {
   llvm::outs() << "[Debug] End of source file lists"
                << "\n";
 #endif
+  Tool.buildASTs(ASTs);
 
+  // auto &SM = ASTs[0]->getSourceManager();
   ExternalCallMatcher Matcher;
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(CallMatcher, &Matcher);
-  return Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  int status =
+      Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+
+  // for (auto &it: test_vec) {
+  //   auto FD = it->getDirectCallee();
+  //   llvm::outs() << "========================================\n";
+  //   // printCaller(it, SM);
+  //   printFuncDecl(FD, SM);
+  // }
+
+  return status;
 }
