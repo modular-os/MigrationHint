@@ -33,6 +33,13 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   unsigned ColumnNumber = PLoc.getColumn();
   llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
 
+  // Get the spelling location for Loc
+  auto SLoc = SM.getSpellingLoc(Loc);
+  FilePath = SM.getFilename(SLoc).str();
+  LineNumber = SM.getSpellingLineNumber(SLoc);
+  ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
+
   llvm::outs() << FD->getReturnType().getAsString() << " "
                << FD->getNameAsString() << "(";
   if (int paramNum = FD->getNumParams()) {
