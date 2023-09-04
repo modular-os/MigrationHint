@@ -63,17 +63,13 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
 
     ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
-    FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    // assert(FilePath != "" &&
-    //        "(Normal) Macro's original location defined in the headfiles is "
-    //        "invalid.");
-    if (FilePath == "") {
-      llvm::outs() << "(Normal) Macro's original location defined in the headfiles is invalid.\n"
-      << SM.getFilename(SM.getImmediateMacroCallerLoc(CallerLoc)) << "\n"
-      << SM.getFilename(ExpansionLoc) << "\n";
-    }
-    LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
-    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
+    PLoc = SM.getPresumedLoc(ExpansionLoc);
+    FilePath = PLoc.getFilename();
+    LineNumber = PLoc.getLine();
+    ColumnNumber = PLoc.getColumn();
+    assert(FilePath != "" &&
+           "(Normal) Macro's original location defined in the headfiles is "
+           "invalid.");
   } else if (SM.isMacroArgExpansion(CallerLoc)) {
 #ifdef DEBUG
     llvm::outs() << "Is in macro arg expansion\n";
