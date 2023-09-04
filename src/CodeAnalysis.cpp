@@ -25,10 +25,12 @@ std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
   auto Loc = FD->getLocation();
-  std::string FilePath = SM.getFilename(Loc).str();
-  unsigned LineNumber = SM.getSpellingLineNumber(Loc);
-  unsigned ColumnNumber = SM.getSpellingColumnNumber(Loc);
-
+  auto PLoc = SM.getPresumedLoc(Loc);
+  assert(PLoc.isValid() && "Caller's location in the source file is invalid\n");
+  std::string FilePath = PLoc.getFilename();
+  assert(FilePath != "" && "Callee's location in the source file is invalid.");
+  unsigned LineNumber = PLoc.getLine();
+  unsigned ColumnNumber = PLoc.getColumn();
   llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
 
   llvm::outs() << FD->getReturnType().getAsString() << " "
@@ -62,9 +64,14 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 
     ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
     FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    assert(FilePath != "" &&
-           "(Normal) Macro's original location defined in the headfiles is "
-           "invalid.");
+    // assert(FilePath != "" &&
+    //        "(Normal) Macro's original location defined in the headfiles is "
+    //        "invalid.");
+    if (FilePath == "") {
+      llvm::outs() << "(Normal) Macro's original location defined in the headfiles is invalid.\n"
+      << SM.getFilename(SM.getImmediateMacroCallerLoc(CallerLoc)) << "\n"
+      << SM.getFilename(ExpansionLoc) << "\n";
+    }
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
   } else if (SM.isMacroArgExpansion(CallerLoc)) {
