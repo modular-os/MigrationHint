@@ -49,35 +49,39 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   auto CallerLoc = CE->getBeginLoc();
-  std::string FilePath = SM.getFilename(CallerLoc).str();
-  unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
-  unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
+  auto PLoc = SM.getPresumedLoc(CallerLoc);
+  assert(PLoc.isValid() && "Caller's location in the source file is invalid\n");
+  std::string FilePath = PLoc.getFilename();
+  unsigned LineNumber = PLoc.getLine();
+  unsigned ColumnNumber = PLoc.getColumn();
+
+  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
+  // Judging whether the caller is expanded from predefined macros.
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
 
     ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
     FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    if (FilePath == "") {
-      // TODO: Find the macro(printK, rb_tree_infrastructure, etc.)
-      //  Reference Location
-      // FilePath = SM.getFilename(ExpansionLoc).str();
-    }
+    assert(FilePath != "" &&
+           "(Normal) Macro's original location defined in the headfiles is "
+           "invalid.");
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
-    // if (FilePath == "") {
-    //   llvm::outs() << "Wrong macro parsing ways.\n";
-    // }
   } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
     llvm::outs() << "Is in macro arg expansion\n";
-    auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc);
-    FilePath = SM.getFilename(ExpansionLoc.getBegin()).str();
-    {
-      // FilePath =
-      // SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    }
-    LineNumber = SM.getSpellingLineNumber(ExpansionLoc.getBegin());
-    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc.getBegin());
+#endif
+    auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc).getBegin();
+    FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
+    assert(FilePath != "" &&
+           "(function-like) Macro's original location defined in the headfiles "
+           "is invalid.");
+    LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
+    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
+  } else {
+    return;
   }
+
 #ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {
     llvm::outs() << "Is in system header\n";
@@ -97,12 +101,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  if (FilePath == "") {
-    llvm::outs() << "Caller file path not found\n";
-  } else {
-    llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber
-                 << "\n";
-  }
+  llvm::outs() << "Is expanded from Macro, Macro's definition: "
+               << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
 }
 
 class ExternalCallMatcher
@@ -164,8 +164,8 @@ int main(int argc, const char **argv) {
     llvm::outs()
         << "Usage: ./CodeAnalysis [path to source file]\n"
         << "Example: CodeAnalysis ./test.cpp\n"
-        << "Notice: 1. The compile_commands.json file should be in the same "
-           "directory as the source file or in the parent directory of the "
+        << "Notice: 1. The compile_commands.json file should be in the same \n"
+           "directory as the source file or in the parent directory of the \n"
            "source file.\n"
         << "        2. The compile_commands.json file should be named as "
            "compile_commands.json.\n"
