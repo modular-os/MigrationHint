@@ -104,7 +104,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  llvm::outs() << "Is expanded from Macro, Macro's definition: "
+  llvm::outs() << "Expanded from Macro, Macro's definition: "
                << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
 }
 
@@ -220,5 +220,4 @@ int main(int argc, const char **argv) {
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(CallMatcher, &Matcher);
   return Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
-  // Tool.run(newFrontendActionFactory<HeadFileDependencyAction>().get());
 }
