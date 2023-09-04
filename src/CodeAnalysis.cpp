@@ -132,7 +132,8 @@ class ExternalCallMatcher
   void onStartOfTranslationUnit() override {
     llvm::outs() << "In onStartOfTranslationUnit\n";
     test_vec.clear();
-    llvm::outs().flush();
+    FilenameToCallExprs.clear();
+    // llvm::outs().flush();
   }
 
   virtual void run(
@@ -143,10 +144,35 @@ class ExternalCallMatcher
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
         if (!SM.isInMainFile(FD->getLocation())) {
-          // auto CalleeLoc = FD->getLocation();
+          auto Loc = FD->getLocation();
+          // Get the spelling location for Loc
+          auto SLoc = SM.getSpellingLoc(Loc);
+          std::string FilePath = SM.getFilename(SLoc).str();
+
+          if (FilePath == "") {
+            // Couldn't get the spelling location, try to get the presumed
+            // location
+#if DEBUG
+            llvm::outs << "Couldn't get the spelling location, try to get the "
+                          "presumed "
+                          "location\n";
+#endif
+            auto PLoc = SM.getPresumedLoc(Loc);
+            assert(
+                PLoc.isValid() &&
+                "Caller's Presumed location in the source file is invalid\n");
+            FilePath = PLoc.getFilename();
+            assert(FilePath != "" &&
+                   "Caller's location in the source file is invalid.");
+          }
+
           test_vec.push_back(CE);
-          // printCaller(CE, SM);
-          // printFuncDecl(FD, SM);
+
+          if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
+            FilenameToCallExprs[FilePath] =
+                std::vector<const clang::CallExpr *>();
+          }
+          FilenameToCallExprs[FilePath].push_back(CE);
         }
 #ifdef DEBUG
         /// Determine whether this declaration came from an AST file (such as
@@ -171,12 +197,13 @@ class ExternalCallMatcher
   }
 
   void onEndOfTranslationUnit() override {
-    llvm::outs() << test_vec.size() << " " << "In onEndOfTranslationUnit\n";
-    llvm::outs().flush();
+    llvm::outs() << test_vec.size() << " "
+                 << "In onEndOfTranslationUnit\n";
+    // llvm::outs().flush();
     auto &SM = ASTs[0]->getSourceManager();
     for (auto &it : test_vec) {
       llvm::outs() << "========================================\n";
-      llvm::outs().flush();
+      // llvm::outs();
       auto FD = it->getDirectCallee();
       printCaller(it, SM);
       printFuncDecl(FD, SM);
@@ -185,6 +212,8 @@ class ExternalCallMatcher
 
  private:
   std::vector<const clang::CallExpr *> test_vec;
+  std::map<std::string, std::vector<const clang::CallExpr *>>
+      FilenameToCallExprs;
 };
 
 // Apply a custom category to all command-line options so that they are the
@@ -208,12 +237,14 @@ int main(int argc, const char **argv) {
     llvm::outs()
         << "Usage: ./CodeAnalysis [path to source file]\n"
         << "Example: CodeAnalysis ./test.cpp\n"
-        << "Notice: 1. The compile_commands.json file should be in the same \n"
+        << "Notice: 1. The compile_commands.json file should be in the same "
+           "\n"
            "directory as the source file or in the parent directory of the \n"
            "source file.\n"
         << "        2. The compile_commands.json file should be named as "
            "compile_commands.json.\n"
-        << "        3. You can input any number of source file as you wish.\n";
+        << "        3. You can input any number of source file as you "
+           "wish.\n";
     return 1;
   }
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
