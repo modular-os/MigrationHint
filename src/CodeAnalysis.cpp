@@ -48,17 +48,19 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 }
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
-  auto CallerLoc = CE->getRParenLoc();
+  auto CallerLoc = CE->getBeginLoc();
   std::string FilePath = SM.getFilename(CallerLoc).str();
   unsigned LineNumber = SM.getSpellingLineNumber(CallerLoc);
   unsigned ColumnNumber = SM.getSpellingColumnNumber(CallerLoc);
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-    // FilePath = SM.getFilename(ExpansionLoc).str();
-    {
+
+    ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
+    FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
+    if (FilePath == "") {
       // TODO: Find the macro(printK, rb_tree_infrastructure, etc.)
       //  Reference Location
-      FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
+      // FilePath = SM.getFilename(ExpansionLoc).str();
     }
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
@@ -67,7 +69,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     // }
   } else if (SM.isMacroArgExpansion(CallerLoc)) {
     llvm::outs() << "Is in macro arg expansion\n";
-    auto ExpansionLoc = SM.getImmediateExpansionRange(CE->getBeginLoc());
+    auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc);
     FilePath = SM.getFilename(ExpansionLoc.getBegin()).str();
     {
       // FilePath =
