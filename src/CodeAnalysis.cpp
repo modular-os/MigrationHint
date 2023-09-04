@@ -133,7 +133,6 @@ class ExternalCallMatcher
     llvm::outs() << "In onStartOfTranslationUnit\n";
     test_vec.clear();
     FilenameToCallExprs.clear();
-    // llvm::outs().flush();
   }
 
   virtual void run(
@@ -199,15 +198,31 @@ class ExternalCallMatcher
   void onEndOfTranslationUnit() override {
     llvm::outs() << test_vec.size() << " "
                  << "In onEndOfTranslationUnit\n";
-    // llvm::outs().flush();
     auto &SM = ASTs[0]->getSourceManager();
-    for (auto &it : test_vec) {
+    
+    // Traverse the FilenameToCallExprs
+    int cnt = 0;
+    for(auto &it: FilenameToCallExprs) {
       llvm::outs() << "========================================\n";
-      // llvm::outs();
-      auto FD = it->getDirectCallee();
-      printCaller(it, SM);
-      printFuncDecl(FD, SM);
+      llvm::outs() << "Filename: " << it.first << "\n";
+      llvm::outs() << "Function Call Count: " << it.second.size() << "\n";
+      for(auto &it2: it.second) {
+        auto FD = it2->getDirectCallee();
+        printCaller(it2, SM);
+        printFuncDecl(FD, SM);
+        llvm::outs() << "\n";
+        ++cnt;
+      }
     }
+
+    llvm::outs() << "Externel Function Call Count: " << cnt << "\n";
+
+    // for (auto &it : test_vec) {
+    //   llvm::outs() << "========================================\n";
+    //   auto FD = it->getDirectCallee();
+    //   printCaller(it, SM);
+    //   printFuncDecl(FD, SM);
+    // }
   }
 
  private:
