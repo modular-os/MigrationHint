@@ -25,19 +25,27 @@ std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
   auto Loc = FD->getLocation();
-  auto PLoc = SM.getPresumedLoc(Loc);
-  assert(PLoc.isValid() && "Caller's location in the source file is invalid\n");
-  std::string FilePath = PLoc.getFilename();
-  assert(FilePath != "" && "Callee's location in the source file is invalid.");
-  unsigned LineNumber = PLoc.getLine();
-  unsigned ColumnNumber = PLoc.getColumn();
-  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
-
   // Get the spelling location for Loc
   auto SLoc = SM.getSpellingLoc(Loc);
-  FilePath = SM.getFilename(SLoc).str();
-  LineNumber = SM.getSpellingLineNumber(SLoc);
-  ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+  std::string FilePath = SM.getFilename(SLoc).str();
+  unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+  unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+
+  if (FilePath == "") {
+    // Couldn't get the spelling location, try to get the presumed location
+#if DEBUG
+    llvm::outs << "Couldn't get the spelling location, try to get the presumed "
+                  "location\n";
+#endif
+    auto PLoc = SM.getPresumedLoc(Loc);
+    assert(PLoc.isValid() &&
+           "Caller's Presumed location in the source file is invalid\n");
+    FilePath = PLoc.getFilename();
+    assert(FilePath != "" &&
+           "Caller's location in the source file is invalid.");
+    LineNumber = PLoc.getLine();
+    ColumnNumber = PLoc.getColumn();
+  }
   llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
 
   llvm::outs() << FD->getReturnType().getAsString() << " "
@@ -111,8 +119,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  llvm::outs() << "Expanded from Macro, Macro's definition: "
-               << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
+  llvm::outs() << "Expanded from Macro, Macro's definition: " << FilePath << ":"
+               << LineNumber << ":" << ColumnNumber << "\n";
 }
 
 class ExternalCallMatcher

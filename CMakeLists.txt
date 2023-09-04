@@ -29,6 +29,8 @@ set(CA_EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY_DIR})
 # Set the compiler
 set(CMAKE_C_COMPILER ${CA_Clang_INSTALL_DIR}/bin/clang)
 set(CMAKE_CXX_COMPILER ${CA_Clang_INSTALL_DIR}/bin/clang++)
+message(STATUS "Using Clang++ compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "Using Clang compiler: ${CMAKE_C_COMPILER}")
 
 #===============================================================================
 # 1. VERIFY CLANG INSTALLATION DIR
