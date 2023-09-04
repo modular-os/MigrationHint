@@ -130,15 +130,15 @@ class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
   void onStartOfTranslationUnit() override {
+#ifdef DEBUG
     llvm::outs() << "In onStartOfTranslationUnit\n";
-    test_vec.clear();
+#endif
     FilenameToCallExprs.clear();
   }
 
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    // llvm::outs() << "========================================\n";
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
@@ -164,8 +164,6 @@ class ExternalCallMatcher
             assert(FilePath != "" &&
                    "Caller's location in the source file is invalid.");
           }
-
-          test_vec.push_back(CE);
 
           if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
             FilenameToCallExprs[FilePath] =
@@ -196,17 +194,18 @@ class ExternalCallMatcher
   }
 
   void onEndOfTranslationUnit() override {
-    llvm::outs() << test_vec.size() << " "
-                 << "In onEndOfTranslationUnit\n";
+#ifdef DEBUG
+    llvm::outs() << "In onEndOfTranslationUnit\n";
+#endif
     auto &SM = ASTs[0]->getSourceManager();
-    
+
     // Traverse the FilenameToCallExprs
     int cnt = 0;
-    for(auto &it: FilenameToCallExprs) {
+    for (auto &it : FilenameToCallExprs) {
       llvm::outs() << "========================================\n";
       llvm::outs() << "Filename: " << it.first << "\n";
       llvm::outs() << "Function Call Count: " << it.second.size() << "\n";
-      for(auto &it2: it.second) {
+      for (auto &it2 : it.second) {
         auto FD = it2->getDirectCallee();
         printCaller(it2, SM);
         printFuncDecl(FD, SM);
@@ -216,17 +215,9 @@ class ExternalCallMatcher
     }
 
     llvm::outs() << "Externel Function Call Count: " << cnt << "\n";
-
-    // for (auto &it : test_vec) {
-    //   llvm::outs() << "========================================\n";
-    //   auto FD = it->getDirectCallee();
-    //   printCaller(it, SM);
-    //   printFuncDecl(FD, SM);
-    // }
   }
 
  private:
-  std::vector<const clang::CallExpr *> test_vec;
   std::map<std::string, std::vector<const clang::CallExpr *>>
       FilenameToCallExprs;
 };
