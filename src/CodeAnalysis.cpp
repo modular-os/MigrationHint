@@ -49,9 +49,8 @@ void printFuncDecl(const clang::FunctionDecl *FD,
     LineNumber = PLoc.getLine();
     ColumnNumber = PLoc.getColumn();
   }
-  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << " ";
 
-  llvm::outs() << FD->getReturnType().getAsString() << " "
+  llvm::outs() << "`" << FD->getReturnType().getAsString() << " "
                << FD->getNameAsString() << "(";
   if (int paramNum = FD->getNumParams()) {
     for (auto &it : FD->parameters()) {
@@ -64,7 +63,9 @@ void printFuncDecl(const clang::FunctionDecl *FD,
       }
     }
   }
-  llvm::outs() << ")\n";
+  llvm::outs() << ")`\n";
+  llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
+               << ColumnNumber << "`\n";
 }
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
@@ -75,7 +76,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   unsigned LineNumber = PLoc.getLine();
   unsigned ColumnNumber = PLoc.getColumn();
 
-  llvm::outs() << FilePath << ":" << LineNumber << ":" << ColumnNumber << "\n";
+  llvm::outs() << "   - Caller Location: `" << FilePath << ":" << LineNumber
+               << ":" << ColumnNumber << "`\n";
   // Judging whether the caller is expanded from predefined macros.
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
@@ -122,8 +124,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  llvm::outs() << "Expanded from Macro, Macro's definition: " << FilePath << ":"
-               << LineNumber << ":" << ColumnNumber << "\n";
+  llvm::outs() << "   - Expanded from Macro, Macro's definition: `" << FilePath
+               << ":" << LineNumber << ":" << ColumnNumber << "`\n\n";
 }
 
 class ExternalCallMatcher
@@ -202,19 +204,23 @@ class ExternalCallMatcher
     // Traverse the FilenameToCallExprs
     int cnt = 0;
     for (auto &it : FilenameToCallExprs) {
-      llvm::outs() << "========================================\n";
-      llvm::outs() << "Filename: " << it.first << "\n";
-      llvm::outs() << "Function Call Count: " << it.second.size() << "\n";
+      llvm::outs() << "## Headfile: " << it.first << "\n";
+      llvm::outs() << "- Externel Function Count: " << it.second.size()
+                   << "\n\n";
+      int file_cnt = 0;
       for (auto &it2 : it.second) {
         auto FD = it2->getDirectCallee();
-        printCaller(it2, SM);
+        llvm::outs() << ++file_cnt << ". ";
         printFuncDecl(FD, SM);
+        printCaller(it2, SM);
         llvm::outs() << "\n";
         ++cnt;
       }
+      llvm::outs() << "---\n\n";
     }
 
-    llvm::outs() << "Externel Function Call Count: " << cnt << "\n";
+    llvm::outs() << "# Summary\n"
+                 << "- Externel Function Call Count: " << cnt << "\n";
   }
 
  private:
@@ -293,6 +299,8 @@ int main(int argc, const char **argv) {
   llvm::outs() << "[Debug] End of source file lists"
                << "\n";
 #endif
+
+  llvm::outs() << "# External Function Call Report\n\n";
   Tool.buildASTs(ASTs);
 
   // auto &SM = ASTs[0]->getSourceManager();
