@@ -245,21 +245,40 @@ class ExternalStructMatcher
     auto &SM = *Result.SourceManager;
     if (auto FD =
             Result.Nodes.getNodeAs<clang::FieldDecl>("externalFieldDecl")) {
-      // Dealing with the relaionship between RecordDecl and fieldDecl
-      // output the basic information of the RecordDecl
+#ifdef DEBUG
       llvm::outs() << "ExternalStructMatcher\n";
-      // llvm::outs() << FD->getQualifiedNameAsString() << "\n";
+      llvm::outs() << FD->getQualifiedNameAsString() << "\n";
       llvm::outs() << FD->getType().getAsString() << " "
-                     << FD->getNameAsString() << "\n";
+                   << FD->getNameAsString() << "\n";
       auto RD = FD->getParent();
       llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
+#endif
+      // Dealing with the relaionship between RecordDecl and fieldDecl
+      // output the basic information of the RecordDecl
 
-      // for (const auto &it : RD->fields()) {
-      //   llvm::outs() << "\t"
-      //                << it->getType().getAsString() << " "
-      //                << it->getNameAsString() << "\n";
+      if (const clang::RecordType *RT = FD->getType()->getAs<clang::RecordType>()) {
+        const clang::RecordDecl *RD = RT->getDecl();
+        if (RD->isCompleteDefinition()) {
+          clang::SourceRange Range = RD->getSourceRange();
+          // clang::SourceManager &SM = Result.Context->getSourceManager();
+          bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+          if (!InCurrentFile) {
+            llvm::outs()
+                << "The struct type is not defined in the current file.\n";
+            llvm::outs() << "Struct type name: " << RD->getNameAsString()
+                         << "\n";
+          }
+        }
+      }
+
+      // if (!SM.isInMainFile(FD->getLocation())) {
+      //   llvm::outs() << FD->getQualifiedNameAsString() << "\n";
+      //   llvm::outs() << FD->getType().getAsString() << " "
+      //                << FD->getNameAsString() << "\n";
+      //   auto RD = FD->getParent();
+      //   llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
       // }
-      //       if (!SM.isInMainFile(RD->getLocation())) {
       //         auto Loc = RD->getLocation();
       //         // Get the spelling location for Loc
       //         auto SLoc = SM.getSpellingLoc(Loc);
@@ -270,31 +289,29 @@ class ExternalStructMatcher
       //           presumed
       //           // location
       // #if DEBUG
-      //           llvm::outs << "Couldn't get the spelling location, try to get
-      //           the "
-      //                         "presumed "
-      //                         "location\n";
+      //           llvm::outs << "Couldn't get the spelling location, try
+      //           to get
+      //               the presumed location\n ";
       // #endif
-      //           auto PLoc = SM.getPresumedLoc(Loc);
-      //           // assert(
-      //           //     PLoc.isValid() &&
-      //           //     "Caller's Presumed location in the source file is
-      //           invalid\n"); FilePath = PLoc.getFilename();
-      //           // assert(FilePath != "" &&
-      //           //        "Caller's location in the source file is
-      //           invalid.");
+      //               auto PLoc = SM.getPresumedLoc(Loc);
+      //           assert(PLoc.isValid() &&
+      //                  "Caller's Presumed location in the source file
+      //                  is " "invalid\n ");
+      //           FilePath = PLoc.getFilename();
+      //           assert(
+      //               FilePath != "" &&
+      //               "Caller's location in the source file is
+      //               invalid.");
       //         }
 
-      //         // if (FilenameToCallExprs.find(FilePath) ==
-      //         FilenameToCallExprs.end()) {
-      //         //   FilenameToCallExprs[FilePath] =
-      //         //       std::vector<const clang::CallExpr *>();
-      //         // }
-      //         // FilenameToCallExprs[FilePath].push_back(nullptr);
-      //       }
-    }
-
-    else {
+      //         if (FilenameToCallExprs.find(FilePath) ==
+      //               FilenameToCallExprs.end()) {
+      //                   FilenameToCallExprs[FilePath] =
+      //                       std::vector<const clang::CallExpr *>();
+      //                 }
+      //                 FilenameToCallExprs[FilePath].push_back(nullptr);
+      //               }
+    } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
 #endif
@@ -335,8 +352,8 @@ class ExternalStructMatcher
 };
 
 // Global Infrastructure
-// Apply a custom category to all command-line options so that they are the
-// only ones displayed.
+// Apply a custom category to all command-line options so that they are
+// the only ones displayed.
 static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 
 // Setting AST Matchers for call expr
@@ -363,9 +380,11 @@ int main(int argc, const char **argv) {
     llvm::outs()
         << "Usage: ./CodeAnalysis [path to source file]\n"
         << "Example: CodeAnalysis ./test.cpp\n"
-        << "Notice: 1. The compile_commands.json file should be in the same "
+        << "Notice: 1. The compile_commands.json file should be in the "
+           "same "
            "\n"
-           "directory as the source file or in the parent directory of the \n"
+           "directory as the source file or in the parent directory of "
+           "the \n"
            "source file.\n"
         << "        2. The compile_commands.json file should be named as "
            "compile_commands.json.\n"

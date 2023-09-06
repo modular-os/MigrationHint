@@ -7,6 +7,10 @@ extern "C" {
 #endif
 
 void hi();
+struct _sysy_timeval {
+    long tv_sec;
+    long tv_usec;
+};
 
 /* Timing function implementation */
 void _sysy_starttime(int lineno);
