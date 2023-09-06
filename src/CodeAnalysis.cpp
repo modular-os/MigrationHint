@@ -313,21 +313,14 @@ int main(int argc, const char **argv) {
 #endif
 
   llvm::outs() << "# External Function Call Report\n\n";
+  // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
 
-  // auto &SM = ASTs[0]->getSourceManager();
   ExternalCallMatcher Matcher;
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(CAMatcher, &Matcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
-
-  // for (auto &it: test_vec) {
-  //   auto FD = it->getDirectCallee();
-  //   llvm::outs() << "========================================\n";
-  //   // printCaller(it, SM);
-  //   printFuncDecl(FD, SM);
-  // }
 
   return status;
 }
