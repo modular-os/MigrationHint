@@ -190,12 +190,7 @@ class ExternalCallMatcher
       } else {
         llvm::outs() << "No function declaration found for call\n";
       }
-    } 
-    // else if () {
-    //   // Dealing with the relaionship between RecordDeclo and fieldDecl
-    // }
-
-    else {
+    } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
 #endif
@@ -212,7 +207,7 @@ class ExternalCallMatcher
     int cnt = 0;
     for (auto &it : FilenameToCallExprs) {
       llvm::outs() << "## Headfile: " << it.first << "\n";
-      llvm::outs() << "- Externel Function Count: " << it.second.size()
+      llvm::outs() << "- External Function Count: " << it.second.size()
                    << "\n\n";
       int file_cnt = 0;
       for (auto &it2 : it.second) {
@@ -227,7 +222,7 @@ class ExternalCallMatcher
     }
 
     llvm::outs() << "# Summary\n"
-                 << "- Externel Function Call Count: " << cnt << "\n";
+                 << "- External Function Call Count: " << cnt << "\n";
   }
 
  private:
@@ -235,19 +230,116 @@ class ExternalCallMatcher
       FilenameToCallExprs;
 };
 
+class ExternalStructMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  void onStartOfTranslationUnit() override {
+#ifdef DEBUG
+    llvm::outs() << "In onStartOfTranslationUnit\n";
+#endif
+    FilenameToCallExprs.clear();
+  }
+
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
+    auto &SM = *Result.SourceManager;
+    if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>(
+                   "externalFieldDecl")) {
+      // Dealing with the relaionship between RecordDecl and fieldDecl
+      // output the basic information of the RecordDecl
+
+      for (const auto &it : RD->fields()) {
+        llvm::outs() << it->getType().getAsString() << " "
+                     << it->getNameAsString() << "\n";
+      }
+      //       if (!SM.isInMainFile(RD->getLocation())) {
+      //         auto Loc = RD->getLocation();
+      //         // Get the spelling location for Loc
+      //         auto SLoc = SM.getSpellingLoc(Loc);
+      //         std::string FilePath = SM.getFilename(SLoc).str();
+
+      //         if (FilePath == "") {
+      //           // Couldn't get the spelling location, try to get the
+      //           presumed
+      //           // location
+      // #if DEBUG
+      //           llvm::outs << "Couldn't get the spelling location, try to get
+      //           the "
+      //                         "presumed "
+      //                         "location\n";
+      // #endif
+      //           auto PLoc = SM.getPresumedLoc(Loc);
+      //           // assert(
+      //           //     PLoc.isValid() &&
+      //           //     "Caller's Presumed location in the source file is
+      //           invalid\n"); FilePath = PLoc.getFilename();
+      //           // assert(FilePath != "" &&
+      //           //        "Caller's location in the source file is
+      //           invalid.");
+      //         }
+
+      //         // if (FilenameToCallExprs.find(FilePath) ==
+      //         FilenameToCallExprs.end()) {
+      //         //   FilenameToCallExprs[FilePath] =
+      //         //       std::vector<const clang::CallExpr *>();
+      //         // }
+      //         // FilenameToCallExprs[FilePath].push_back(nullptr);
+      //       }
+    }
+
+    else {
+#ifdef DEBUG
+      llvm::outs() << "No call or fieldDecl expression found\n";
+#endif
+    }
+  }
+
+  void onEndOfTranslationUnit() override {
+#ifdef DEBUG
+    llvm::outs() << "In onEndOfTranslationUnit\n";
+#endif
+    // auto &SM = ASTs[0]->getSourceManager();
+
+    // // Traverse the FilenameToCallExprs
+    // int cnt = 0;
+    // for (auto &it : FilenameToCallExprs) {
+    //   llvm::outs() << "## Headfile: " << it.first << "\n";
+    //   llvm::outs() << "- External Function Count: " << it.second.size()
+    //                << "\n\n";
+    //   int file_cnt = 0;
+    //   for (auto &it2 : it.second) {
+    //     auto FD = it2->getDirectCallee();
+    //     llvm::outs() << ++file_cnt << ". ";
+    //     printFuncDecl(FD, SM);
+    //     printCaller(it2, SM);
+    //     llvm::outs() << "\n";
+    //     ++cnt;
+    //   }
+    //   llvm::outs() << "---\n\n";
+    // }
+
+    // llvm::outs() << "# Summary\n"
+    //              << "- External Function Call Count: " << cnt << "\n";
+  }
+
+ private:
+  std::map<std::string, std::vector<const clang::CallExpr *>>
+      FilenameToCallExprs;
+};
+
+// Global Infrastructure
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
 static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 
 // Setting AST Matchers for call expr
 using namespace clang::ast_matchers;
-// StatementMatcher CallMatcher =
-//     callExpr(callee(functionDecl())).bind("externalCall");
+StatementMatcher ExternalCallMatcherPattern =
+    callExpr(callee(functionDecl())).bind("externalCall");
 
-// Bind Matcher to ExternelCall or ExterenelFieldDecl
-StatementMatcher CAMatcher =
-    anyOf(callExpr(callee(functionDecl().bind("externalCall"))),
-          fieldDecl(hasType(recordDecl().bind("externalFieldDecl"))));
+// Bind Matcher to ExterenelFieldDecl
+DeclarationMatcher ExternalStructMatcherPattern =
+    fieldDecl(hasType(recordDecl())).bind("externalFieldDecl");
 
 int main(int argc, const char **argv) {
   /*
@@ -316,9 +408,11 @@ int main(int argc, const char **argv) {
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
 
-  ExternalCallMatcher Matcher;
+  ExternalCallMatcher exCallMatcher;
+  ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
-  Finder.addMatcher(CAMatcher, &Matcher);
+  // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+  Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
