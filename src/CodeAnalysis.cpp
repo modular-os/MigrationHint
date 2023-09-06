@@ -190,8 +190,15 @@ class ExternalCallMatcher
       } else {
         llvm::outs() << "No function declaration found for call\n";
       }
-    } else {
-      llvm::outs() << "No call expression found\n";
+    } 
+    // else if () {
+    //   // Dealing with the relaionship between RecordDeclo and fieldDecl
+    // }
+
+    else {
+#ifdef DEBUG
+      llvm::outs() << "No call or fieldDecl expression found\n";
+#endif
     }
   }
 
@@ -234,8 +241,13 @@ static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 
 // Setting AST Matchers for call expr
 using namespace clang::ast_matchers;
-StatementMatcher CallMatcher =
-    callExpr(callee(functionDecl())).bind("externalCall");
+// StatementMatcher CallMatcher =
+//     callExpr(callee(functionDecl())).bind("externalCall");
+
+// Bind Matcher to ExternelCall or ExterenelFieldDecl
+StatementMatcher CAMatcher =
+    anyOf(callExpr(callee(functionDecl().bind("externalCall"))),
+          fieldDecl(hasType(recordDecl().bind("externalFieldDecl"))));
 
 int main(int argc, const char **argv) {
   /*
@@ -306,7 +318,7 @@ int main(int argc, const char **argv) {
   // auto &SM = ASTs[0]->getSourceManager();
   ExternalCallMatcher Matcher;
   clang::ast_matchers::MatchFinder Finder;
-  Finder.addMatcher(CallMatcher, &Matcher);
+  Finder.addMatcher(CAMatcher, &Matcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
