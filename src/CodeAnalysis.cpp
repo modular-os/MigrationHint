@@ -256,18 +256,25 @@ class ExternalStructMatcher
       // Dealing with the relaionship between RecordDecl and fieldDecl
       // output the basic information of the RecordDecl
 
-      if (const clang::RecordType *RT = FD->getType()->getAs<clang::RecordType>()) {
+      if (const clang::RecordType *RT =
+              FD->getType()->getAs<clang::RecordType>()) {
         const clang::RecordDecl *RD = RT->getDecl();
         if (RD->isCompleteDefinition()) {
           clang::SourceRange Range = RD->getSourceRange();
-          // clang::SourceManager &SM = Result.Context->getSourceManager();
+          clang::SourceManager &SM = Result.Context->getSourceManager();
           bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
                                SM.isWrittenInMainFile(Range.getEnd());
           if (!InCurrentFile) {
+            llvm::outs() << "==============================================\n";
             llvm::outs()
                 << "The struct type is not defined in the current file.\n";
             llvm::outs() << "Struct type name: " << RD->getNameAsString()
                          << "\n";
+                        //  << FD->getType().getAsString() << "\n";
+            llvm::outs() << FD->getType().getAsString() << " "
+                         << FD->getNameAsString() << "\n";
+            auto RD = FD->getParent();
+            llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
           }
         }
       }
