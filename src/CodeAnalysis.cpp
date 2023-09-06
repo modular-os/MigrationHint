@@ -243,15 +243,22 @@ class ExternalStructMatcher
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>(
-                   "externalFieldDecl")) {
+    if (auto FD =
+            Result.Nodes.getNodeAs<clang::FieldDecl>("externalFieldDecl")) {
       // Dealing with the relaionship between RecordDecl and fieldDecl
       // output the basic information of the RecordDecl
+      llvm::outs() << "ExternalStructMatcher\n";
+      // llvm::outs() << FD->getQualifiedNameAsString() << "\n";
+      llvm::outs() << FD->getType().getAsString() << " "
+                     << FD->getNameAsString() << "\n";
+      auto RD = FD->getParent();
+      llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
 
-      for (const auto &it : RD->fields()) {
-        llvm::outs() << it->getType().getAsString() << " "
-                     << it->getNameAsString() << "\n";
-      }
+      // for (const auto &it : RD->fields()) {
+      //   llvm::outs() << "\t"
+      //                << it->getType().getAsString() << " "
+      //                << it->getNameAsString() << "\n";
+      // }
       //       if (!SM.isInMainFile(RD->getLocation())) {
       //         auto Loc = RD->getLocation();
       //         // Get the spelling location for Loc
@@ -339,7 +346,10 @@ StatementMatcher ExternalCallMatcherPattern =
 
 // Bind Matcher to ExterenelFieldDecl
 DeclarationMatcher ExternalStructMatcherPattern =
-    fieldDecl(hasType(recordDecl())).bind("externalFieldDecl");
+    fieldDecl().bind("externalFieldDecl");
+
+// DeclarationMatcher ExternalStructMatcherPattern =
+//     fieldDecl(hasType(recordDecl())).bind("externalFieldDecl");
 
 int main(int argc, const char **argv) {
   /*

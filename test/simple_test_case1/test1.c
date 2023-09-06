@@ -2,7 +2,12 @@
 int M;
 int L;
 int N;
-
+struct matrix
+{
+    int row;
+    int col;
+    int data[100];
+};
 
 int mul(int a0[],int a1[], int a2[],int b0[],int b1[],int b2[],int c0[],int c1[],int c2[])
 {
