@@ -270,11 +270,19 @@ class ExternalStructMatcher
                 << "The struct type is not defined in the current file.\n";
             llvm::outs() << "Struct type name: " << RD->getNameAsString()
                          << "\n";
-                        //  << FD->getType().getAsString() << "\n";
+            //  << FD->getType().getAsString() << "\n";
             llvm::outs() << FD->getType().getAsString() << " "
                          << FD->getNameAsString() << "\n";
             auto RD = FD->getParent();
-            llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
+            if (SM.isInMainFile(RD->getLocation())) {
+              llvm::outs() << "Parents: " << RD->getQualifiedNameAsString()
+                           << "\n";
+              // Traverse its fieldDecl
+              for (const auto &it : RD->fields()) {
+                llvm::outs() << "\t" << it->getType().getAsString() << " "
+                             << it->getNameAsString() << "\n";
+              }
+            }
           }
         }
       }
