@@ -40,3 +40,6 @@ popd
 
 # clang-query /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
 # clang-query /home/tz/MigrationHint/test/simple_test_case1/test1.c
+
+# Summarize the number of lines of code
+# git ls-files | xargs wc -l

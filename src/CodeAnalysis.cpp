@@ -279,25 +279,29 @@ class ExternalStructMatcher
             FDType = FDType->getPointeeType();
             isPointer = 1;
           }
-          llvm::outs() << "\t" << FD->getType().getAsString() << " "
-                       << FD->getNameAsString() << " "
-                       << FDType->isStructureOrClassType() << "\n";
           if (FDType->isStructureOrClassType()) {
             auto RT = FDType->getAs<clang::RecordType>();
             auto RTD = RT->getDecl();
-            // if (RTD->isCompleteDefinition()) {
 
             auto Range = RTD->getSourceRange();
             bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
                                  SM.isWrittenInMainFile(Range.getEnd());
+            llvm::outs() << "\t" << FD->getType().getAsString() << " "
+                         << FD->getNameAsString() << " " << InCurrentFile
+                         << "\n";
             if (!InCurrentFile) {
-              llvm::outs() << "\t\t" << RTD->getQualifiedNameAsString() << "\n";
-              for (const auto &FD2 : RTD->fields()) {
-                llvm::outs() << "\t\t\t" << FD2->getType().getAsString() << " "
-                             << FD2->getNameAsString() << "\n";
+              llvm::outs() << "\t\t" << RTD->getQualifiedNameAsString() << " "
+                           << RTD->field_empty() << "\n";
+              if (!RTD->field_empty()) {
+                for (const auto &FD2 : RTD->fields()) {
+                  llvm::outs() << "\t\t\t" << FD2->getType().getAsString()
+                               << " " << FD2->getNameAsString() << "\n";
+                }
+              } else {
+                // TODO: Fix missing zpool, why?
+                llvm::outs() << "\t\t\t" << "Empty Field!\n";
               }
             }
-            // }
           }
         }
       }
