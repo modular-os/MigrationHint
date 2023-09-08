@@ -267,13 +267,23 @@ class ExternalStructMatcher
         for (const auto &FD : RD->fields()) {
 #ifdef DEBUG
           llvm::outs() << "\t" << FD->getType().getAsString() << " "
-                       << FD->getNameAsString() << "\n";
+                       << FD->getNameAsString() << " "
+                       << FDType->isStructureOrClassType() << "\n";
 #endif
+
+          // FDType: De-pointer the type and find the original type
+          auto FDType = FD->getType();
+
+          bool isPointer = 0;
+          if (FDType->isPointerType()) {
+            FDType = FDType->getPointeeType();
+            isPointer = 1;
+          }
           llvm::outs() << "\t" << FD->getType().getAsString() << " "
                        << FD->getNameAsString() << " "
-                       << FD->getType()->isStructureOrClassType() << "\n";
-          if (FD->getType()->isStructureOrClassType()) {
-            auto RT = FD->getType()->getAs<clang::RecordType>();
+                       << FDType->isStructureOrClassType() << "\n";
+          if (FDType->isStructureOrClassType()) {
+            auto RT = FDType->getAs<clang::RecordType>();
             auto RTD = RT->getDecl();
             // if (RTD->isCompleteDefinition()) {
 
