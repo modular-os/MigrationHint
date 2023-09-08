@@ -239,7 +239,9 @@ class ExternalStructMatcher
 #ifdef DEBUG
     llvm::outs() << "In onStartOfTranslationUnit\n";
 #endif
-    FilenameToCallExprs.clear();
+    llvm::outs() << "# External Struct Report\n\n";
+    structCnt = 0;
+    externalStructCnt = 0;
   }
 
   virtual void run(
@@ -262,8 +264,45 @@ class ExternalStructMatcher
       // output the basic information of the RecordDecl
 
       if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
-        llvm::outs() << RD->getQualifiedNameAsString() << "\n";
-        // Traverse its fieldDecl
+        // Output the basic info for specific RecordDecl
+        llvm::outs() << "## " << ++structCnt << ". "
+                     << RD->getQualifiedNameAsString() << "\n";
+
+        // Output the basic location info for the fieldDecl
+        auto Loc = RD->getLocation();
+        // Get the spelling location for Loc
+        auto SLoc = SM.getSpellingLoc(Loc);
+        std::string FilePath = SM.getFilename(SLoc).str();
+        unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+        unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+        if (FilePath == "") {
+          // Couldn't get the spelling location, try to get the presumed
+          // location
+#if DEBUG
+          llvm::outs << "Couldn't get the spelling location, try
+              to get the presumed location\n ";
+#endif
+              auto PLoc = SM.getPresumedLoc(Loc);
+          assert(PLoc.isValid() &&
+                 "Caller's Presumed location in the source file is invalid\n ");
+          FilePath = PLoc.getFilename();
+          assert(FilePath != "" &&
+                 "Caller's location in the source file is invalid.");
+          LineNumber = PLoc.getLine();
+          ColumnNumber = PLoc.getColumn();
+        }
+
+        llvm::outs() << "- Location: `" << FilePath << ":" << LineNumber << ":"
+                     << ColumnNumber << "`\n";
+
+        // Output the full definition for the fieldDecl
+        llvm::outs() << "- Full Definition: \n"
+                     << "```c\n";
+        RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
+        llvm::outs() << "\n```\n";
+
+        // Traverse its fieldDecl and find external struct member
+        llvm::outs() << "- External Struct Members: \n";
         for (const auto &FD : RD->fields()) {
 #ifdef DEBUG
           llvm::outs() << "\t" << FD->getType().getAsString() << " "
@@ -286,20 +325,55 @@ class ExternalStructMatcher
             auto Range = RTD->getSourceRange();
             bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
                                  SM.isWrittenInMainFile(Range.getEnd());
-            llvm::outs() << "\t" << FD->getType().getAsString() << " "
-                         << FD->getNameAsString() << " " << InCurrentFile
-                         << "\n";
             if (!InCurrentFile) {
-              llvm::outs() << "\t\t" << RTD->getQualifiedNameAsString() << " "
-                           << RTD->field_empty() << "\n";
+              llvm::outs() << "\t- Member: " << FD->getType().getAsString()
+                           << " " << FD->getNameAsString() << "\n"
+                           << "\t\t- Type: " << RTD->getQualifiedNameAsString()
+                           << "\n";
+
+              SLoc = SM.getSpellingLoc(RTD->getLocation());
+              FilePath = SM.getFilename(SLoc).str();
+              LineNumber = SM.getSpellingLineNumber(SLoc);
+              ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+              if (FilePath == "") {
+                // Couldn't get the spelling location, try to get the presumed
+                // location
+#if DEBUG
+                llvm::outs << "Couldn't get the spelling location, try
+                    to get the presumed location\n ";
+#endif
+
+                    auto PLoc = SM.getPresumedLoc(RTD->getLocation());
+                assert(PLoc.isValid() &&
+                       "Caller's Presumed location in the source file is "
+                       "invalid\n ");
+                FilePath = PLoc.getFilename();
+                assert(FilePath != "" &&
+                       "Caller's location in the source file is invalid.");
+                LineNumber = PLoc.getLine();
+                ColumnNumber = PLoc.getColumn();
+              }
+
+              llvm::outs() << "\t\t- Location: "
+                           << "`" << FilePath << ":" << LineNumber << ":"
+                           << ColumnNumber << "`\n";
+
+              llvm::outs() << "\t\t-Is Pointer: " << isPointer << "\n";
+
               if (!RTD->field_empty()) {
-                for (const auto &FD2 : RTD->fields()) {
-                  llvm::outs() << "\t\t\t" << FD2->getType().getAsString()
-                               << " " << FD2->getNameAsString() << "\n";
-                }
+                llvm::outs() << "\t\t- Full Definition: \n"
+                             << "```c\n";
+                RTD->print(llvm::outs(),
+                           clang::PrintingPolicy(clang::LangOptions()));
+                llvm::outs() << "\n```\n";
+                // for (const auto &FD2 : RTD->fields()) {
+                //   llvm::outs() << "\t\t\t" << FD2->getType().getAsString()
+                //                << " " << FD2->getNameAsString() << "\n";
+                // }
               } else {
                 // TODO: Fix missing zpool, why?
-                llvm::outs() << "\t\t\t" << "Empty Field!\n";
+                llvm::outs() << "\t\t\t"
+                             << "Empty Field!\n";
               }
             }
           }
@@ -344,30 +418,6 @@ class ExternalStructMatcher
       //   auto RD = FD->getParent();
       //   llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
       // }
-      //         auto Loc = RD->getLocation();
-      //         // Get the spelling location for Loc
-      //         auto SLoc = SM.getSpellingLoc(Loc);
-      //         std::string FilePath = SM.getFilename(SLoc).str();
-
-      //         if (FilePath == "") {
-      //           // Couldn't get the spelling location, try to get the
-      //           presumed
-      //           // location
-      // #if DEBUG
-      //           llvm::outs << "Couldn't get the spelling location, try
-      //           to get
-      //               the presumed location\n ";
-      // #endif
-      //               auto PLoc = SM.getPresumedLoc(Loc);
-      //           assert(PLoc.isValid() &&
-      //                  "Caller's Presumed location in the source file
-      //                  is " "invalid\n ");
-      //           FilePath = PLoc.getFilename();
-      //           assert(
-      //               FilePath != "" &&
-      //               "Caller's location in the source file is
-      //               invalid.");
-      //         }
 
       //         if (FilenameToCallExprs.find(FilePath) ==
       //               FilenameToCallExprs.end()) {
@@ -412,8 +462,8 @@ class ExternalStructMatcher
   }
 
  private:
-  std::map<std::string, std::vector<const clang::CallExpr *>>
-      FilenameToCallExprs;
+  int structCnt;
+  int externalStructCnt;
 };
 
 // Global Infrastructure
