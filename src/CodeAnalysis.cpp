@@ -17,13 +17,9 @@
 
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
-// using namespace clang;
-// using namespace clang::tooling;
-// using namespace llvm;
 
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
-// std::vector<const clang::CallExpr *> test_vec;
 
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
@@ -247,9 +243,6 @@ class ExternalStructMatcher
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    // if (auto FD =
-    //     Result.Nodes.getNodeAs<clang::FieldDecl>("externalFieldDecl")) {
-
     if (auto RD =
             Result.Nodes.getNodeAs<clang::RecordDecl>("externalFieldDecl")) {
 #ifdef DEBUG
@@ -326,10 +319,10 @@ class ExternalStructMatcher
             bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
                                  SM.isWrittenInMainFile(Range.getEnd());
             if (!InCurrentFile) {
-              llvm::outs() << "   - Member: " << FD->getType().getAsString()
-                           << " " << FD->getNameAsString() << "\n"
-                           << "   - Type: " << RTD->getQualifiedNameAsString()
-                           << "\n";
+              llvm::outs() << "   - Member: `" << FD->getType().getAsString()
+                           << " " << FD->getNameAsString() << "`\n"
+                           << "   - Type: `" << RTD->getQualifiedNameAsString()
+                           << "`\n";
 
               SLoc = SM.getSpellingLoc(RTD->getLocation());
               FilePath = SM.getFilename(SLoc).str();
@@ -360,31 +353,28 @@ class ExternalStructMatcher
 
               llvm::outs() << "      - Is Pointer: ";
               if(isPointer) {
-                llvm::outs() << "Yes\n";
+                llvm::outs() << "`Yes`\n";
               } else {  
-                llvm::outs() << "No\n";
+                llvm::outs() << "`No`\n";
               }
               
               if (!RTD->field_empty()) {
                 llvm::outs() << "      - Full Definition: \n"
                              << "      ```c\n";
                 RTD->print(llvm::outs().indent(6),
-                           clang::PrintingPolicy(clang::LangOptions()));
+                           clang::PrintingPolicy(clang::LangOptions()), 3);
                 llvm::outs() << "\n      ```\n";
-                // for (const auto &FD2 : RTD->fields()) {
-                //   llvm::outs() << "\t\t\t" << FD2->getType().getAsString()
-                //                << " " << FD2->getNameAsString() << "\n";
-                // }
               } else {
                 // TODO: Fix missing zpool, why?
                 llvm::outs() << "       - Full Definition: \n"
-                             << "Empty Field!\n";
+                             << "**Empty Field!**\n";
               }
 
               ++externalStructCnt;
             }
           }
         }
+        llvm::outs() << "\n\n---\n\n\n";
       }
     } else {
 #ifdef DEBUG
