@@ -261,12 +261,34 @@ class ExternalStructMatcher
       // Dealing with the relaionship between RecordDecl and fieldDecl
       // output the basic information of the RecordDecl
 
-      if (SM.isInMainFile(RD->getLocation())) {
+      if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
         llvm::outs() << RD->getQualifiedNameAsString() << "\n";
         // Traverse its fieldDecl
-        for (const auto &it : RD->fields()) {
-          llvm::outs() << "\t" << it->getType().getAsString() << " "
-                       << it->getNameAsString() << "\n";
+        for (const auto &FD : RD->fields()) {
+#ifdef DEBUG
+          llvm::outs() << "\t" << FD->getType().getAsString() << " "
+                       << FD->getNameAsString() << "\n";
+#endif
+          llvm::outs() << "\t" << FD->getType().getAsString() << " "
+                       << FD->getNameAsString() << " "
+                       << FD->getType()->isStructureOrClassType() << "\n";
+          if (FD->getType()->isStructureOrClassType()) {
+            auto RT = FD->getType()->getAs<clang::RecordType>();
+            auto RTD = RT->getDecl();
+            // if (RTD->isCompleteDefinition()) {
+
+            auto Range = RTD->getSourceRange();
+            bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                                 SM.isWrittenInMainFile(Range.getEnd());
+            if (!InCurrentFile) {
+              llvm::outs() << "\t\t" << RTD->getQualifiedNameAsString() << "\n";
+              for (const auto &FD2 : RTD->fields()) {
+                llvm::outs() << "\t\t\t" << FD2->getType().getAsString() << " "
+                             << FD2->getNameAsString() << "\n";
+              }
+            }
+            // }
+          }
         }
       }
 
