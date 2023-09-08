@@ -380,6 +380,8 @@ class ExternalStructMatcher
                 llvm::outs() << "       - Full Definition: \n"
                              << "Empty Field!\n";
               }
+
+              ++externalStructCnt;
             }
           }
         }
@@ -395,28 +397,9 @@ class ExternalStructMatcher
 #ifdef DEBUG
     llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
-    // auto &SM = ASTs[0]->getSourceManager();
-
-    // // Traverse the FilenameToCallExprs
-    // int cnt = 0;
-    // for (auto &it : FilenameToCallExprs) {
-    //   llvm::outs() << "## Headfile: " << it.first << "\n";
-    //   llvm::outs() << "- External Function Count: " << it.second.size()
-    //                << "\n\n";
-    //   int file_cnt = 0;
-    //   for (auto &it2 : it.second) {
-    //     auto FD = it2->getDirectCallee();
-    //     llvm::outs() << ++file_cnt << ". ";
-    //     printFuncDecl(FD, SM);
-    //     printCaller(it2, SM);
-    //     llvm::outs() << "\n";
-    //     ++cnt;
-    //   }
-    //   llvm::outs() << "---\n\n";
-    // }
-
-    // llvm::outs() << "# Summary\n"
-    //              << "- External Function Call Count: " << cnt << "\n";
+    llvm::outs() << "# Summary\n"
+    << "- Struct Count: " << structCnt << "\n"
+    << "- External Struct Count: " << externalStructCnt << "\n";
   }
 
  private:
