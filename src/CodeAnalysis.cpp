@@ -203,6 +203,8 @@ class ExternalCallMatcher
 #endif
     auto &SM = ASTs[0]->getSourceManager();
 
+    llvm::outs() << "# External Function Call Report\n\n";
+
     // Traverse the FilenameToCallExprs
     int cnt = 0;
     for (auto &it : FilenameToCallExprs) {
@@ -243,8 +245,11 @@ class ExternalStructMatcher
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    if (auto FD =
-            Result.Nodes.getNodeAs<clang::FieldDecl>("externalFieldDecl")) {
+    // if (auto FD =
+    //     Result.Nodes.getNodeAs<clang::FieldDecl>("externalFieldDecl")) {
+
+    if (auto RD =
+            Result.Nodes.getNodeAs<clang::RecordDecl>("externalFieldDecl")) {
 #ifdef DEBUG
       llvm::outs() << "ExternalStructMatcher\n";
       llvm::outs() << FD->getQualifiedNameAsString() << "\n";
@@ -256,36 +261,45 @@ class ExternalStructMatcher
       // Dealing with the relaionship between RecordDecl and fieldDecl
       // output the basic information of the RecordDecl
 
-      if (const clang::RecordType *RT =
-              FD->getType()->getAs<clang::RecordType>()) {
-        const clang::RecordDecl *RD = RT->getDecl();
-        if (RD->isCompleteDefinition()) {
-          clang::SourceRange Range = RD->getSourceRange();
-          clang::SourceManager &SM = Result.Context->getSourceManager();
-          bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
-                               SM.isWrittenInMainFile(Range.getEnd());
-          if (!InCurrentFile) {
-            llvm::outs() << "==============================================\n";
-            llvm::outs()
-                << "The struct type is not defined in the current file.\n";
-            llvm::outs() << "Struct type name: " << RD->getNameAsString()
-                         << "\n";
-            //  << FD->getType().getAsString() << "\n";
-            llvm::outs() << FD->getType().getAsString() << " "
-                         << FD->getNameAsString() << "\n";
-            auto RD = FD->getParent();
-            if (SM.isInMainFile(RD->getLocation())) {
-              llvm::outs() << "Parents: " << RD->getQualifiedNameAsString()
-                           << "\n";
-              // Traverse its fieldDecl
-              for (const auto &it : RD->fields()) {
-                llvm::outs() << "\t" << it->getType().getAsString() << " "
-                             << it->getNameAsString() << "\n";
-              }
-            }
-          }
+      if (SM.isInMainFile(RD->getLocation())) {
+        llvm::outs() << RD->getQualifiedNameAsString() << "\n";
+        // Traverse its fieldDecl
+        for (const auto &it : RD->fields()) {
+          llvm::outs() << "\t" << it->getType().getAsString() << " "
+                       << it->getNameAsString() << "\n";
         }
       }
+
+      // if (const clang::RecordType *RT =
+      //         FD->getType()->getAs<clang::RecordType>()) {
+      //   const clang::RecordDecl *RD = RT->getDecl();
+      //   if (RD->isCompleteDefinition()) {
+      //     clang::SourceRange Range = RD->getSourceRange();
+      //     clang::SourceManager &SM = Result.Context->getSourceManager();
+      //     bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+      //                          SM.isWrittenInMainFile(Range.getEnd());
+      //     if (!InCurrentFile) {
+      //       llvm::outs() <<
+      //       "==============================================\n"; llvm::outs()
+      //           << "The struct type is not defined in the current file.\n";
+      //       llvm::outs() << "Struct type name: " << RD->getNameAsString()
+      //                    << "\n";
+      //       //  << FD->getType().getAsString() << "\n";
+      //       llvm::outs() << FD->getType().getAsString() << " "
+      //                    << FD->getNameAsString() << "\n";
+      //       auto RD = FD->getParent();
+      //       if (SM.isInMainFile(RD->getLocation())) {
+      //         llvm::outs() << "Parents: " << RD->getQualifiedNameAsString()
+      //                      << "\n";
+      //         // Traverse its fieldDecl
+      //         for (const auto &it : RD->fields()) {
+      //           llvm::outs() << "\t" << it->getType().getAsString() << " "
+      //                        << it->getNameAsString() << "\n";
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
 
       // if (!SM.isInMainFile(FD->getLocation())) {
       //   llvm::outs() << FD->getQualifiedNameAsString() << "\n";
@@ -377,8 +391,11 @@ StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 // Bind Matcher to ExterenelFieldDecl
+// DeclarationMatcher ExternalStructMatcherPattern =
+//     fieldDecl().bind("externalFieldDecl");
+
 DeclarationMatcher ExternalStructMatcherPattern =
-    fieldDecl().bind("externalFieldDecl");
+    recordDecl().bind("externalFieldDecl");
 
 // DeclarationMatcher ExternalStructMatcherPattern =
 //     fieldDecl(hasType(recordDecl())).bind("externalFieldDecl");
@@ -448,7 +465,6 @@ int main(int argc, const char **argv) {
                << "\n";
 #endif
 
-  llvm::outs() << "# External Function Call Report\n\n";
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
 
