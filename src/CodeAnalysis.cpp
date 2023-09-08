@@ -292,7 +292,7 @@ class ExternalStructMatcher
           ColumnNumber = PLoc.getColumn();
         }
 
-        llvm::outs() << "- Location: `" << FilePath << ":" << LineNumber << ":"
+        llvm::outs() << "- Location: `" << FilePath << ": " << LineNumber << ":"
                      << ColumnNumber << "`\n";
 
         // Output the full definition for the fieldDecl
@@ -326,9 +326,9 @@ class ExternalStructMatcher
             bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
                                  SM.isWrittenInMainFile(Range.getEnd());
             if (!InCurrentFile) {
-              llvm::outs() << "\t- Member: " << FD->getType().getAsString()
+              llvm::outs() << "   - Member: " << FD->getType().getAsString()
                            << " " << FD->getNameAsString() << "\n"
-                           << "\t\t- Type: " << RTD->getQualifiedNameAsString()
+                           << "   - Type: " << RTD->getQualifiedNameAsString()
                            << "\n";
 
               SLoc = SM.getSpellingLoc(RTD->getLocation());
@@ -354,78 +354,36 @@ class ExternalStructMatcher
                 ColumnNumber = PLoc.getColumn();
               }
 
-              llvm::outs() << "\t\t- Location: "
+              llvm::outs() << "      - Location: "
                            << "`" << FilePath << ":" << LineNumber << ":"
                            << ColumnNumber << "`\n";
 
-              llvm::outs() << "\t\t-Is Pointer: " << isPointer << "\n";
-
+              llvm::outs() << "      - Is Pointer: ";
+              if(isPointer) {
+                llvm::outs() << "Yes\n";
+              } else {  
+                llvm::outs() << "No\n";
+              }
+              
               if (!RTD->field_empty()) {
-                llvm::outs() << "\t\t- Full Definition: \n"
-                             << "```c\n";
-                RTD->print(llvm::outs(),
+                llvm::outs() << "      - Full Definition: \n"
+                             << "      ```c\n";
+                RTD->print(llvm::outs().indent(6),
                            clang::PrintingPolicy(clang::LangOptions()));
-                llvm::outs() << "\n```\n";
+                llvm::outs() << "\n      ```\n";
                 // for (const auto &FD2 : RTD->fields()) {
                 //   llvm::outs() << "\t\t\t" << FD2->getType().getAsString()
                 //                << " " << FD2->getNameAsString() << "\n";
                 // }
               } else {
                 // TODO: Fix missing zpool, why?
-                llvm::outs() << "\t\t\t"
+                llvm::outs() << "       - Full Definition: \n"
                              << "Empty Field!\n";
               }
             }
           }
         }
       }
-
-      // if (const clang::RecordType *RT =
-      //         FD->getType()->getAs<clang::RecordType>()) {
-      //   const clang::RecordDecl *RD = RT->getDecl();
-      //   if (RD->isCompleteDefinition()) {
-      //     clang::SourceRange Range = RD->getSourceRange();
-      //     clang::SourceManager &SM = Result.Context->getSourceManager();
-      //     bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
-      //                          SM.isWrittenInMainFile(Range.getEnd());
-      //     if (!InCurrentFile) {
-      //       llvm::outs() <<
-      //       "==============================================\n"; llvm::outs()
-      //           << "The struct type is not defined in the current file.\n";
-      //       llvm::outs() << "Struct type name: " << RD->getNameAsString()
-      //                    << "\n";
-      //       //  << FD->getType().getAsString() << "\n";
-      //       llvm::outs() << FD->getType().getAsString() << " "
-      //                    << FD->getNameAsString() << "\n";
-      //       auto RD = FD->getParent();
-      //       if (SM.isInMainFile(RD->getLocation())) {
-      //         llvm::outs() << "Parents: " << RD->getQualifiedNameAsString()
-      //                      << "\n";
-      //         // Traverse its fieldDecl
-      //         for (const auto &it : RD->fields()) {
-      //           llvm::outs() << "\t" << it->getType().getAsString() << " "
-      //                        << it->getNameAsString() << "\n";
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
-
-      // if (!SM.isInMainFile(FD->getLocation())) {
-      //   llvm::outs() << FD->getQualifiedNameAsString() << "\n";
-      //   llvm::outs() << FD->getType().getAsString() << " "
-      //                << FD->getNameAsString() << "\n";
-      //   auto RD = FD->getParent();
-      //   llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
-      // }
-
-      //         if (FilenameToCallExprs.find(FilePath) ==
-      //               FilenameToCallExprs.end()) {
-      //                   FilenameToCallExprs[FilePath] =
-      //                       std::vector<const clang::CallExpr *>();
-      //                 }
-      //                 FilenameToCallExprs[FilePath].push_back(nullptr);
-      //               }
     } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
