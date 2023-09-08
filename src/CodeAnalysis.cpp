@@ -140,7 +140,7 @@ class ExternalCallMatcher
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
-        if (!SM.isInMainFile(FD->getLocation())) {
+        if (!SM.isInMainFile(FD->getLocation()) && SM.isInMainFile(CE->getBeginLoc())) {
           auto Loc = FD->getLocation();
           // Get the spelling location for Loc
           auto SLoc = SM.getSpellingLoc(Loc);
@@ -389,7 +389,7 @@ class ExternalStructMatcher
 #endif
     llvm::outs() << "# Summary\n"
     << "- Struct Count: " << structCnt << "\n"
-    << "- External Struct Count: " << externalStructCnt << "\n";
+    << "- External Struct Count: " << externalStructCnt << "\n\n";
   }
 
  private:
@@ -488,8 +488,8 @@ int main(int argc, const char **argv) {
   ExternalCallMatcher exCallMatcher;
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
-  // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
+  Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
