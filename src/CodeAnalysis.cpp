@@ -62,6 +62,10 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::outs() << ")`\n";
   llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
                << ColumnNumber << "`\n";
+#ifdef DEBUG
+  FD->getBody()->printPretty(llvm::outs(), nullptr,
+                             clang::PrintingPolicy(clang::LangOptions()));
+#endif
 }
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
@@ -140,7 +144,8 @@ class ExternalCallMatcher
     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
       if (auto FD = CE->getDirectCallee()) {
         // output the basic information of the function declaration
-        if (!SM.isInMainFile(FD->getLocation()) && SM.isInMainFile(CE->getBeginLoc())) {
+        if (!SM.isInMainFile(FD->getLocation()) &&
+            SM.isInMainFile(CE->getBeginLoc())) {
           auto Loc = FD->getLocation();
           // Get the spelling location for Loc
           auto SLoc = SM.getSpellingLoc(Loc);
@@ -352,12 +357,12 @@ class ExternalStructMatcher
                            << ColumnNumber << "`\n";
 
               llvm::outs() << "      - Is Pointer: ";
-              if(isPointer) {
+              if (isPointer) {
                 llvm::outs() << "`Yes`\n";
-              } else {  
+              } else {
                 llvm::outs() << "`No`\n";
               }
-              
+
               if (!RTD->field_empty()) {
                 llvm::outs() << "      - Full Definition: \n"
                              << "      ```c\n";
@@ -388,8 +393,8 @@ class ExternalStructMatcher
     llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
     llvm::outs() << "# Summary\n"
-    << "- Struct Count: " << structCnt << "\n"
-    << "- External Struct Count: " << externalStructCnt << "\n\n";
+                 << "- Struct Count: " << structCnt << "\n"
+                 << "- External Struct Count: " << externalStructCnt << "\n\n";
   }
 
  private:
