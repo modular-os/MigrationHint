@@ -63,6 +63,15 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
                << ColumnNumber << "`\n";
 #ifdef DEBUG
+  // Print function with parameters to string FuncDeclStr;
+  std::string FuncDeclStrBuffer, FuncDeclStr;
+  llvm::raw_string_ostream FuncDeclStream(FuncDeclStrBuffer);
+  clang::LangOptions LangOpts;
+  clang::PrintingPolicy PrintPolicy(LangOpts);
+  PrintPolicy.TerseOutput = true;  // 设置为只打印函数签名
+  FD->print(FuncDeclStream, PrintPolicy);
+  FuncDeclStr = FuncDeclStream.str();
+  llvm::outs() << "---Found external function call: " << FuncDeclStr << "\n";
   FD->getBody()->printPretty(llvm::outs(), nullptr,
                              clang::PrintingPolicy(clang::LangOptions()));
 #endif
@@ -172,6 +181,9 @@ class ExternalCallMatcher
             FilenameToCallExprs[FilePath] =
                 std::vector<const clang::CallExpr *>();
           }
+
+        
+
           FilenameToCallExprs[FilePath].push_back(CE);
         }
 #ifdef DEBUG
