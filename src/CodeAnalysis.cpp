@@ -106,7 +106,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   unsigned LineNumber = PLoc.getLine();
   unsigned ColumnNumber = PLoc.getColumn();
 
-  llvm::outs() << "   - Caller Location: `" << FilePath << ":" << LineNumber
+  llvm::outs() << "`" << FilePath << ":" << LineNumber
                << ":" << ColumnNumber << "`\n";
   // Judging whether the caller is expanded from predefined macros.
   if (SM.isMacroBodyExpansion(CallerLoc)) {
@@ -154,8 +154,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  llvm::outs() << "   - Expanded from Macro, Macro's definition: `" << FilePath
-               << ":" << LineNumber << ":" << ColumnNumber << "`\n\n";
+  llvm::outs() << "         - Expanded from Macro, Macro's definition: `" << FilePath
+               << ":" << LineNumber << ":" << ColumnNumber << "`\n";
 }
 
 class ExternalCallMatcher
@@ -165,6 +165,10 @@ class ExternalCallMatcher
 #ifdef DEBUG
     llvm::outs() << "In onStartOfTranslationUnit\n";
 #endif
+    // Clean the map-map-vec
+    for (auto &it : FilenameToCallExprs) {
+      it.second.clear();
+    }
     FilenameToCallExprs.clear();
   }
 
@@ -198,12 +202,18 @@ class ExternalCallMatcher
                    "Caller's location in the source file is invalid.");
           }
 
+          auto FuncDeclStr = getFuncDeclString(FD);
+
           if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
             FilenameToCallExprs[FilePath] =
+                std::map<std::string, std::vector<const clang::CallExpr *>>();
+          }
+          if (FilenameToCallExprs[FilePath].find(FuncDeclStr) ==
+              FilenameToCallExprs[FilePath].end()) {
+            FilenameToCallExprs[FilePath][FuncDeclStr] =
                 std::vector<const clang::CallExpr *>();
           }
-
-          FilenameToCallExprs[FilePath].push_back(CE);
+          FilenameToCallExprs[FilePath][FuncDeclStr].push_back(CE);
         }
 #ifdef DEBUG
         /// Determine whether this declaration came from an AST file (such as
@@ -245,13 +255,32 @@ class ExternalCallMatcher
                    << "\n\n";
       int file_cnt = 0;
       for (auto &it2 : it.second) {
-        auto FD = it2->getDirectCallee();
+        auto FD = it2.first;
         llvm::outs() << ++file_cnt << ". ";
-        printFuncDecl(FD, SM);
-        printCaller(it2, SM);
+        // llvm::outs() << "`" << FD << "`\n";
+        int caller_cnt = 0;
+
+        for (auto &it3 : it2.second) {
+          if (!caller_cnt) {
+            auto FD = it3->getDirectCallee();
+            printFuncDecl(FD, SM);
+            llvm::outs() << "   - Caller Counts: **" <<it2.second.size() << "**, details:\n";
+          }
+          llvm::outs() << "      " << ++caller_cnt << ". ";
+          printCaller(it3, SM);
+        }
         llvm::outs() << "\n";
         ++cnt;
       }
+
+      // for (auto &it2 : it.second) {
+      //   auto FD = it2->getDirectCallee();
+      //   llvm::outs() << ++file_cnt << ". ";
+      //   printFuncDecl(FD, SM);
+      //   printCaller(it2, SM);
+      //   llvm::outs() << "\n";
+      //   ++cnt;
+      // }
       llvm::outs() << "---\n\n";
     }
 
@@ -260,7 +289,8 @@ class ExternalCallMatcher
   }
 
  private:
-  std::map<std::string, std::vector<const clang::CallExpr *>>
+  std::map<std::string,
+           std::map<std::string, std::vector<const clang::CallExpr *>>>
       FilenameToCallExprs;
 };
 
