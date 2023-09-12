@@ -21,6 +21,26 @@
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 
+std::string getFuncDeclString(const clang::FunctionDecl *FD) {
+  // Return the function declaration string
+  std::string FuncDeclStr;
+  FuncDeclStr =
+      FD->getReturnType().getAsString() + " " + FD->getNameAsString() + "(";
+  if (int paramNum = FD->getNumParams()) {
+    for (auto &it : FD->parameters()) {
+      FuncDeclStr += it->getType().getAsString();
+      if (it->getNameAsString() != "") {
+        FuncDeclStr += " " + it->getNameAsString();
+      }
+      if (--paramNum) {
+        FuncDeclStr += ", ";
+      }
+    }
+  }
+  FuncDeclStr += ")";
+  return FuncDeclStr;
+}
+
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
   auto Loc = FD->getLocation();
@@ -46,20 +66,21 @@ void printFuncDecl(const clang::FunctionDecl *FD,
     ColumnNumber = PLoc.getColumn();
   }
 
-  llvm::outs() << "`" << FD->getReturnType().getAsString() << " "
-               << FD->getNameAsString() << "(";
-  if (int paramNum = FD->getNumParams()) {
-    for (auto &it : FD->parameters()) {
-      llvm::outs() << it->getType().getAsString();
-      if (it->getNameAsString() != "") {
-        llvm::outs() << " " << it->getNameAsString();
-      }
-      if (--paramNum) {
-        llvm::outs() << ", ";
-      }
-    }
-  }
-  llvm::outs() << ")`\n";
+  // llvm::outs() << "`" << FD->getReturnType().getAsString() << " "
+  //              << FD->getNameAsString() << "(";
+  // if (int paramNum = FD->getNumParams()) {
+  //   for (auto &it : FD->parameters()) {
+  //     llvm::outs() << it->getType().getAsString();
+  //     if (it->getNameAsString() != "") {
+  //       llvm::outs() << " " << it->getNameAsString();
+  //     }
+  //     if (--paramNum) {
+  //       llvm::outs() << ", ";
+  //     }
+  //   }
+  // }
+  // llvm::outs() << ")`\n";
+  llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
   llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
                << ColumnNumber << "`\n";
 #ifdef DEBUG
@@ -181,8 +202,6 @@ class ExternalCallMatcher
             FilenameToCallExprs[FilePath] =
                 std::vector<const clang::CallExpr *>();
           }
-
-        
 
           FilenameToCallExprs[FilePath].push_back(CE);
         }
