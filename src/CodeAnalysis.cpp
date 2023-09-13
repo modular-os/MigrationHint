@@ -65,21 +65,6 @@ void printFuncDecl(const clang::FunctionDecl *FD,
     LineNumber = PLoc.getLine();
     ColumnNumber = PLoc.getColumn();
   }
-
-  // llvm::outs() << "`" << FD->getReturnType().getAsString() << " "
-  //              << FD->getNameAsString() << "(";
-  // if (int paramNum = FD->getNumParams()) {
-  //   for (auto &it : FD->parameters()) {
-  //     llvm::outs() << it->getType().getAsString();
-  //     if (it->getNameAsString() != "") {
-  //       llvm::outs() << " " << it->getNameAsString();
-  //     }
-  //     if (--paramNum) {
-  //       llvm::outs() << ", ";
-  //     }
-  //   }
-  // }
-  // llvm::outs() << ")`\n";
   llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
   llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
                << ColumnNumber << "`\n";
@@ -273,14 +258,6 @@ class ExternalCallMatcher
         ++cnt;
       }
 
-      // for (auto &it2 : it.second) {
-      //   auto FD = it2->getDirectCallee();
-      //   llvm::outs() << ++file_cnt << ". ";
-      //   printFuncDecl(FD, SM);
-      //   printCaller(it2, SM);
-      //   llvm::outs() << "\n";
-      //   ++cnt;
-      // }
       llvm::outs() << "---\n\n";
     }
 
@@ -474,9 +451,6 @@ StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 // Bind Matcher to ExterenelFieldDecl
-// DeclarationMatcher ExternalStructMatcherPattern =
-//     fieldDecl().bind("externalFieldDecl");
-
 DeclarationMatcher ExternalStructMatcherPattern =
     recordDecl().bind("externalFieldDecl");
 
