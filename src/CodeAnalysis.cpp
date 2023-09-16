@@ -17,6 +17,7 @@
 
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
+#include "utils.hpp"
 
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
@@ -110,7 +111,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     LineNumber = PLoc.getLine();
     ColumnNumber = PLoc.getColumn();
     assert(FilePath != "" &&
-           "(Normal) Macro's original location defined in the headfiles is "
+           "(Normal) Macro's original location defined in the header files is "
            "invalid.");
   } else if (SM.isMacroArgExpansion(CallerLoc)) {
 #ifdef DEBUG
@@ -118,9 +119,10 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 #endif
     auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc).getBegin();
     FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    assert(FilePath != "" &&
-           "(function-like) Macro's original location defined in the headfiles "
-           "is invalid.");
+    assert(
+        FilePath != "" &&
+        "(function-like) Macro's original location defined in the header files "
+        "is invalid.");
     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
   } else {
@@ -242,7 +244,7 @@ class ExternalCallMatcher
     // Traverse the FilenameToCallExprs
     int cnt = 0;
     for (auto &it : FilenameToCallExprs) {
-      llvm::outs() << "## Headfile: " << it.first << "\n";
+      llvm::outs() << "## Header File: " << it.first << "\n";
       llvm::outs() << "- External Function Count: " << it.second.size()
                    << "\n\n";
       int file_cnt = 0;
@@ -461,7 +463,7 @@ int main(int argc, const char **argv) {
     llvm::outs() << "[Debug] Directory: " << it.Directory << "\n";
     // llvm::outs() << it.CommandLine << "\n";
     // Output the command line content
-    llvm::outs() << "[Debug] Commandline: "
+    llvm::outs() << "[Debug] Command Line: "
                  << "\n";
     for (auto &it2 : it.CommandLine) {
       llvm::outs() << it2 << "\n";
