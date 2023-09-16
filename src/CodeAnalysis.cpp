@@ -19,9 +19,27 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "utils.hpp"
 
+/**********************************************************************
+* 0. Global Infrastructure
+**********************************************************************/
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+// Apply a custom category to all command-line options so that they are
+// the only ones displayed.
+static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 
+// Setting AST Matchers for call expr
+using namespace clang::ast_matchers;
+StatementMatcher ExternalCallMatcherPattern =
+    callExpr(callee(functionDecl())).bind("externalCall");
+
+// Bind Matcher to ExternalFieldDecl
+DeclarationMatcher ExternalStructMatcherPattern =
+    recordDecl().bind("externalFieldDecl");
+
+/**********************************************************************
+* 1. Matcher Callbacks
+**********************************************************************/
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
@@ -276,20 +294,9 @@ class ExternalStructMatcher
   int externalStructCnt;
 };
 
-// Global Infrastructure
-// Apply a custom category to all command-line options so that they are
-// the only ones displayed.
-static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
-
-// Setting AST Matchers for call expr
-using namespace clang::ast_matchers;
-StatementMatcher ExternalCallMatcherPattern =
-    callExpr(callee(functionDecl())).bind("externalCall");
-
-// Bind Matcher to ExternalFieldDecl
-DeclarationMatcher ExternalStructMatcherPattern =
-    recordDecl().bind("externalFieldDecl");
-
+/**********************************************************************
+* 2. Main Function
+**********************************************************************/
 int main(int argc, const char **argv) {
   /*
    * Usage:
