@@ -37,10 +37,12 @@ std::string getLocationString(const clang::SourceManager &SM,
 #endif
     auto PLoc = SM.getPresumedLoc(Loc);
     assert(PLoc.isValid() &&
-           "Caller's Presumed location in the source file is invalid\n");
+           "[getLocationString]: Presumed location in the source file is "
+           "invalid\n");
     FilePath = PLoc.getFilename();
-    assert(FilePath != "" &&
-           "Caller's location in the source file is invalid.");
+    assert(
+        FilePath != "" &&
+        "[getLocationString]: Location string in the source file is invalid.");
     LineNumber = PLoc.getLine();
     ColumnNumber = PLoc.getColumn();
   }
@@ -70,33 +72,9 @@ std::string getFuncDeclString(const clang::FunctionDecl *FD) {
 
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
-  auto Loc = FD->getLocation();
-//   // Get the spelling location for Loc
-//   auto SLoc = SM.getSpellingLoc(Loc);
-//   std::string FilePath = SM.getFilename(SLoc).str();
-//   unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
-//   unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
-
-//   if (FilePath == "") {
-//     // Couldn't get the spelling location, try to get the presumed location
-// #if DEBUG
-//     llvm::outs << "Couldn't get the spelling location, try to get the presumed "
-//                   "location\n";
-// #endif
-//     auto PLoc = SM.getPresumedLoc(Loc);
-//     assert(PLoc.isValid() &&
-//            "Caller's Presumed location in the source file is invalid\n");
-//     FilePath = PLoc.getFilename();
-//     assert(FilePath != "" &&
-//            "Caller's location in the source file is invalid.");
-//     LineNumber = PLoc.getLine();
-//     ColumnNumber = PLoc.getColumn();
-//   }
-  auto LocStr = getLocationString(SM, Loc);
   llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
-  llvm::outs() << "   - Location: `" << LocStr << "`\n";
-  // llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
-              //  << ColumnNumber << "`\n";
+  llvm::outs() << "   - Location: `" << getLocationString(SM, FD->getLocation())
+               << "`\n";
 #ifdef DEBUG
   // Print function with parameters to string FuncDeclStr;
   std::string FuncDeclStrBuffer, FuncDeclStr;
@@ -120,8 +98,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   unsigned LineNumber = PLoc.getLine();
   unsigned ColumnNumber = PLoc.getColumn();
 
-  llvm::outs() << "`" << FilePath << ":" << LineNumber
-               << ":" << ColumnNumber << "`\n";
+  llvm::outs() << "`" << FilePath << ":" << LineNumber << ":" << ColumnNumber
+               << "`\n";
   // Judging whether the caller is expanded from predefined macros.
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
@@ -168,8 +146,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   }
 #endif
 
-  llvm::outs() << "         - Expanded from Macro, Macro's definition: `" << FilePath
-               << ":" << LineNumber << ":" << ColumnNumber << "`\n";
+  llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
+               << FilePath << ":" << LineNumber << ":" << ColumnNumber << "`\n";
 }
 
 class ExternalCallMatcher
@@ -278,7 +256,8 @@ class ExternalCallMatcher
           if (!caller_cnt) {
             auto FD = it3->getDirectCallee();
             printFuncDecl(FD, SM);
-            llvm::outs() << "   - Caller Counts: **" <<it2.second.size() << "**, details:\n";
+            llvm::outs() << "   - Caller Counts: **" << it2.second.size()
+                         << "**, details:\n";
           }
           llvm::outs() << "      " << ++caller_cnt << ". ";
           printCaller(it3, SM);
@@ -325,7 +304,7 @@ class ExternalStructMatcher
       auto RD = FD->getParent();
       llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
 #endif
-      // Dealing with the relaionship between RecordDecl and fieldDecl
+      // Dealing with the relationships between RecordDecl and fieldDecl
       // output the basic information of the RecordDecl
 
       if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
@@ -334,33 +313,8 @@ class ExternalStructMatcher
                      << RD->getQualifiedNameAsString() << "\n";
 
         // Output the basic location info for the fieldDecl
-        auto Loc = RD->getLocation();
-//         // Get the spelling location for Loc
-//         auto SLoc = SM.getSpellingLoc(Loc);
-//         std::string FilePath = SM.getFilename(SLoc).str();
-//         unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
-//         unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
-//         if (FilePath == "") {
-//           // Couldn't get the spelling location, try to get the presumed
-//           // location
-// #if DEBUG
-//           llvm::outs << "Couldn't get the spelling location, try
-//               to get the presumed location\n ";
-// #endif
-//               auto PLoc = SM.getPresumedLoc(Loc);
-//           assert(PLoc.isValid() &&
-//                  "Caller's Presumed location in the source file is invalid\n ");
-//           FilePath = PLoc.getFilename();
-//           assert(FilePath != "" &&
-//                  "Caller's location in the source file is invalid.");
-//           LineNumber = PLoc.getLine();
-//           ColumnNumber = PLoc.getColumn();
-//         }
-
-        auto LocStr = getLocationString(SM, Loc);
-        llvm::outs() << "- Location: `" << LocStr << "`\n";
-        // llvm::outs() << "- Location: `" << FilePath << ": " << LineNumber << ":"
-        //              << ColumnNumber << "`\n";
+        llvm::outs() << "- Location: `"
+                     << getLocationString(SM, RD->getLocation()) << "`\n";
 
         // Output the full definition for the fieldDecl
         llvm::outs() << "- Full Definition: \n"
@@ -398,34 +352,9 @@ class ExternalStructMatcher
                            << "   - Type: `" << RTD->getQualifiedNameAsString()
                            << "`\n";
 
-//               SLoc = SM.getSpellingLoc(RTD->getLocation());
-//               FilePath = SM.getFilename(SLoc).str();
-//               LineNumber = SM.getSpellingLineNumber(SLoc);
-//               ColumnNumber = SM.getSpellingColumnNumber(SLoc);
-//               if (FilePath == "") {
-//                 // Couldn't get the spelling location, try to get the presumed
-//                 // location
-// #if DEBUG
-//                 llvm::outs << "Couldn't get the spelling location, try
-//                     to get the presumed location\n ";
-// #endif
-
-//                     auto PLoc = SM.getPresumedLoc(RTD->getLocation());
-//                 assert(PLoc.isValid() &&
-//                        "Caller's Presumed location in the source file is "
-//                        "invalid\n ");
-//                 FilePath = PLoc.getFilename();
-//                 assert(FilePath != "" &&
-//                        "Caller's location in the source file is invalid.");
-//                 LineNumber = PLoc.getLine();
-//                 ColumnNumber = PLoc.getColumn();
-//               }
-              LocStr = getLocationString(SM, RTD->getLocation());
-              llvm::outs() << "     - Location: `" << LocStr << "`\n";
-              // llvm::outs() << "      - Location: "
-              //              << "`" << FilePath << ":" << LineNumber << ":"
-              //              << ColumnNumber << "`\n";
-
+              llvm::outs() << "     - Location: `"
+                           << getLocationString(SM, RTD->getLocation())
+                           << "`\n";
 
               llvm::outs() << "      - Is Pointer: ";
               if (isPointer) {
@@ -483,12 +412,9 @@ using namespace clang::ast_matchers;
 StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
-// Bind Matcher to ExterenelFieldDecl
+// Bind Matcher to ExternalFieldDecl
 DeclarationMatcher ExternalStructMatcherPattern =
     recordDecl().bind("externalFieldDecl");
-
-// DeclarationMatcher ExternalStructMatcherPattern =
-//     fieldDecl(hasType(recordDecl())).bind("externalFieldDecl");
 
 int main(int argc, const char **argv) {
   /*
