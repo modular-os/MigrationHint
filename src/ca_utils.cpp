@@ -7,6 +7,8 @@
 
 #include "utils.hpp"
 
+namespace ca_utils {
+
 std::string getLocationString(const clang::SourceManager &SM,
                               const clang::SourceLocation &Loc) {
   // Get the spelling location for Loc
@@ -136,3 +138,4 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
                << FilePath << ":" << LineNumber << ":" << ColumnNumber << "`\n";
 }
+}  // namespace ca_utils

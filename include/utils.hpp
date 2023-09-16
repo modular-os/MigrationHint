@@ -9,6 +9,7 @@
 
 #include <string>
 
+namespace ca_utils {
 std::string getLocationString(const clang::SourceManager &SM,
                               const clang::SourceLocation &Loc);
 
@@ -18,5 +19,7 @@ void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM);
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM);
+
+}  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP

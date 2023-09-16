@@ -66,7 +66,7 @@ class ExternalCallMatcher
                    "Caller's location in the source file is invalid.");
           }
 
-          auto FuncDeclStr = getFuncDeclString(FD);
+          auto FuncDeclStr = ca_utils::getFuncDeclString(FD);
 
           if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
             FilenameToCallExprs[FilePath] =
@@ -127,12 +127,12 @@ class ExternalCallMatcher
         for (auto &it3 : it2.second) {
           if (!caller_cnt) {
             auto FD = it3->getDirectCallee();
-            printFuncDecl(FD, SM);
+            ca_utils::printFuncDecl(FD, SM);
             llvm::outs() << "   - Caller Counts: **" << it2.second.size()
                          << "**, details:\n";
           }
           llvm::outs() << "      " << ++caller_cnt << ". ";
-          printCaller(it3, SM);
+          ca_utils::printCaller(it3, SM);
         }
         llvm::outs() << "\n";
         ++cnt;
@@ -186,7 +186,8 @@ class ExternalStructMatcher
 
         // Output the basic location info for the fieldDecl
         llvm::outs() << "- Location: `"
-                     << getLocationString(SM, RD->getLocation()) << "`\n";
+                     << ca_utils::getLocationString(SM, RD->getLocation())
+                     << "`\n";
 
         // Output the full definition for the fieldDecl
         llvm::outs() << "- Full Definition: \n"
@@ -225,7 +226,8 @@ class ExternalStructMatcher
                            << "`\n";
 
               llvm::outs() << "     - Location: `"
-                           << getLocationString(SM, RTD->getLocation())
+                           << ca_utils::getLocationString(SM,
+                                                          RTD->getLocation())
                            << "`\n";
 
               llvm::outs() << "      - Is Pointer: ";
