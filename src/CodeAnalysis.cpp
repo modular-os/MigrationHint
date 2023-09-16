@@ -21,6 +21,33 @@
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 
+std::string getLocationString(const clang::SourceManager &SM,
+                              const clang::SourceLocation &Loc) {
+  // Get the spelling location for Loc
+  auto SLoc = SM.getSpellingLoc(Loc);
+  std::string FilePath = SM.getFilename(SLoc).str();
+  unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+  unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+
+  if (FilePath == "") {
+    // Couldn't get the spelling location, try to get the presumed location
+#if DEBUG
+    llvm::outs << "Couldn't get the spelling location, try to get the presumed "
+                  "location\n";
+#endif
+    auto PLoc = SM.getPresumedLoc(Loc);
+    assert(PLoc.isValid() &&
+           "Caller's Presumed location in the source file is invalid\n");
+    FilePath = PLoc.getFilename();
+    assert(FilePath != "" &&
+           "Caller's location in the source file is invalid.");
+    LineNumber = PLoc.getLine();
+    ColumnNumber = PLoc.getColumn();
+  }
+  return FilePath + ":" + std::to_string(LineNumber) + ":" +
+         std::to_string(ColumnNumber);
+}
+
 std::string getFuncDeclString(const clang::FunctionDecl *FD) {
   // Return the function declaration string
   std::string FuncDeclStr;
@@ -44,30 +71,32 @@ std::string getFuncDeclString(const clang::FunctionDecl *FD) {
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
   auto Loc = FD->getLocation();
-  // Get the spelling location for Loc
-  auto SLoc = SM.getSpellingLoc(Loc);
-  std::string FilePath = SM.getFilename(SLoc).str();
-  unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
-  unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+//   // Get the spelling location for Loc
+//   auto SLoc = SM.getSpellingLoc(Loc);
+//   std::string FilePath = SM.getFilename(SLoc).str();
+//   unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+//   unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
 
-  if (FilePath == "") {
-    // Couldn't get the spelling location, try to get the presumed location
-#if DEBUG
-    llvm::outs << "Couldn't get the spelling location, try to get the presumed "
-                  "location\n";
-#endif
-    auto PLoc = SM.getPresumedLoc(Loc);
-    assert(PLoc.isValid() &&
-           "Caller's Presumed location in the source file is invalid\n");
-    FilePath = PLoc.getFilename();
-    assert(FilePath != "" &&
-           "Caller's location in the source file is invalid.");
-    LineNumber = PLoc.getLine();
-    ColumnNumber = PLoc.getColumn();
-  }
+//   if (FilePath == "") {
+//     // Couldn't get the spelling location, try to get the presumed location
+// #if DEBUG
+//     llvm::outs << "Couldn't get the spelling location, try to get the presumed "
+//                   "location\n";
+// #endif
+//     auto PLoc = SM.getPresumedLoc(Loc);
+//     assert(PLoc.isValid() &&
+//            "Caller's Presumed location in the source file is invalid\n");
+//     FilePath = PLoc.getFilename();
+//     assert(FilePath != "" &&
+//            "Caller's location in the source file is invalid.");
+//     LineNumber = PLoc.getLine();
+//     ColumnNumber = PLoc.getColumn();
+//   }
+  auto LocStr = getLocationString(SM, Loc);
   llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
-  llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
-               << ColumnNumber << "`\n";
+  llvm::outs() << "   - Location: `" << LocStr << "`\n";
+  // llvm::outs() << "   - Location: `" << FilePath << ":" << LineNumber << ":"
+              //  << ColumnNumber << "`\n";
 #ifdef DEBUG
   // Print function with parameters to string FuncDeclStr;
   std::string FuncDeclStrBuffer, FuncDeclStr;
@@ -306,30 +335,32 @@ class ExternalStructMatcher
 
         // Output the basic location info for the fieldDecl
         auto Loc = RD->getLocation();
-        // Get the spelling location for Loc
-        auto SLoc = SM.getSpellingLoc(Loc);
-        std::string FilePath = SM.getFilename(SLoc).str();
-        unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
-        unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
-        if (FilePath == "") {
-          // Couldn't get the spelling location, try to get the presumed
-          // location
-#if DEBUG
-          llvm::outs << "Couldn't get the spelling location, try
-              to get the presumed location\n ";
-#endif
-              auto PLoc = SM.getPresumedLoc(Loc);
-          assert(PLoc.isValid() &&
-                 "Caller's Presumed location in the source file is invalid\n ");
-          FilePath = PLoc.getFilename();
-          assert(FilePath != "" &&
-                 "Caller's location in the source file is invalid.");
-          LineNumber = PLoc.getLine();
-          ColumnNumber = PLoc.getColumn();
-        }
+//         // Get the spelling location for Loc
+//         auto SLoc = SM.getSpellingLoc(Loc);
+//         std::string FilePath = SM.getFilename(SLoc).str();
+//         unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+//         unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+//         if (FilePath == "") {
+//           // Couldn't get the spelling location, try to get the presumed
+//           // location
+// #if DEBUG
+//           llvm::outs << "Couldn't get the spelling location, try
+//               to get the presumed location\n ";
+// #endif
+//               auto PLoc = SM.getPresumedLoc(Loc);
+//           assert(PLoc.isValid() &&
+//                  "Caller's Presumed location in the source file is invalid\n ");
+//           FilePath = PLoc.getFilename();
+//           assert(FilePath != "" &&
+//                  "Caller's location in the source file is invalid.");
+//           LineNumber = PLoc.getLine();
+//           ColumnNumber = PLoc.getColumn();
+//         }
 
-        llvm::outs() << "- Location: `" << FilePath << ": " << LineNumber << ":"
-                     << ColumnNumber << "`\n";
+        auto LocStr = getLocationString(SM, Loc);
+        llvm::outs() << "- Location: `" << LocStr << "`\n";
+        // llvm::outs() << "- Location: `" << FilePath << ": " << LineNumber << ":"
+        //              << ColumnNumber << "`\n";
 
         // Output the full definition for the fieldDecl
         llvm::outs() << "- Full Definition: \n"
@@ -367,32 +398,34 @@ class ExternalStructMatcher
                            << "   - Type: `" << RTD->getQualifiedNameAsString()
                            << "`\n";
 
-              SLoc = SM.getSpellingLoc(RTD->getLocation());
-              FilePath = SM.getFilename(SLoc).str();
-              LineNumber = SM.getSpellingLineNumber(SLoc);
-              ColumnNumber = SM.getSpellingColumnNumber(SLoc);
-              if (FilePath == "") {
-                // Couldn't get the spelling location, try to get the presumed
-                // location
-#if DEBUG
-                llvm::outs << "Couldn't get the spelling location, try
-                    to get the presumed location\n ";
-#endif
+//               SLoc = SM.getSpellingLoc(RTD->getLocation());
+//               FilePath = SM.getFilename(SLoc).str();
+//               LineNumber = SM.getSpellingLineNumber(SLoc);
+//               ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+//               if (FilePath == "") {
+//                 // Couldn't get the spelling location, try to get the presumed
+//                 // location
+// #if DEBUG
+//                 llvm::outs << "Couldn't get the spelling location, try
+//                     to get the presumed location\n ";
+// #endif
 
-                    auto PLoc = SM.getPresumedLoc(RTD->getLocation());
-                assert(PLoc.isValid() &&
-                       "Caller's Presumed location in the source file is "
-                       "invalid\n ");
-                FilePath = PLoc.getFilename();
-                assert(FilePath != "" &&
-                       "Caller's location in the source file is invalid.");
-                LineNumber = PLoc.getLine();
-                ColumnNumber = PLoc.getColumn();
-              }
+//                     auto PLoc = SM.getPresumedLoc(RTD->getLocation());
+//                 assert(PLoc.isValid() &&
+//                        "Caller's Presumed location in the source file is "
+//                        "invalid\n ");
+//                 FilePath = PLoc.getFilename();
+//                 assert(FilePath != "" &&
+//                        "Caller's location in the source file is invalid.");
+//                 LineNumber = PLoc.getLine();
+//                 ColumnNumber = PLoc.getColumn();
+//               }
+              LocStr = getLocationString(SM, RTD->getLocation());
+              llvm::outs() << "     - Location: `" << LocStr << "`\n";
+              // llvm::outs() << "      - Location: "
+              //              << "`" << FilePath << ":" << LineNumber << ":"
+              //              << ColumnNumber << "`\n";
 
-              llvm::outs() << "      - Location: "
-                           << "`" << FilePath << ":" << LineNumber << ":"
-                           << ColumnNumber << "`\n";
 
               llvm::outs() << "      - Is Pointer: ";
               if (isPointer) {

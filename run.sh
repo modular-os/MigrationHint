@@ -14,7 +14,7 @@ JSON_PATH=/home/tz/MigrationHint/tmp/tmp.json
 TARGET_PROJ_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15
 TARGET_SOURCE=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
 # TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
-TARGET_SOURCE=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c
+# TARGET_SOURCE=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Not Matched commands
