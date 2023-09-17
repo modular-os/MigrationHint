@@ -89,34 +89,65 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 
   llvm::outs() << "`" << FilePath << ":" << LineNumber << ":" << ColumnNumber
                << "`\n";
-  // Judging whether the caller is expanded from predefined macros.
-  if (SM.isMacroBodyExpansion(CallerLoc)) {
-    auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
 
-    // ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
-    PLoc = SM.getPresumedLoc(ExpansionLoc);
-    FilePath = PLoc.getFilename();
-    LineNumber = PLoc.getLine();
-    ColumnNumber = PLoc.getColumn();
+  //   // Judging whether the caller is expanded from predefined macros.
+  //   if (SM.isMacroBodyExpansion(CallerLoc)) {
+  //     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+
+  //     // ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
+  //     PLoc = SM.getPresumedLoc(ExpansionLoc);
+  //     FilePath = PLoc.getFilename();
+  //     LineNumber = PLoc.getLine();
+  //     ColumnNumber = PLoc.getColumn();
+  //     assert(FilePath != "" &&
+  //            "(Normal) Macro's original location defined in the header files
+  //            is " "invalid.");
+  //   } else if (SM.isMacroArgExpansion(CallerLoc)) {
+  // #ifdef DEBUG
+  //     llvm::outs() << "Is in macro arg expansion\n";
+  // #endif
+  //     auto ExpansionLoc =
+  //     SM.getImmediateExpansionRange(CallerLoc).getBegin(); FilePath =
+  //     SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str(); assert(
+  //         FilePath != "" &&
+  //         "(function-like) Macro's original location defined in the header
+  //         files " "is invalid.");
+  //     LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
+  //     ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
+  //   } else {
+  //     return;
+  //   }
+
+  //   llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
+  //                << FilePath << ":" << LineNumber << ":" << ColumnNumber <<
+  //                "`\n";
+
+  while (true) {
+    if (SM.isMacroBodyExpansion(CallerLoc)) {
+      auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+      CallerLoc = ExpansionLoc;
+    } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+      llvm::outs() << "Is in macro arg expansion\n";
+#endif
+      auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc).getBegin();
+      CallerLoc = ExpansionLoc;
+    } else {
+      break;
+    }
+
+    // auto PLoc = SM.getPresumedLoc(CallerLoc);
+    // FilePath = PLoc.getFilename();
+    // unsigned LineNumber = PLoc.getLine();
+    // unsigned ColumnNumber = PLoc.getColumn();
+
     assert(FilePath != "" &&
            "(Normal) Macro's original location defined in the header files is "
            "invalid.");
-  } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-    llvm::outs() << "Is in macro arg expansion\n";
-#endif
-    auto ExpansionLoc = SM.getImmediateExpansionRange(CallerLoc).getBegin();
-    FilePath = SM.getFilename(SM.getImmediateSpellingLoc(ExpansionLoc)).str();
-    assert(
-        FilePath != "" &&
-        "(function-like) Macro's original location defined in the header files "
-        "is invalid.");
-    LineNumber = SM.getSpellingLineNumber(ExpansionLoc);
-    ColumnNumber = SM.getSpellingColumnNumber(ExpansionLoc);
-  } else {
-    return;
-  }
 
+    llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
+                 << getLocationString(SM, CallerLoc) << "`\n";
+  }
 #ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {
     llvm::outs() << "Is in system header\n";
@@ -135,8 +166,5 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
                  << "Is in macro arg expansion\n";
   }
 #endif
-
-  llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
-               << FilePath << ":" << LineNumber << ":" << ColumnNumber << "`\n";
 }
 }  // namespace ca_utils
