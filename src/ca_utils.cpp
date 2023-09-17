@@ -63,6 +63,7 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
   llvm::outs() << "   - Location: `" << getLocationString(SM, FD->getLocation())
                << "`\n";
+  // FD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
 #ifdef DEBUG
   // Print function with parameters to string FuncDeclStr;
   std::string FuncDeclStrBuffer, FuncDeclStr;
@@ -92,7 +93,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   if (SM.isMacroBodyExpansion(CallerLoc)) {
     auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
 
-    ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
+    // ExpansionLoc = SM.getTopMacroCallerLoc(ExpansionLoc);
     PLoc = SM.getPresumedLoc(ExpansionLoc);
     FilePath = PLoc.getFilename();
     LineNumber = PLoc.getLine();
