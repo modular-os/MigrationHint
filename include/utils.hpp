@@ -10,6 +10,8 @@
 #include <string>
 
 namespace ca_utils {
+std::string getCoreFileNameFromPath(const std::string &path);
+
 std::string getLocationString(const clang::SourceManager &SM,
                               const clang::SourceLocation &Loc);
 

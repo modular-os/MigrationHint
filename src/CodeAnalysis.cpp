@@ -20,8 +20,8 @@
 #include "utils.hpp"
 
 /**********************************************************************
-* 0. Global Infrastructure
-**********************************************************************/
+ * 0. Global Infrastructure
+ **********************************************************************/
 // Basic Infrastructure
 std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 // Apply a custom category to all command-line options so that they are
@@ -38,8 +38,8 @@ DeclarationMatcher ExternalStructMatcherPattern =
     recordDecl().bind("externalFieldDecl");
 
 /**********************************************************************
-* 1. Matcher Callbacks
-**********************************************************************/
+ * 1. Matcher Callbacks
+ **********************************************************************/
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
@@ -139,7 +139,6 @@ class ExternalCallMatcher
       for (auto &it2 : it.second) {
         auto FD = it2.first;
         llvm::outs() << ++file_cnt << ". ";
-        // llvm::outs() << "`" << FD << "`\n";
         int caller_cnt = 0;
 
         for (auto &it3 : it2.second) {
@@ -295,8 +294,8 @@ class ExternalStructMatcher
 };
 
 /**********************************************************************
-* 2. Main Function
-**********************************************************************/
+ * 2. Main Function
+ **********************************************************************/
 int main(int argc, const char **argv) {
   /*
    * Usage:
@@ -324,14 +323,16 @@ int main(int argc, const char **argv) {
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
       clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
                                                   llvm::cl::OneOrMore);
+  auto compileCommands =
+      OptionsParser->getCompilations().getAllCompileCommands();
+  auto fileLists = OptionsParser->getSourcePathList();
+
   // Database can also be imported manually with JSONCompilationDatabase
   clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
                                  OptionsParser->getSourcePathList());
 
 #ifdef DEBUG
   // Validate the compile commands and source file lists.
-  auto compileCommands =
-      OptionsParser->getCompilations().getAllCompileCommands();
 
   // traverse compile_commands
   llvm::outs() << "[Debug] Validating compile database: "
@@ -354,7 +355,6 @@ int main(int argc, const char **argv) {
 
   llvm::outs() << "[Debug] Validating source file lists: "
                << "\n";
-  auto fileLists = OptionsParser->getSourcePathList();
   for (auto &it : fileLists) {
     llvm::outs() << it << "\n";
   }

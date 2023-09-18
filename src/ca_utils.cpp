@@ -9,6 +9,29 @@
 
 namespace ca_utils {
 
+std::string getCoreFileNameFromPath(const std::string &path) {
+  std::string coreFileName;
+  // Find the last slash
+  size_t lastSlashPos = path.find_last_of('/');
+  if (lastSlashPos == std::string::npos) {
+    coreFileName = path;
+  } else {
+    coreFileName = path.substr(lastSlashPos + 1);
+  }
+
+  // Find the last dot
+  size_t lastDotPos = coreFileName.find_last_of('.');
+  assert(lastDotPos != std::string::npos &&
+         "Error! Incorrect source file format.\n");
+  coreFileName = coreFileName.substr(0, lastDotPos);
+  llvm::outs() << "Original path is: " << path
+               << "; Core File path is: " << coreFileName << "\n";
+#ifdef DEBUG
+#endif
+
+  return coreFileName;
+}
+
 std::string getLocationString(const clang::SourceManager &SM,
                               const clang::SourceLocation &Loc) {
   // Get the spelling location for Loc

@@ -1,0 +1,619 @@
+/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c:13:10: fatal error: 'linux/list.h' file not found
+#include <linux/list.h>
+         ^~~~~~~~~~~~~~
+TranslationUnitDecl 0x4dd8c8 <<invalid sloc>> <invalid sloc>
+|-TypedefDecl 0x4de0f0 <<invalid sloc>> <invalid sloc> implicit __int128_t '__int128'
+| `-BuiltinType 0x4dde90 '__int128'
+|-TypedefDecl 0x4de160 <<invalid sloc>> <invalid sloc> implicit __uint128_t 'unsigned __int128'
+| `-BuiltinType 0x4ddeb0 'unsigned __int128'
+|-TypedefDecl 0x4de468 <<invalid sloc>> <invalid sloc> implicit __NSConstantString 'struct __NSConstantString_tag'
+| `-RecordType 0x4de240 'struct __NSConstantString_tag'
+|   `-Record 0x4de1b8 '__NSConstantString_tag'
+|-TypedefDecl 0x4de500 <<invalid sloc>> <invalid sloc> implicit __builtin_ms_va_list 'char *'
+| `-PointerType 0x4de4c0 'char *'
+|   `-BuiltinType 0x4dd970 'char'
+|-TypedefDecl 0x4de7f8 <<invalid sloc>> <invalid sloc> implicit __builtin_va_list 'struct __va_list_tag[1]'
+| `-ConstantArrayType 0x4de7a0 'struct __va_list_tag[1]' 1 
+|   `-RecordType 0x4de5e0 'struct __va_list_tag'
+|     `-Record 0x4de558 '__va_list_tag'
+|-RecordDecl 0x546e70 </home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c:21:1, line:24:1> line:21:8 struct zpool definition
+| |-RecordDecl 0x546f10 parent 0x4dd8c8 <line:22:2, col:9> col:9 struct zpool_driver
+| |-FieldDecl 0x547080 <col:2, col:23> col:23 referenced driver 'struct zpool_driver *'
+| `-FieldDecl 0x5470e8 <line:23:2, col:8> col:8 referenced pool 'void *'
+|-FunctionDecl 0x547190 <line:26:1, col:30> col:8 invalid LIST_HEAD 'int ()' static
+|-FunctionDecl 0x547258 <line:27:1, col:36> col:8 invalid DEFINE_SPINLOCK 'int ()' static
+|-FunctionDecl 0x5474a8 <line:33:1, line:39:1> line:33:6 zpool_register_driver 'void (struct zpool_driver *)'
+| |-ParmVarDecl 0x5473b0 <col:28, col:49> col:49 used driver 'struct zpool_driver *'
+| |-CompoundStmt 0x547ab8 <line:34:1, line:39:1>
+| | `-CallExpr 0x547820 <line:36:2, col:33> 'int' contains-errors
+| |   |-DeclRefExpr 0x547768 <col:2> 'int ()' Function 0x5476b8 'atomic_set' 'int ()'
+| |   |-UnaryOperator 0x5477e8 <col:13, col:22> '<dependent type>' contains-errors prefix '&' cannot overflow
+| |   | `-RecoveryExpr 0x5477c0 <col:14, col:22> '<dependent type>' contains-errors lvalue
+| |   |   `-DeclRefExpr 0x547788 <col:14> 'struct zpool_driver *' lvalue ParmVar 0x5473b0 'driver' 'struct zpool_driver *'
+| |   `-IntegerLiteral 0x547800 <col:32> 'int' 0
+| `-FullComment 0x554e70 <line:30:3, line:31:30>
+|   `-ParagraphComment 0x554e40 <line:30:3, line:31:30>
+|     |-TextComment 0x554d70 <line:30:3, col:61> Text=" zpool_register_driver() - register a zpool implementation."
+|     |-TextComment 0x554d90 <line:31:3> Text=" "
+|     |-InlineCommandComment 0x554de0 <col:4, col:10> Name="driver" RenderNormal
+|     `-TextComment 0x554e00 <col:11, col:30> Text=":	driver to register"
+|-FunctionDecl 0x547af8 <line:40:1, col:36> col:1 invalid EXPORT_SYMBOL 'int ()'
+|-FunctionDecl 0x547cf0 <line:52:1, line:66:1> line:52:5 zpool_unregister_driver 'int (struct zpool_driver *)'
+| |-ParmVarDecl 0x547bf0 <col:29, col:50> col:50 used driver 'struct zpool_driver *'
+| |-CompoundStmt 0x54acb8 <line:53:1, line:66:1>
+| | |-DeclStmt 0x54a600 <line:54:2, col:23>
+| | | |-VarDecl 0x547db0 <col:2, col:12> col:6 used ret 'int' cinit
+| | | | `-IntegerLiteral 0x547e18 <col:12> 'int' 0
+| | | `-VarDecl 0x54a580 <col:2, col:15> col:15 used refcount 'int'
+| | |-BinaryOperator 0x54a7f0 <line:57:2, col:42> 'int' contains-errors '='
+| | | |-DeclRefExpr 0x54a638 <col:2> 'int' lvalue Var 0x54a580 'refcount' 'int'
+| | | `-CallExpr 0x54a7c8 <col:13, col:42> 'int' contains-errors
+| | |   |-DeclRefExpr 0x54a730 <col:13> 'int ()' Function 0x54a680 'atomic_read' 'int ()'
+| | |   `-UnaryOperator 0x54a7b0 <col:25, col:34> '<dependent type>' contains-errors prefix '&' cannot overflow
+| | |     `-RecoveryExpr 0x54a788 <col:26, col:34> '<dependent type>' contains-errors lvalue
+| | |       `-DeclRefExpr 0x54a750 <col:26> 'struct zpool_driver *' lvalue ParmVar 0x547bf0 'driver' 'struct zpool_driver *'
+| | |-CallExpr 0x54a9c0 <line:58:2, col:22> 'int'
+| | | |-ImplicitCastExpr 0x54a9a8 <col:2> 'int (*)()' <FunctionToPointerDecay>
+| | | | `-DeclRefExpr 0x54a8e8 <col:2> 'int ()' Function 0x54a838 'WARN_ON' 'int ()'
+| | | `-BinaryOperator 0x54a960 <col:10, col:21> 'int' '<'
+| | |   |-ImplicitCastExpr 0x54a948 <col:10> 'int' <LValueToRValue>
+| | |   | `-DeclRefExpr 0x54a908 <col:10> 'int' lvalue Var 0x54a580 'refcount' 'int'
+| | |   `-IntegerLiteral 0x54a928 <col:21> 'int' 0
+| | |-IfStmt 0x54ac20 <line:59:2, line:62:25> has_else
+| | | |-BinaryOperator 0x54aa40 <line:59:6, col:17> 'int' '>'
+| | | | |-ImplicitCastExpr 0x54aa28 <col:6> 'int' <LValueToRValue>
+| | | | | `-DeclRefExpr 0x54a9e8 <col:6> 'int' lvalue Var 0x54a580 'refcount' 'int'
+| | | | `-IntegerLiteral 0x54aa08 <col:17> 'int' 0
+| | | |-NullStmt 0x54ac18 <line:60:3>
+| | | `-CallExpr 0x54abf0 <line:62:3, col:25> 'int' contains-errors
+| | |   |-DeclRefExpr 0x54ab58 <col:3> 'int ()' Function 0x54aaa8 'list_del' 'int ()'
+| | |   `-UnaryOperator 0x54abd8 <col:12, col:21> '<dependent type>' contains-errors prefix '&' cannot overflow
+| | |     `-RecoveryExpr 0x54abb0 <col:13, col:21> '<dependent type>' contains-errors lvalue
+| | |       `-DeclRefExpr 0x54ab78 <col:13> 'struct zpool_driver *' lvalue ParmVar 0x547bf0 'driver' 'struct zpool_driver *'
+| | `-ReturnStmt 0x54aca8 <line:65:2, col:9>
+| |   `-ImplicitCastExpr 0x54ac90 <col:9> 'int' <LValueToRValue>
+| |     `-DeclRefExpr 0x54ac70 <col:9> 'int' lvalue Var 0x547db0 'ret' 'int'
+| `-FullComment 0x5550a0 <line:43:3, line:50:59>
+|   |-ParagraphComment 0x554f80 <line:43:3, line:44:33>
+|   | |-TextComment 0x554ee0 <line:43:3, col:65> Text=" zpool_unregister_driver() - unregister a zpool implementation."
+|   | |-TextComment 0x554f00 <line:44:3> Text=" "
+|   | |-InlineCommandComment 0x554f20 <col:4, col:10> Name="driver" RenderNormal
+|   | `-TextComment 0x554f40 <col:11, col:33> Text=":	driver to unregister."
+|   `-ParagraphComment 0x555070 <line:46:3, line:50:59>
+|     |-TextComment 0x554fa0 <line:46:3, col:58> Text=" Module usage counting is used to prevent using a driver"
+|     |-TextComment 0x554fc0 <line:47:3, col:58> Text=" while/after unloading, so if this is called from module"
+|     |-TextComment 0x554fe0 <line:48:3, col:56> Text=" exit function, this should never fail; if called from"
+|     |-TextComment 0x555000 <line:49:3, col:56> Text=" other than the module exit function, and this returns"
+|     `-TextComment 0x555020 <line:50:3, col:59> Text=" failure, the driver is in use and must remain available."
+|-FunctionDecl 0x54ad18 <line:67:1, col:38> col:1 invalid EXPORT_SYMBOL 'int ()'
+|-FunctionDecl 0x54aee0 <line:70:1, line:88:1> line:70:29 used zpool_get_driver 'struct zpool_driver *(const char *)' static
+| |-ParmVarDecl 0x54add0 <col:46, col:58> col:58 type 'const char *'
+| `-CompoundStmt 0x54b168 <line:71:1, line:88:1>
+|   `-DeclStmt 0x54b018 <line:72:2, col:29>
+|     `-VarDecl 0x54afb0 <col:2, col:23> col:23 used driver 'struct zpool_driver *'
+|-FunctionDecl 0x54b238 <line:90:1, line:94:1> line:90:13 used zpool_put_driver 'void (struct zpool_driver *)' static
+| |-ParmVarDecl 0x54b1a8 <col:30, col:51> col:51 used driver 'struct zpool_driver *'
+| `-CompoundStmt 0x54f808 <line:91:1, line:94:1>
+|   |-CallExpr 0x54b450 <line:92:2, col:30> 'int' contains-errors
+|   | |-DeclRefExpr 0x54b3b8 <col:2> 'int ()' Function 0x54b308 'atomic_dec' 'int ()'
+|   | `-UnaryOperator 0x54b438 <col:13, col:22> '<dependent type>' contains-errors prefix '&' cannot overflow
+|   |   `-RecoveryExpr 0x54b410 <col:14, col:22> '<dependent type>' contains-errors lvalue
+|   |     `-DeclRefExpr 0x54b3d8 <col:14> 'struct zpool_driver *' lvalue ParmVar 0x54b1a8 'driver' 'struct zpool_driver *'
+|   `-CallExpr 0x54f7b0 <line:93:2, col:26> 'int' contains-errors
+|     |-DeclRefExpr 0x54b550 <col:2> 'int ()' Function 0x54b4a0 'module_put' 'int ()'
+|     `-RecoveryExpr 0x54f788 <col:13, col:21> '<dependent type>' contains-errors lvalue
+|       `-DeclRefExpr 0x54f750 <col:13> 'struct zpool_driver *' lvalue ParmVar 0x54b1a8 'driver' 'struct zpool_driver *'
+|-FunctionDecl 0x54f910 <line:114:1, line:128:1> line:114:6 invalid zpool_has_pool 'int (char *)'
+| |-ParmVarDecl 0x54f840 <col:21, col:27> col:27 used type 'char *'
+| |-CompoundStmt 0x550020 <line:115:1, line:128:1>
+| | |-DeclStmt 0x54fb58 <line:116:2, col:54>
+| | | `-VarDecl 0x54f9e0 <col:2, col:53> col:23 used driver 'struct zpool_driver *' cinit
+| | |   `-CallExpr 0x54fb00 <col:32, col:53> 'struct zpool_driver *'
+| | |     |-ImplicitCastExpr 0x54fae8 <col:32> 'struct zpool_driver *(*)(const char *)' <FunctionToPointerDecay>
+| | |     | `-DeclRefExpr 0x54fa48 <col:32> 'struct zpool_driver *(const char *)' Function 0x54aee0 'zpool_get_driver' 'struct zpool_driver *(const char *)'
+| | |     `-ImplicitCastExpr 0x54fb40 <col:49> 'const char *' <NoOp>
+| | |       `-ImplicitCastExpr 0x54fb28 <col:49> 'char *' <LValueToRValue>
+| | |         `-DeclRefExpr 0x54fa68 <col:49> 'char *' lvalue ParmVar 0x54f840 'type' 'char *'
+| | |-IfStmt 0x54fec0 <line:118:2, line:121:2>
+| | | |-UnaryOperator 0x54fba8 <line:118:6, col:7> 'int' prefix '!' cannot overflow
+| | | | `-ImplicitCastExpr 0x54fb90 <col:7> 'struct zpool_driver *' <LValueToRValue>
+| | | |   `-DeclRefExpr 0x54fb70 <col:7> 'struct zpool_driver *' lvalue Var 0x54f9e0 'driver' 'struct zpool_driver *'
+| | | `-CompoundStmt 0x54fea0 <col:15, line:121:2>
+| | |   |-CallExpr 0x54fd50 <line:119:3, col:34> 'int'
+| | |   | |-ImplicitCastExpr 0x54fd38 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |   | | `-DeclRefExpr 0x54fc98 <col:3> 'int ()' Function 0x54fbe8 'request_module' 'int ()'
+| | |   | |-ImplicitCastExpr 0x54fd80 <col:18> 'char *' <ArrayToPointerDecay>
+| | |   | | `-StringLiteral 0x54fcf8 <col:18> 'char[9]' lvalue "zpool-%s"
+| | |   | `-ImplicitCastExpr 0x54fd98 <col:30> 'char *' <LValueToRValue>
+| | |   |   `-DeclRefExpr 0x54fd18 <col:30> 'char *' lvalue ParmVar 0x54f840 'type' 'char *'
+| | |   `-BinaryOperator 0x54fe80 <line:120:3, col:33> 'struct zpool_driver *' '='
+| | |     |-DeclRefExpr 0x54fdb0 <col:3> 'struct zpool_driver *' lvalue Var 0x54f9e0 'driver' 'struct zpool_driver *'
+| | |     `-CallExpr 0x54fe28 <col:12, col:33> 'struct zpool_driver *'
+| | |       |-ImplicitCastExpr 0x54fe10 <col:12> 'struct zpool_driver *(*)(const char *)' <FunctionToPointerDecay>
+| | |       | `-DeclRefExpr 0x54fdd0 <col:12> 'struct zpool_driver *(const char *)' Function 0x54aee0 'zpool_get_driver' 'struct zpool_driver *(const char *)'
+| | |       `-ImplicitCastExpr 0x54fe68 <col:29> 'const char *' <NoOp>
+| | |         `-ImplicitCastExpr 0x54fe50 <col:29> 'char *' <LValueToRValue>
+| | |           `-DeclRefExpr 0x54fdf0 <col:29> 'char *' lvalue ParmVar 0x54f840 'type' 'char *'
+| | `-CallExpr 0x54ffe0 <line:126:2, col:25> 'void'
+| |   |-ImplicitCastExpr 0x54ffc8 <col:2> 'void (*)(struct zpool_driver *)' <FunctionToPointerDecay>
+| |   | `-DeclRefExpr 0x54ff30 <col:2> 'void (struct zpool_driver *)' Function 0x54b238 'zpool_put_driver' 'void (struct zpool_driver *)'
+| |   `-ImplicitCastExpr 0x550008 <col:19> 'struct zpool_driver *' <LValueToRValue>
+| |     `-DeclRefExpr 0x54ff50 <col:19> 'struct zpool_driver *' lvalue Var 0x54f9e0 'driver' 'struct zpool_driver *'
+| `-FullComment 0x555610 <line:97:3, line:112:57>
+|   |-ParagraphComment 0x5551e0 <line:97:3, line:98:62>
+|   | |-TextComment 0x555110 <line:97:3, col:59> Text=" zpool_has_pool() - Check if the pool driver is available"
+|   | |-TextComment 0x555130 <line:98:3> Text=" "
+|   | |-InlineCommandComment 0x555180 <col:4, col:8> Name="type" RenderNormal
+|   | `-TextComment 0x5551a0 <col:9, col:62> Text=":	The type of the zpool to check (e.g. zbud, zsmalloc)"
+|   |-ParagraphComment 0x555490 <line:100:3, line:108:8>
+|   | |-TextComment 0x555200 <line:100:3, col:22> Text=" This checks if the "
+|   | |-InlineCommandComment 0x555220 <col:23, col:27> Name="type" RenderNormal
+|   | |-TextComment 0x555240 <col:28, col:76> Text=" pool driver is available.  This will try to load"
+|   | |-TextComment 0x555260 <line:101:3, col:77> Text=" the requested module, if needed, but there is no guarantee the module will"
+|   | |-TextComment 0x555280 <line:102:3, col:76> Text=" still be loaded and available immediately after calling.  If this returns"
+|   | |-TextComment 0x5552a0 <line:103:3, col:77> Text=" true, the caller should assume the pool is available, but must be prepared"
+|   | |-TextComment 0x5552c0 <line:104:3, col:17> Text=" to handle the "
+|   | |-InlineCommandComment 0x555310 <col:18, col:23> Name="zpool" RenderNormal
+|   | |-TextComment 0x555330 <col:24, col:73> Text="_create_pool() returning failure.  However if this"
+|   | |-TextComment 0x555350 <line:105:3, col:73> Text=" returns false, the caller should assume the requested pool type is not"
+|   | |-TextComment 0x555370 <line:106:3, col:76> Text=" available; either the requested pool type module does not exist, or could"
+|   | |-TextComment 0x555390 <line:107:3, col:30> Text=" not be loaded, and calling "
+|   | |-InlineCommandComment 0x5553b0 <col:31, col:36> Name="zpool" RenderNormal
+|   | |-TextComment 0x5553d0 <col:37, col:74> Text="_create_pool() with the pool type will"
+|   | `-TextComment 0x5553f0 <line:108:3, col:8> Text=" fail."
+|   |-ParagraphComment 0x555530 <line:110:3, col:44>
+|   | |-TextComment 0x5554b0 <col:3, col:7> Text=" The "
+|   | |-InlineCommandComment 0x5554d0 <col:8, col:12> Name="type" RenderNormal
+|   | `-TextComment 0x5554f0 <col:13, col:44> Text=" string must be null-terminated."
+|   `-ParagraphComment 0x5555d0 <line:112:3, col:57>
+|     |-TextComment 0x555550 <col:3, col:20> Text=" Returns: true if "
+|     |-InlineCommandComment 0x555570 <col:21, col:25> Name="type" RenderNormal
+|     `-TextComment 0x555590 <col:26, col:57> Text=" pool is available, false if not"
+|-FunctionDecl 0x550070 <line:129:1, col:29> col:1 invalid EXPORT_SYMBOL 'int ()'
+|-FunctionDecl 0x550610 <line:148:1, line:188:1> line:148:15 invalid zpool_create_pool 'struct zpool *(const char *, const char *, int, const struct zpool_ops *)'
+| |-ParmVarDecl 0x550150 <col:33, col:45> col:45 used type 'const char *'
+| |-ParmVarDecl 0x5501d0 <col:51, col:63> col:63 used name 'const char *'
+| |-ParmVarDecl 0x550250 <col:69, col:75> col:75 invalid gfp 'int'
+| |-ParmVarDecl 0x550420 <line:149:3, col:27> col:27 used ops 'const struct zpool_ops *'
+| |-CompoundStmt 0x551b98 <line:150:1, line:188:1>
+| | |-DeclStmt 0x550808 <line:151:2, col:29>
+| | | `-VarDecl 0x5507a0 <col:2, col:23> col:23 used driver 'struct zpool_driver *'
+| | |-DeclStmt 0x5508b0 <line:152:2, col:21>
+| | | `-VarDecl 0x550848 <col:2, col:16> col:16 used zpool 'struct zpool *'
+| | |-CallExpr 0x550a60 <line:154:2, col:42> 'int'
+| | | |-ImplicitCastExpr 0x550a48 <col:2> 'int (*)()' <FunctionToPointerDecay>
+| | | | `-DeclRefExpr 0x5509a0 <col:2> 'int ()' Function 0x5508f0 'pr_debug' 'int ()'
+| | | |-ImplicitCastExpr 0x550a90 <col:11> 'char *' <ArrayToPointerDecay>
+| | | | `-StringLiteral 0x5509f8 <col:11> 'char[23]' lvalue "creating pool type %s\n"
+| | | `-ImplicitCastExpr 0x550aa8 <col:38> 'const char *' <LValueToRValue>
+| | |   `-DeclRefExpr 0x550a28 <col:38> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |-BinaryOperator 0x550b78 <line:156:2, col:32> 'struct zpool_driver *' '='
+| | | |-DeclRefExpr 0x550ac0 <col:2> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | | `-CallExpr 0x550b38 <col:11, col:32> 'struct zpool_driver *'
+| | |   |-ImplicitCastExpr 0x550b20 <col:11> 'struct zpool_driver *(*)(const char *)' <FunctionToPointerDecay>
+| | |   | `-DeclRefExpr 0x550ae0 <col:11> 'struct zpool_driver *(const char *)' Function 0x54aee0 'zpool_get_driver' 'struct zpool_driver *(const char *)'
+| | |   `-ImplicitCastExpr 0x550b60 <col:28> 'const char *' <LValueToRValue>
+| | |     `-DeclRefExpr 0x550b00 <col:28> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |-IfStmt 0x550db8 <line:158:2, line:161:2>
+| | | |-UnaryOperator 0x550bd0 <line:158:6, col:7> 'int' prefix '!' cannot overflow
+| | | | `-ImplicitCastExpr 0x550bb8 <col:7> 'struct zpool_driver *' <LValueToRValue>
+| | | |   `-DeclRefExpr 0x550b98 <col:7> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | | `-CompoundStmt 0x550d98 <col:15, line:161:2>
+| | |   |-CallExpr 0x550c60 <line:159:3, col:34> 'int'
+| | |   | |-ImplicitCastExpr 0x550c48 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |   | | `-DeclRefExpr 0x550be8 <col:3> 'int ()' Function 0x54fbe8 'request_module' 'int ()'
+| | |   | |-ImplicitCastExpr 0x550c90 <col:18> 'char *' <ArrayToPointerDecay>
+| | |   | | `-StringLiteral 0x550c08 <col:18> 'char[9]' lvalue "zpool-%s"
+| | |   | `-ImplicitCastExpr 0x550ca8 <col:30> 'const char *' <LValueToRValue>
+| | |   |   `-DeclRefExpr 0x550c28 <col:30> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |   `-BinaryOperator 0x550d78 <line:160:3, col:33> 'struct zpool_driver *' '='
+| | |     |-DeclRefExpr 0x550cc0 <col:3> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | |     `-CallExpr 0x550d38 <col:12, col:33> 'struct zpool_driver *'
+| | |       |-ImplicitCastExpr 0x550d20 <col:12> 'struct zpool_driver *(*)(const char *)' <FunctionToPointerDecay>
+| | |       | `-DeclRefExpr 0x550ce0 <col:12> 'struct zpool_driver *(const char *)' Function 0x54aee0 'zpool_get_driver' 'struct zpool_driver *(const char *)'
+| | |       `-ImplicitCastExpr 0x550d60 <col:29> 'const char *' <LValueToRValue>
+| | |         `-DeclRefExpr 0x550d00 <col:29> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |-IfStmt 0x551000 <line:163:2, line:166:2>
+| | | |-UnaryOperator 0x550e10 <line:163:6, col:7> 'int' prefix '!' cannot overflow
+| | | | `-ImplicitCastExpr 0x550df8 <col:7> 'struct zpool_driver *' <LValueToRValue>
+| | | |   `-DeclRefExpr 0x550dd8 <col:7> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | | `-CompoundStmt 0x550fe8 <col:15, line:166:2>
+| | |   `-CallExpr 0x550f88 <line:164:3, col:41> 'int'
+| | |     |-ImplicitCastExpr 0x550f70 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |     | `-DeclRefExpr 0x550f00 <col:3> 'int ()' Function 0x550e50 'pr_err' 'int ()'
+| | |     |-ImplicitCastExpr 0x550fb8 <col:10> 'char *' <ArrayToPointerDecay>
+| | |     | `-StringLiteral 0x550f20 <col:10> 'char[23]' lvalue "no driver for type %s\n"
+| | |     `-ImplicitCastExpr 0x550fd0 <col:37> 'const char *' <LValueToRValue>
+| | |       `-DeclRefExpr 0x550f50 <col:37> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |-IfStmt 0x5513c8 <line:169:2, line:173:2>
+| | | |-UnaryOperator 0x551200 <line:169:6, col:7> 'int' prefix '!' cannot overflow
+| | | | `-ImplicitCastExpr 0x5511e8 <col:7> 'struct zpool *' <LValueToRValue>
+| | | |   `-DeclRefExpr 0x5511c8 <col:7> 'struct zpool *' lvalue Var 0x550848 'zpool' 'struct zpool *'
+| | | `-CompoundStmt 0x5513a8 <col:14, line:173:2>
+| | |   |-CallExpr 0x5512d0 <line:170:3, col:51> 'int'
+| | |   | |-ImplicitCastExpr 0x5512b8 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |   | | `-DeclRefExpr 0x551218 <col:3> 'int ()' Function 0x550e50 'pr_err' 'int ()'
+| | |   | `-ImplicitCastExpr 0x5512f8 <col:10> 'char *' <ArrayToPointerDecay>
+| | |   |   `-StringLiteral 0x551278 <col:10> 'char[39]' lvalue "couldn't create zpool - out of memory\n"
+| | |   `-CallExpr 0x551368 <line:171:3, col:26> 'void'
+| | |     |-ImplicitCastExpr 0x551350 <col:3> 'void (*)(struct zpool_driver *)' <FunctionToPointerDecay>
+| | |     | `-DeclRefExpr 0x551310 <col:3> 'void (struct zpool_driver *)' Function 0x54b238 'zpool_put_driver' 'void (struct zpool_driver *)'
+| | |     `-ImplicitCastExpr 0x551390 <col:20> 'struct zpool_driver *' <LValueToRValue>
+| | |       `-DeclRefExpr 0x551330 <col:20> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | |-BinaryOperator 0x551488 <line:175:2, col:18> 'struct zpool_driver *' '='
+| | | |-MemberExpr 0x551420 <col:2, col:9> 'struct zpool_driver *' lvalue ->driver 0x547080
+| | | | `-ImplicitCastExpr 0x551408 <col:2> 'struct zpool *' <LValueToRValue>
+| | | |   `-DeclRefExpr 0x5513e8 <col:2> 'struct zpool *' lvalue Var 0x550848 'zpool' 'struct zpool *'
+| | | `-ImplicitCastExpr 0x551470 <col:18> 'struct zpool_driver *' <LValueToRValue>
+| | |   `-DeclRefExpr 0x551450 <col:18> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | |-IfStmt 0x5519e0 <line:178:2, line:183:2>
+| | | |-UnaryOperator 0x551650 <line:178:6, col:14> 'int' prefix '!' cannot overflow
+| | | | `-ImplicitCastExpr 0x551638 <col:7, col:14> 'void *' <LValueToRValue>
+| | | |   `-MemberExpr 0x551608 <col:7, col:14> 'void *' lvalue ->pool 0x5470e8
+| | | |     `-ImplicitCastExpr 0x5515f0 <col:7> 'struct zpool *' <LValueToRValue>
+| | | |       `-DeclRefExpr 0x5515d0 <col:7> 'struct zpool *' lvalue Var 0x550848 'zpool' 'struct zpool *'
+| | | `-CompoundStmt 0x5519b8 <col:20, line:183:2>
+| | |   |-CallExpr 0x551730 <line:179:3, col:43> 'int'
+| | |   | |-ImplicitCastExpr 0x551718 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |   | | `-DeclRefExpr 0x551668 <col:3> 'int ()' Function 0x550e50 'pr_err' 'int ()'
+| | |   | |-ImplicitCastExpr 0x551760 <col:10> 'char *' <ArrayToPointerDecay>
+| | |   | | `-StringLiteral 0x5516c8 <col:10> 'char[25]' lvalue "couldn't create %s pool\n"
+| | |   | `-ImplicitCastExpr 0x551778 <col:39> 'const char *' <LValueToRValue>
+| | |   |   `-DeclRefExpr 0x5516f8 <col:39> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | |   |-CallExpr 0x551808 <line:180:3, col:26> 'void'
+| | |   | |-ImplicitCastExpr 0x5517f0 <col:3> 'void (*)(struct zpool_driver *)' <FunctionToPointerDecay>
+| | |   | | `-DeclRefExpr 0x5517b0 <col:3> 'void (struct zpool_driver *)' Function 0x54b238 'zpool_put_driver' 'void (struct zpool_driver *)'
+| | |   | `-ImplicitCastExpr 0x551830 <col:20> 'struct zpool_driver *' <LValueToRValue>
+| | |   |   `-DeclRefExpr 0x5517d0 <col:20> 'struct zpool_driver *' lvalue Var 0x5507a0 'driver' 'struct zpool_driver *'
+| | |   `-CallExpr 0x551978 <line:181:3, col:14> 'int'
+| | |     |-ImplicitCastExpr 0x551960 <col:3> 'int (*)()' <FunctionToPointerDecay>
+| | |     | `-DeclRefExpr 0x551920 <col:3> 'int ()' Function 0x551870 'kfree' 'int ()'
+| | |     `-ImplicitCastExpr 0x5519a0 <col:9> 'struct zpool *' <LValueToRValue>
+| | |       `-DeclRefExpr 0x551940 <col:9> 'struct zpool *' lvalue Var 0x550848 'zpool' 'struct zpool *'
+| | |-CallExpr 0x551ac0 <line:185:2, col:41> 'int'
+| | | |-ImplicitCastExpr 0x551aa8 <col:2> 'int (*)()' <FunctionToPointerDecay>
+| | | | `-DeclRefExpr 0x551a00 <col:2> 'int ()' Function 0x5508f0 'pr_debug' 'int ()'
+| | | |-ImplicitCastExpr 0x551af0 <col:11> 'char *' <ArrayToPointerDecay>
+| | | | `-StringLiteral 0x551a58 <col:11> 'char[22]' lvalue "created pool type %s\n"
+| | | `-ImplicitCastExpr 0x551b08 <col:37> 'const char *' <LValueToRValue>
+| | |   `-DeclRefExpr 0x551a88 <col:37> 'const char *' lvalue ParmVar 0x550150 'type' 'const char *'
+| | `-ReturnStmt 0x551b58 <line:187:2, col:9>
+| |   `-ImplicitCastExpr 0x551b40 <col:9> 'struct zpool *' <LValueToRValue>
+| |     `-DeclRefExpr 0x551b20 <col:9> 'struct zpool *' lvalue Var 0x550848 'zpool' 'struct zpool *'
+| `-FullComment 0x5575b0 <line:132:3, line:146:50>
+|   |-ParagraphComment 0x555750 <line:132:3, line:134:3>
+|   | |-TextComment 0x555680 <line:132:3, col:43> Text=" zpool_create_pool() - Create a new zpool"
+|   | |-TextComment 0x5556a0 <line:133:3> Text=" "
+|   | |-InlineCommandComment 0x5556c0 <col:4, col:8> Name="type" RenderNormal
+|   | |-TextComment 0x5556e0 <col:9, col:63> Text=":	The type of the zpool to create (e.g. zbud, zsmalloc)"
+|   | `-TextComment 0x555700 <line:134:3> Text=" "
+|   |-VerbatimLineComment 0x555770 <col:4, col:52> Text=":	The name of the zpool (e.g. zram0, zswap)"
+|   |-ParagraphComment 0x555900 <line:135:3, line:136:35>
+|   | |-TextComment 0x5557b0 <line:135:3> Text=" "
+|   | |-InlineCommandComment 0x555800 <col:4, col:7> Name="gfp" RenderNormal
+|   | |-TextComment 0x555820 <col:8, col:55> Text=":	The GFP flags to use when allocating the pool."
+|   | |-TextComment 0x555840 <line:136:3> Text=" "
+|   | |-InlineCommandComment 0x555890 <col:4, col:7> Name="ops" RenderNormal
+|   | `-TextComment 0x5558b0 <col:8, col:35> Text=":	The optional ops callback."
+|   |-ParagraphComment 0x5559a0 <line:138:3, line:140:67>
+|   | |-TextComment 0x555920 <line:138:3, col:73> Text=" This creates a new zpool of the specified type.  The gfp flags will be"
+|   | |-TextComment 0x555940 <line:139:3, col:74> Text=" used when allocating memory, if the implementation supports it.  If the"
+|   | `-TextComment 0x555960 <line:140:3, col:67> Text=" ops param is NULL, then the created zpool will not be evictable."
+|   |-ParagraphComment 0x5559f0 <line:142:3, col:57>
+|   | `-TextComment 0x5559c0 <col:3, col:57> Text=" Implementations must guarantee this to be thread-safe."
+|   |-ParagraphComment 0x555a90 <line:144:3, col:17>
+|   | |-TextComment 0x555a10 <col:3, col:7> Text=" The "
+|   | |-InlineCommandComment 0x555a30 <col:8, col:12> Name="type" RenderNormal
+|   | `-TextComment 0x555a50 <col:13, col:17> Text=" and "
+|   |-VerbatimLineComment 0x555ab0 <col:18, col:56> Text=" strings must be null-terminated."
+|   `-ParagraphComment 0x557550 <line:146:3, col:50>
+|     `-TextComment 0x557520 <col:3, col:50> Text=" Returns: New zpool on success, NULL on failure."
+|-FunctionDecl 0x551d18 <line:201:1, line:208:1> line:201:6 zpool_destroy_pool 'void (struct zpool *)'
+| |-ParmVarDecl 0x551c28 <col:25, col:39> col:39 used zpool 'struct zpool *'
+| |-CompoundStmt 0x5521c8 <line:202:1, line:208:1>
+| | |-CallExpr 0x551eb8 <line:203:2, col:59> 'int' contains-errors
+| | | |-DeclRefExpr 0x551dc0 <col:2> 'int ()' Function 0x5508f0 'pr_debug' 'int ()'
+| | | |-StringLiteral 0x551de0 <col:11> 'char[25]' lvalue "destroying pool type %s\n"
+| | | `-RecoveryExpr 0x551e90 <col:40, col:55> '<dependent type>' contains-errors lvalue
+| | |   `-MemberExpr 0x551e48 <col:40, col:47> 'struct zpool_driver *' lvalue ->driver 0x547080
+| | |     `-ImplicitCastExpr 0x551e30 <col:40> 'struct zpool *' <LValueToRValue>
+| | |       `-DeclRefExpr 0x551e10 <col:40> 'struct zpool *' lvalue ParmVar 0x551c28 'zpool' 'struct zpool *'
+| | |-CallExpr 0x551ff8 <line:205:2, col:36> '<dependent type>' contains-errors
+| | | |-RecoveryExpr 0x551f68 <col:2, col:17> '<dependent type>' contains-errors lvalue
+| | | | `-MemberExpr 0x551f20 <col:2, col:9> 'struct zpool_driver *' lvalue ->driver 0x547080
+| | | |   `-ImplicitCastExpr 0x551f08 <col:2> 'struct zpool *' <LValueToRValue>
+| | | |     `-DeclRefExpr 0x551ee8 <col:2> 'struct zpool *' lvalue ParmVar 0x551c28 'zpool' 'struct zpool *'
+| | | `-MemberExpr 0x551fc8 <col:25, col:32> 'void *' lvalue ->pool 0x5470e8
+| | |   `-ImplicitCastExpr 0x551fb0 <col:25> 'struct zpool *' <LValueToRValue>
+| | |     `-DeclRefExpr 0x551f90 <col:25> 'struct zpool *' lvalue ParmVar 0x551c28 'zpool' 'struct zpool *'
+| | |-CallExpr 0x5520c0 <line:206:2, col:32> 'void'
+| | | |-ImplicitCastExpr 0x5520a8 <col:2> 'void (*)(struct zpool_driver *)' <FunctionToPointerDecay>
+| | | | `-DeclRefExpr 0x552020 <col:2> 'void (struct zpool_driver *)' Function 0x54b238 'zpool_put_driver' 'void (struct zpool_driver *)'
+| | | `-ImplicitCastExpr 0x5520e8 <col:19, col:26> 'struct zpool_driver *' <LValueToRValue>
+| | |   `-MemberExpr 0x552078 <col:19, col:26> 'struct zpool_driver *' lvalue ->driver 0x547080
+| | |     `-ImplicitCastExpr 0x552060 <col:19> 'struct zpool *' <LValueToRValue>
+| | |       `-DeclRefExpr 0x552040 <col:19> 'struct zpool *' lvalue ParmVar 0x551c28 'zpool' 'struct zpool *'
+| | `-CallExpr 0x552158 <line:207:2, col:13> 'int'
+| |   |-ImplicitCastExpr 0x552140 <col:2> 'int (*)()' <FunctionToPointerDecay>
+| |   | `-DeclRefExpr 0x552100 <col:2> 'int ()' Function 0x551870 'kfree' 'int ()'
+| |   `-ImplicitCastExpr 0x552180 <col:8> 'struct zpool *' <LValueToRValue>
+| |     `-DeclRefExpr 0x552120 <col:8> 'struct zpool *' lvalue ParmVar 0x551c28 'zpool' 'struct zpool *'
+| `-FullComment 0x557810 <line:191:3, line:199:68>
+|   |-ParagraphComment 0x5576c0 <line:191:3, line:192:32>
+|   | |-TextComment 0x557620 <line:191:3, col:41> Text=" zpool_destroy_pool() - Destroy a zpool"
+|   | |-TextComment 0x557640 <line:192:3> Text=" "
+|   | |-InlineCommandComment 0x557660 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x557680 <col:10, col:32> Text=":	The zpool to destroy."
+|   |-ParagraphComment 0x557780 <line:194:3, line:197:25>
+|   | |-TextComment 0x5576e0 <line:194:3, col:57> Text=" Implementations must guarantee this to be thread-safe,"
+|   | |-TextComment 0x557700 <line:195:3, col:58> Text=" however only when destroying different pools.  The same"
+|   | |-TextComment 0x557720 <line:196:3, col:61> Text=" pool should only be destroyed once, and should not be used"
+|   | `-TextComment 0x557740 <line:197:3, col:25> Text=" after it is destroyed."
+|   `-ParagraphComment 0x5577d0 <line:199:3, col:68>
+|     `-TextComment 0x5577a0 <col:3, col:68> Text=" This destroys an existing zpool.  The zpool should not be in use."
+|-FunctionDecl 0x552320 <line:220:1, line:223:1> line:220:13 zpool_get_type 'const char *(struct zpool *)'
+| |-ParmVarDecl 0x552220 <col:28, col:42> col:42 used zpool 'struct zpool *'
+| |-CompoundStmt 0x5524a8 <line:221:1, line:223:1>
+| | `-ReturnStmt 0x552470 <line:222:2, col:24>
+| |   `-RecoveryExpr 0x552448 <col:9, col:24> '<dependent type>' contains-errors lvalue
+| |     `-MemberExpr 0x552400 <col:9, col:16> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |       `-ImplicitCastExpr 0x5523e8 <col:9> 'struct zpool *' <LValueToRValue>
+| |         `-DeclRefExpr 0x5523c8 <col:9> 'struct zpool *' lvalue ParmVar 0x552220 'zpool' 'struct zpool *'
+| `-FullComment 0x557a50 <line:211:3, line:218:30>
+|   |-ParagraphComment 0x557920 <line:211:3, line:212:29>
+|   | |-TextComment 0x557880 <line:211:3, col:47> Text=" zpool_get_type() - Get the type of the zpool"
+|   | |-TextComment 0x5578a0 <line:212:3> Text=" "
+|   | |-InlineCommandComment 0x5578c0 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x5578e0 <col:10, col:29> Text=":	The zpool to check"
+|   |-ParagraphComment 0x557970 <line:214:3, col:37>
+|   | `-TextComment 0x557940 <col:3, col:37> Text=" This returns the type of the pool."
+|   |-ParagraphComment 0x5579c0 <line:216:3, col:57>
+|   | `-TextComment 0x557990 <col:3, col:57> Text=" Implementations must guarantee this to be thread-safe."
+|   `-ParagraphComment 0x557a10 <line:218:3, col:30>
+|     `-TextComment 0x5579e0 <col:3, col:30> Text=" Returns: The type of zpool."
+|-FunctionDecl 0x5525e0 <line:236:1, line:239:1> line:236:6 invalid zpool_malloc_support_movable 'int (struct zpool *)'
+| |-ParmVarDecl 0x5524e8 <col:35, col:49> col:49 used zpool 'struct zpool *'
+| |-CompoundStmt 0x552768 <line:237:1, line:239:1>
+| | `-ReturnStmt 0x552730 <line:238:2, col:24>
+| |   `-RecoveryExpr 0x552708 <col:9, col:24> '<dependent type>' contains-errors lvalue
+| |     `-MemberExpr 0x5526c0 <col:9, col:16> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |       `-ImplicitCastExpr 0x5526a8 <col:9> 'struct zpool *' <LValueToRValue>
+| |         `-DeclRefExpr 0x552688 <col:9> 'struct zpool *' lvalue ParmVar 0x5524e8 'zpool' 'struct zpool *'
+| `-FullComment 0x557cc0 <line:226:3, line:234:78>
+|   |-ParagraphComment 0x557b90 <line:226:3, line:228:29>
+|   | |-TextComment 0x557ac0 <line:226:3, col:63> Text=" zpool_malloc_support_movable() - Check if the zpool supports"
+|   | |-TextComment 0x557ae0 <line:227:3, col:28> Text="	allocating movable memory"
+|   | |-TextComment 0x557b00 <line:228:3> Text=" "
+|   | |-InlineCommandComment 0x557b20 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x557b40 <col:10, col:29> Text=":	The zpool to check"
+|   |-ParagraphComment 0x557be0 <line:230:3, col:64>
+|   | `-TextComment 0x557bb0 <col:3, col:64> Text=" This returns if the zpool supports allocating movable memory."
+|   |-ParagraphComment 0x557c30 <line:232:3, col:57>
+|   | `-TextComment 0x557c00 <col:3, col:57> Text=" Implementations must guarantee this to be thread-safe."
+|   `-ParagraphComment 0x557c80 <line:234:3, col:78>
+|     `-TextComment 0x557c50 <col:3, col:78> Text=" Returns: true if the zpool supports allocating movable memory, false if not"
+|-FunctionDecl 0x552c20 <line:257:1, line:261:1> line:257:5 invalid zpool_malloc 'int (struct zpool *, int, int, unsigned long *)'
+| |-ParmVarDecl 0x552920 <col:18, col:32> col:32 used zpool 'struct zpool *'
+| |-ParmVarDecl 0x5529a0 <col:39, col:46> col:46 invalid size 'int'
+| |-ParmVarDecl 0x552a20 <col:52, col:58> col:58 invalid gfp 'int'
+| |-ParmVarDecl 0x552ad0 <line:258:4, col:19> col:19 used handle 'unsigned long *'
+| |-CompoundStmt 0x552e38 <line:259:1, line:261:1>
+| `-FullComment 0x558190 <line:242:3, line:255:50>
+|   |-ParagraphComment 0x557fa0 <line:242:3, line:246:40>
+|   | |-TextComment 0x557d30 <line:242:3, col:35> Text=" zpool_malloc() - Allocate memory"
+|   | |-TextComment 0x557d50 <line:243:3> Text=" "
+|   | |-InlineCommandComment 0x557d70 <col:4, col:9> Name="zpool" RenderNormal
+|   | |-TextComment 0x557d90 <col:10, col:38> Text=":	The zpool to allocate from."
+|   | |-TextComment 0x557db0 <line:244:3> Text=" "
+|   | |-InlineCommandComment 0x557e00 <col:4, col:8> Name="size" RenderNormal
+|   | |-TextComment 0x557e20 <col:9, col:43> Text=":	The amount of memory to allocate."
+|   | |-TextComment 0x557e40 <line:245:3> Text=" "
+|   | |-InlineCommandComment 0x557e60 <col:4, col:7> Name="gfp" RenderNormal
+|   | |-TextComment 0x557e80 <col:8, col:53> Text=":	The GFP flags to use when allocating memory."
+|   | |-TextComment 0x557ea0 <line:246:3> Text=" "
+|   | |-InlineCommandComment 0x557ef0 <col:4, col:10> Name="handle" RenderNormal
+|   | `-TextComment 0x557f10 <col:11, col:40> Text=":	Pointer to the handle to set"
+|   |-ParagraphComment 0x5580b0 <line:248:3, line:251:38>
+|   | |-TextComment 0x557fc0 <line:248:3, col:63> Text=" This allocates the requested amount of memory from the pool."
+|   | |-TextComment 0x557fe0 <line:249:3, col:60> Text=" The gfp flags will be used when allocating memory, if the"
+|   | |-TextComment 0x558000 <line:250:3, col:45> Text=" implementation supports it.  The provided "
+|   | |-InlineCommandComment 0x558020 <col:46, col:52> Name="handle" RenderNormal
+|   | |-TextComment 0x558040 <col:53, col:60> Text=" will be"
+|   | `-TextComment 0x558060 <line:251:3, col:38> Text=" set to the allocated object handle."
+|   |-ParagraphComment 0x558100 <line:253:3, col:57>
+|   | `-TextComment 0x5580d0 <col:3, col:57> Text=" Implementations must guarantee this to be thread-safe."
+|   `-ParagraphComment 0x558150 <line:255:3, col:50>
+|     `-TextComment 0x558120 <col:3, col:50> Text=" Returns: 0 on success, negative value on error."
+|-FunctionDecl 0x553008 <line:277:1, line:280:1> line:277:6 zpool_free 'void (struct zpool *, unsigned long)'
+| |-ParmVarDecl 0x552e70 <col:17, col:31> col:31 used zpool 'struct zpool *'
+| |-ParmVarDecl 0x552ef0 <col:38, col:52> col:52 used handle 'unsigned long'
+| |-CompoundStmt 0x553248 <line:278:1, line:280:1>
+| | `-CallExpr 0x5531e8 <line:279:2, col:41> '<dependent type>' contains-errors
+| |   |-RecoveryExpr 0x553138 <col:2, col:17> '<dependent type>' contains-errors lvalue
+| |   | `-MemberExpr 0x5530f0 <col:2, col:9> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |   |   `-ImplicitCastExpr 0x5530d8 <col:2> 'struct zpool *' <LValueToRValue>
+| |   |     `-DeclRefExpr 0x5530b8 <col:2> 'struct zpool *' lvalue ParmVar 0x552e70 'zpool' 'struct zpool *'
+| |   |-MemberExpr 0x553198 <col:22, col:29> 'void *' lvalue ->pool 0x5470e8
+| |   | `-ImplicitCastExpr 0x553180 <col:22> 'struct zpool *' <LValueToRValue>
+| |   |   `-DeclRefExpr 0x553160 <col:22> 'struct zpool *' lvalue ParmVar 0x552e70 'zpool' 'struct zpool *'
+| |   `-DeclRefExpr 0x5531c8 <col:35> 'unsigned long' lvalue ParmVar 0x552ef0 'handle' 'unsigned long'
+| `-FullComment 0x5584c0 <line:264:3, line:275:17>
+|   |-ParagraphComment 0x558320 <line:264:3, line:266:45>
+|   | |-TextComment 0x558200 <line:264:3, col:50> Text=" zpool_free() - Free previously allocated memory"
+|   | |-TextComment 0x558220 <line:265:3> Text=" "
+|   | |-InlineCommandComment 0x558240 <col:4, col:9> Name="zpool" RenderNormal
+|   | |-TextComment 0x558260 <col:10, col:47> Text=":	The zpool that allocated the memory."
+|   | |-TextComment 0x558280 <line:266:3> Text=" "
+|   | |-InlineCommandComment 0x5582a0 <col:4, col:10> Name="handle" RenderNormal
+|   | `-TextComment 0x5582c0 <col:11, col:45> Text=":	The handle to the memory to free."
+|   |-ParagraphComment 0x5583c0 <line:268:3, line:270:57>
+|   | |-TextComment 0x558340 <line:268:3, col:67> Text=" This frees previously allocated memory.  This does not guarantee"
+|   | |-TextComment 0x558360 <line:269:3, col:64> Text=" that the pool will actually free memory, only that the memory"
+|   | `-TextComment 0x558380 <line:270:3, col:57> Text=" in the pool will become available for use by the pool."
+|   `-ParagraphComment 0x558480 <line:272:3, line:275:17>
+|     |-TextComment 0x5583e0 <line:272:3, col:57> Text=" Implementations must guarantee this to be thread-safe,"
+|     |-TextComment 0x558400 <line:273:3, col:57> Text=" however only when freeing different handles.  The same"
+|     |-TextComment 0x558420 <line:274:3, col:59> Text=" handle should only be freed once, and should not be used"
+|     `-TextComment 0x558440 <line:275:3, col:17> Text=" after freeing."
+|-FunctionDecl 0x5534e0 <line:299:1, line:304:1> line:299:5 zpool_shrink 'int (struct zpool *, unsigned int, unsigned int *)'
+| |-ParmVarDecl 0x553288 <col:18, col:32> col:32 used zpool 'struct zpool *'
+| |-ParmVarDecl 0x553308 <col:39, col:52> col:52 used pages 'unsigned int'
+| |-ParmVarDecl 0x5533b0 <line:300:4, col:18> col:18 used reclaimed 'unsigned int *'
+| |-CompoundStmt 0x5537f8 <line:301:1, line:304:1>
+| `-FullComment 0x558a20 <line:283:3, line:297:58>
+|   |-ParagraphComment 0x5586e0 <line:283:3, line:285:3>
+|   | |-TextComment 0x558610 <line:283:3, col:40> Text=" zpool_shrink() - Shrink the pool size"
+|   | |-TextComment 0x558630 <line:284:3> Text=" "
+|   | |-InlineCommandComment 0x558650 <col:4, col:9> Name="zpool" RenderNormal
+|   | |-TextComment 0x558670 <col:10, col:31> Text=":	The zpool to shrink."
+|   | `-TextComment 0x558690 <line:285:3> Text=" "
+|   |-VerbatimLineComment 0x558700 <col:4, col:51> Text=":	The number of pages to shrink the pool."
+|   |-ParagraphComment 0x5587f0 <line:286:3, col:56>
+|   | |-TextComment 0x558740 <col:3> Text=" "
+|   | |-InlineCommandComment 0x558790 <col:4, col:13> Name="reclaimed" RenderNormal
+|   | `-TextComment 0x5587b0 <col:14, col:56> Text=":	The number of pages successfully evicted."
+|   |-ParagraphComment 0x558930 <line:288:3, line:293:56>
+|   | |-TextComment 0x558810 <line:288:3, col:61> Text=" This attempts to shrink the actual memory size of the pool"
+|   | |-TextComment 0x558830 <line:289:3, col:57> Text=" by evicting currently used handle(s).  If the pool was"
+|   | |-TextComment 0x558850 <line:290:3, col:61> Text=" created with no zpool_ops, or the evict call fails for any"
+|   | |-TextComment 0x558870 <line:291:3, col:53> Text=" of the handles, this will fail.  If non-NULL, the "
+|   | |-InlineCommandComment 0x558890 <col:54, col:63> Name="reclaimed" RenderNormal
+|   | |-TextComment 0x5588b0 <line:292:3, col:58> Text=" parameter will be set to the number of pages reclaimed,"
+|   | `-TextComment 0x5588d0 <line:293:3, col:56> Text=" which may be more than the number of pages requested."
+|   |-ParagraphComment 0x558980 <line:295:3, col:57>
+|   | `-TextComment 0x558950 <col:3, col:57> Text=" Implementations must guarantee this to be thread-safe."
+|   `-ParagraphComment 0x5589d0 <line:297:3, col:58>
+|     `-TextComment 0x5589a0 <col:3, col:58> Text=" Returns: 0 on success, negative value on error/failure."
+|-FunctionDecl 0x553c30 <line:328:1, line:332:1> line:328:7 zpool_map_handle 'void *(struct zpool *, unsigned long, enum zpool_mapmode)'
+| |-ParmVarDecl 0x553830 <col:24, col:38> col:38 used zpool 'struct zpool *'
+| |-ParmVarDecl 0x5538b0 <col:45, col:59> col:59 used handle 'unsigned long'
+| |-ParmVarDecl 0x553b08 <line:329:4, col:23> col:23 invalid mapmode 'enum zpool_mapmode':'enum zpool_mapmode'
+| |-CompoundStmt 0x553e48 <line:330:1, line:332:1>
+| `-FullComment 0x558f30 <line:307:3, line:326:57>
+|   |-ParagraphComment 0x558c50 <line:307:3, line:310:44>
+|   | |-TextComment 0x558a90 <line:307:3, col:69> Text=" zpool_map_handle() - Map a previously allocated handle into memory"
+|   | |-TextComment 0x558ab0 <line:308:3> Text=" "
+|   | |-InlineCommandComment 0x558ad0 <col:4, col:9> Name="zpool" RenderNormal
+|   | |-TextComment 0x558af0 <col:10, col:55> Text=":	The zpool that the handle was allocated from"
+|   | |-TextComment 0x558b10 <line:309:3> Text=" "
+|   | |-InlineCommandComment 0x558b30 <col:4, col:10> Name="handle" RenderNormal
+|   | |-TextComment 0x558b50 <col:11, col:29> Text=":	The handle to map"
+|   | |-TextComment 0x558b70 <line:310:3> Text=" "
+|   | |-InlineCommandComment 0x558bc0 <col:4, col:11> Name="mapmode" RenderNormal
+|   | `-TextComment 0x558be0 <col:12, col:44> Text=":	How the memory should be mapped"
+|   |-ParagraphComment 0x558d60 <line:312:3, line:316:17>
+|   | |-TextComment 0x558c70 <line:312:3, col:61> Text=" This maps a previously allocated handle into memory.  The "
+|   | |-InlineCommandComment 0x558c90 <col:62, col:69> Name="mapmode" RenderNormal
+|   | |-TextComment 0x558cb0 <line:313:3, col:63> Text=" param indicates to the implementation how the memory will be"
+|   | |-TextComment 0x558cd0 <line:314:3, col:56> Text=" used, i.e. read-only, write-only, read-write.  If the"
+|   | |-TextComment 0x558cf0 <line:315:3, col:65> Text=" implementation does not support it, the memory will be treated"
+|   | `-TextComment 0x558d10 <line:316:3, col:17> Text=" as read-write."
+|   |-ParagraphComment 0x558ea0 <line:318:3, line:324:11>
+|   | |-TextComment 0x558d80 <line:318:3, col:62> Text=" This may hold locks, disable interrupts, and/or preemption,"
+|   | |-TextComment 0x558da0 <line:319:3, col:60> Text=" and the zpool_unmap_handle() must be called to undo those"
+|   | |-TextComment 0x558dc0 <line:320:3, col:65> Text=" actions.  The code that uses the mapped handle should complete"
+|   | |-TextComment 0x558de0 <line:321:3, col:63> Text=" its operations on the mapped handle memory quickly and unmap"
+|   | |-TextComment 0x558e00 <line:322:3, col:62> Text=" as soon as possible.  As the implementation may use per-cpu"
+|   | |-TextComment 0x558e20 <line:323:3, col:62> Text=" data, multiple handles should not be mapped concurrently on"
+|   | `-TextComment 0x558e40 <line:324:3, col:11> Text=" any cpu."
+|   `-ParagraphComment 0x558ef0 <line:326:3, col:57>
+|     `-TextComment 0x558ec0 <col:3, col:57> Text=" Returns: A pointer to the handle's mapped memory area."
+|-FunctionDecl 0x553f98 <line:344:1, line:347:1> line:344:6 zpool_unmap_handle 'void (struct zpool *, unsigned long)'
+| |-ParmVarDecl 0x553e80 <col:25, col:39> col:39 used zpool 'struct zpool *'
+| |-ParmVarDecl 0x553f00 <col:46, col:60> col:60 used handle 'unsigned long'
+| |-CompoundStmt 0x5541d8 <line:345:1, line:347:1>
+| | `-CallExpr 0x554178 <line:346:2, col:42> '<dependent type>' contains-errors
+| |   |-RecoveryExpr 0x5540c8 <col:2, col:17> '<dependent type>' contains-errors lvalue
+| |   | `-MemberExpr 0x554080 <col:2, col:9> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |   |   `-ImplicitCastExpr 0x554068 <col:2> 'struct zpool *' <LValueToRValue>
+| |   |     `-DeclRefExpr 0x554048 <col:2> 'struct zpool *' lvalue ParmVar 0x553e80 'zpool' 'struct zpool *'
+| |   |-MemberExpr 0x554128 <col:23, col:30> 'void *' lvalue ->pool 0x5470e8
+| |   | `-ImplicitCastExpr 0x554110 <col:23> 'struct zpool *' <LValueToRValue>
+| |   |   `-DeclRefExpr 0x5540f0 <col:23> 'struct zpool *' lvalue ParmVar 0x553e80 'zpool' 'struct zpool *'
+| |   `-DeclRefExpr 0x554158 <col:36> 'unsigned long' lvalue ParmVar 0x553f00 'handle' 'unsigned long'
+| `-FullComment 0x5591b0 <line:335:3, line:342:58>
+|   |-ParagraphComment 0x5590c0 <line:335:3, line:337:31>
+|   | |-TextComment 0x558fa0 <line:335:3, col:58> Text=" zpool_unmap_handle() - Unmap a previously mapped handle"
+|   | |-TextComment 0x558fc0 <line:336:3> Text=" "
+|   | |-InlineCommandComment 0x558fe0 <col:4, col:9> Name="zpool" RenderNormal
+|   | |-TextComment 0x559000 <col:10, col:55> Text=":	The zpool that the handle was allocated from"
+|   | |-TextComment 0x559020 <line:337:3> Text=" "
+|   | |-InlineCommandComment 0x559040 <col:4, col:10> Name="handle" RenderNormal
+|   | `-TextComment 0x559060 <col:11, col:31> Text=":	The handle to unmap"
+|   `-ParagraphComment 0x559180 <line:339:3, line:342:58>
+|     |-TextComment 0x5590e0 <line:339:3, col:62> Text=" This unmaps a previously mapped handle.  Any locks or other"
+|     |-TextComment 0x559100 <line:340:3, col:61> Text=" actions that the implementation took in zpool_map_handle()"
+|     |-TextComment 0x559120 <line:341:3, col:54> Text=" will be undone here.  The memory area returned from"
+|     `-TextComment 0x559140 <line:342:3, col:58> Text=" zpool_map_handle() should no longer be used after this."
+|-FunctionDecl 0x5542b0 <line:357:1, line:360:1> line:357:5 invalid zpool_get_total_size 'int (struct zpool *)'
+| |-ParmVarDecl 0x554218 <col:26, col:40> col:40 used zpool 'struct zpool *'
+| |-CompoundStmt 0x5544c8 <line:358:1, line:360:1>
+| | `-ReturnStmt 0x554490 <line:359:2, col:46>
+| |   `-CallExpr 0x554468 <col:9, col:46> '<dependent type>' contains-errors
+| |     |-RecoveryExpr 0x5543d8 <col:9, col:24> '<dependent type>' contains-errors lvalue
+| |     | `-MemberExpr 0x554390 <col:9, col:16> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |     |   `-ImplicitCastExpr 0x554378 <col:9> 'struct zpool *' <LValueToRValue>
+| |     |     `-DeclRefExpr 0x554358 <col:9> 'struct zpool *' lvalue ParmVar 0x554218 'zpool' 'struct zpool *'
+| |     `-MemberExpr 0x554438 <col:35, col:42> 'void *' lvalue ->pool 0x5470e8
+| |       `-ImplicitCastExpr 0x554420 <col:35> 'struct zpool *' <LValueToRValue>
+| |         `-DeclRefExpr 0x554400 <col:35> 'struct zpool *' lvalue ParmVar 0x554218 'zpool' 'struct zpool *'
+| `-FullComment 0x5593a0 <line:350:3, line:355:45>
+|   |-ParagraphComment 0x5592c0 <line:350:3, line:351:29>
+|   | |-TextComment 0x559220 <line:350:3, col:54> Text=" zpool_get_total_size() - The total size of the pool"
+|   | |-TextComment 0x559240 <line:351:3> Text=" "
+|   | |-InlineCommandComment 0x559260 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x559280 <col:10, col:29> Text=":	The zpool to check"
+|   |-ParagraphComment 0x559310 <line:353:3, col:52>
+|   | `-TextComment 0x5592e0 <col:3, col:52> Text=" This returns the total size in bytes of the pool."
+|   `-ParagraphComment 0x559360 <line:355:3, col:45>
+|     `-TextComment 0x559330 <col:3, col:45> Text=" Returns: Total size of the zpool in bytes."
+|-FunctionDecl 0x5545a0 <line:375:1, line:378:1> line:375:6 invalid zpool_evictable 'int (struct zpool *)'
+| |-ParmVarDecl 0x554508 <col:22, col:36> col:36 used zpool 'struct zpool *'
+| |-CompoundStmt 0x554728 <line:376:1, line:378:1>
+| | `-ReturnStmt 0x5546f0 <line:377:2, col:24>
+| |   `-RecoveryExpr 0x5546c8 <col:9, col:24> '<dependent type>' contains-errors lvalue
+| |     `-MemberExpr 0x554680 <col:9, col:16> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |       `-ImplicitCastExpr 0x554668 <col:9> 'struct zpool *' <LValueToRValue>
+| |         `-DeclRefExpr 0x554648 <col:9> 'struct zpool *' lvalue ParmVar 0x554508 'zpool' 'struct zpool *'
+| `-FullComment 0x559670 <line:363:3, line:373:59>
+|   |-ParagraphComment 0x5594b0 <line:363:3, line:364:28>
+|   | |-TextComment 0x559410 <line:363:3, col:61> Text=" zpool_evictable() - Test if zpool is potentially evictable"
+|   | |-TextComment 0x559430 <line:364:3> Text=" "
+|   | |-InlineCommandComment 0x559450 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x559470 <col:10, col:28> Text=":	The zpool to test"
+|   |-ParagraphComment 0x559520 <line:366:3, line:367:72>
+|   | |-TextComment 0x5594d0 <line:366:3, col:68> Text=" Zpool is only potentially evictable when it's created with struct"
+|   | `-TextComment 0x5594f0 <line:367:3, col:72> Text=" zpool_ops.evict and its driver implements struct zpool_driver.shrink."
+|   |-ParagraphComment 0x5595e0 <line:369:3, line:371:27>
+|   | |-TextComment 0x559540 <line:369:3, col:71> Text=" However, it doesn't necessarily mean driver will use zpool_ops.evict"
+|   | |-TextComment 0x559560 <line:370:3, col:69> Text=" in its implementation of zpool_driver.shrink. It could do internal"
+|   | `-TextComment 0x559580 <line:371:3, col:27> Text=" defragmentation instead."
+|   `-ParagraphComment 0x559630 <line:373:3, col:59>
+|     `-TextComment 0x559600 <col:3, col:59> Text=" Returns: true if potentially evictable; false otherwise."
+|-FunctionDecl 0x554800 <line:393:1, line:396:1> line:393:6 invalid zpool_can_sleep_mapped 'int (struct zpool *)'
+| |-ParmVarDecl 0x554768 <col:29, col:43> col:43 used zpool 'struct zpool *'
+| |-CompoundStmt 0x554960 <line:394:1, line:396:1>
+| | `-ReturnStmt 0x554950 <line:395:2, col:24>
+| |   `-RecoveryExpr 0x554928 <col:1 error generated.
+9, col:24> '<dependent type>' contains-errors lvalue
+| |     `-MemberExpr 0x5548e0 <col:9, col:16> 'struct zpool_driver *' lvalue ->driver 0x547080
+| |       `-ImplicitCastExpr 0x5548c8 <col:9> 'struct zpool *' <LValueToRValue>
+| |         `-DeclRefExpr 0x5548a8 <col:9> 'struct zpool *' lvalue ParmVar 0x554768 'zpool' 'struct zpool *'
+| `-FullComment 0x559920 <line:381:3, line:391:53>
+|   |-ParagraphComment 0x559780 <line:381:3, line:382:28>
+|   | |-TextComment 0x5596e0 <line:381:3, col:67> Text=" zpool_can_sleep_mapped - Test if zpool can sleep when do mapped."
+|   | |-TextComment 0x559700 <line:382:3> Text=" "
+|   | |-InlineCommandComment 0x559720 <col:4, col:9> Name="zpool" RenderNormal
+|   | `-TextComment 0x559740 <col:10, col:28> Text=":	The zpool to test"
+|   |-ParagraphComment 0x559890 <line:384:3, line:389:28>
+|   | |-TextComment 0x5597a0 <line:384:3, col:74> Text=" Some allocators enter non-preemptible context in ->map() callback (e.g."
+|   | |-TextComment 0x5597c0 <line:385:3, col:76> Text=" disable pagefaults) and exit that context in ->unmap(), which limits what"
+|   | |-TextComment 0x5597e0 <line:386:3, col:69> Text=" we can do with the mapped object. For instance, we cannot wait for"
+|   | |-TextComment 0x559800 <line:387:3, col:71> Text=" asynchronous crypto API to decompress such an object or take mutexes"
+|   | |-TextComment 0x559820 <line:388:3, col:75> Text=" since those will call into the scheduler. This function tells us whether"
+|   | `-TextComment 0x559840 <line:389:3, col:28> Text=" we use such an allocator."
+|   `-ParagraphComment 0x5598e0 <line:391:3, col:53>
+|     `-TextComment 0x5598b0 <col:3, col:53> Text=" Returns: true if zpool can sleep; false otherwise."
+|-FunctionDecl 0x554b00 <line:398:1, col:21> col:1 MODULE_LICENSE 'int ()'
+|-FunctionDecl 0x554bc8 <line:399:1, col:50> col:1 MODULE_AUTHOR 'int ()'
+`-FunctionDecl 0x554c90 <line:400:1, col:62> col:1 MODULE_DESCRIPTION 'int ()'
