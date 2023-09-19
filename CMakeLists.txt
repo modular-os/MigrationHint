@@ -7,7 +7,7 @@
 # Date:   2023-08-26
 # Email:  tangzh6101[at]gmail.com
 
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.16.3)
 project(CodeAnalysis)
 
 #===============================================================================
@@ -17,8 +17,10 @@ project(CodeAnalysis)
 # to a Clang installation directory. CA means_ the special prefix for
 # CodeAnalysis. Set this to a valid Clang installation directory. This is most 
 # likely where LLVM is installed on your system.
-set(CA_Clang_INSTALL_DIR /home/tz/applications/llvm/llvm16_install CACHE PATH
-  "Clang installation directory specified for CodeAnalysis.")
+set(CA_Clang_INSTALL_DIR /home/tz/applications/llvm/llvm16_install)
+if(NOT EXISTS "${CA_Clang_INSTALL_DIR}")
+  set(CA_Clang_INSTALL_DIR /usr/lib/llvm-16)
+endif()
 
 # Set the source, include and binary directories
 set(CA_SOURCE_DIR src)
