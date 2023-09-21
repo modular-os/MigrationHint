@@ -223,67 +223,11 @@ class ExternalStructMatcher
                        << FDType->isStructureOrClassType() << "\n";
 #endif
 
-          // FDType: De-pointer the type and find the original type
-          // auto FDType = FD->getType();
-
-          // Decl a temporary stream for output
-          // llvm::raw_string_ostream externalStructStream(nullptr);
           bool IsExternalStruct =
               ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, FD->getNameAsString());
           if (IsExternalStruct) {
             ++externalStructCnt;
-            // llvm::outs() << "   - Member: `" << FD->getType().getAsString()
-            //                  << " " << FD->getNameAsString() << "`\n";
           }
-
-          // bool isPointer = 0;
-          // if (FDType->isPointerType()) {
-          //   FDType = FDType->getPointeeType();
-          //   isPointer = 1;
-          // }
-          // if (FDType->isStructureOrClassType()) {
-          //   auto RT = FDType->getAs<clang::RecordType>();
-          //   auto RTD = RT->getDecl();
-
-          //   auto Range = RTD->getSourceRange();
-          //   bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
-          //                        SM.isWrittenInMainFile(Range.getEnd());
-          //   if (!InCurrentFile) {
-          //     llvm::outs() << "   - Member: `" << FD->getType().getAsString()
-          //                  << " " << FD->getNameAsString() << "`\n"
-          //                  << "   - Type: `" <<
-          //                  RTD->getQualifiedNameAsString()
-          //                  << "`\n";
-
-          //     llvm::outs() << "     - Location: `"
-          //                  << ca_utils::getLocationString(SM,
-          //                                                 RTD->getLocation())
-          //                  << "`\n";
-
-          //     llvm::outs() << "      - Is Pointer: ";
-          //     if (isPointer) {
-          //       llvm::outs() << "`Yes`\n";
-          //     } else {
-          //       llvm::outs() << "`No`\n";
-          //     }
-
-          //     if (!RTD->field_empty()) {
-          //       llvm::outs() << "      - Full Definition: \n"
-          //                    << "      ```c\n";
-          //       RTD->print(llvm::outs().indent(6),
-          //                  clang::PrintingPolicy(clang::LangOptions()), 3);
-          //       llvm::outs() << "\n      ```\n";
-          //     } else {
-          //       // TODO: Fix missing zpool, why?
-          //       // Ans: struct zpool's implementation is in .c file
-          //       //    instead of .h, making LibTooling could not find it.
-          //       llvm::outs() << "       - Full Definition: \n"
-          //                    << "**Empty Field!**\n";
-          //     }
-
-          //     ++externalStructCnt;
-          //   }
-          // }
         }
         llvm::outs() << "\n\n---\n\n\n";
       }
