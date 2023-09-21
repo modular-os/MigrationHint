@@ -16,10 +16,12 @@ fi
 JSON_PATH=$TARGET_KERNEL/compile_commands.json 
 JSON_PATH=$BASE_PATH/tmp/tmp.json
 
-TARGET_SOURCE=$TARGET_KERNEL/mm/zswap.c
+TARGET_SOURCE1=$TARGET_KERNEL/mm/zswap.c
 
+TARGET_PROJ_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15
+TARGET_SOURCE1=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
 # TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
-# TARGET_SOURCE=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c
+TARGET_SOURCE2=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zpool.c
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Make a build dir if there isn't one
@@ -35,7 +37,8 @@ pushd $BUILD
     cmake .. -G Ninja
     ninja
     set -x
-    ./bin/CodeAnalysis ${TARGET_SOURCE} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    ./bin/CodeAnalysis ${TARGET_SOURCE1} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    # ./bin/CodeAnalysis ${TARGET_SOURCE1} ${TARGET_SOURCE2} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     set +x
 popd
 

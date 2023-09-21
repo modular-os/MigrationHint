@@ -293,6 +293,42 @@ class ExternalStructMatcher
   int externalStructCnt;
 };
 
+class MacroPPCallbacks : public clang::PPCallbacks {
+ public:
+  explicit MacroPPCallbacks(clang::Preprocessor &PP) : PP(PP) {}
+
+  void MacroExpands(const clang::Token &MacroNameTok,
+                    const clang::MacroDefinition &MD, clang::SourceRange Range,
+                    const clang::MacroArgs *Args) override {
+    llvm::outs() << "Macro: " << PP.getSpelling(MacroNameTok) << "\n";
+    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
+  }
+
+  void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
+                   clang::SrcMgr::CharacteristicKind FileType,
+                   clang::FileID PrevFID) override {
+    if (Reason == EnterFile) {
+      const clang::SourceManager &SM = PP.getSourceManager();
+      llvm::outs() << "Header: " << SM.getFilename(Loc) << "\n";
+    }
+  }
+
+ private:
+  clang::Preprocessor &PP;
+};
+
+class MacroFrontendAction : public clang::PreprocessorFrontendAction {
+ public:
+  explicit MacroFrontendAction(clang::Preprocessor &PP) : PP(PP) {}
+  void ExecuteAction() override {
+    PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
+    PreprocessorFrontendAction::ExecuteAction();
+  }
+
+ private:
+  clang::Preprocessor &PP;
+};
+
 /**********************************************************************
  * 2. Main Function
  **********************************************************************/
@@ -364,6 +400,17 @@ int main(int argc, const char **argv) {
 
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
+  // std::vector<std::unique_ptr<clang::PPCallbacks>> Callbacks;
+  // Callbacks.push_back(std::make_unique<MyToolVisitor>(Tool.getClangTool().getPreprocessor()));
+
+  // Tool.appendArgumentsAdjuster(getInsertArgumentAdjuster("-Xclang",
+  // "-detailed-preprocessing-record"));
+
+  MacroFrontendAction MacroFinder(ASTs[0]->getPreprocessor());
+  int Result =
+      Tool.run(clang::tooling::newFrontendActionFactory(&MacroFinder).get());
+
+  return 0;
 
   ExternalCallMatcher exCallMatcher;
   ExternalStructMatcher exStructMatcher;
