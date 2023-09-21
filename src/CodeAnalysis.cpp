@@ -264,6 +264,8 @@ class ExternalStructMatcher
                 llvm::outs() << "\n      ```\n";
               } else {
                 // TODO: Fix missing zpool, why?
+                // Ans: struct zpool's implementation is in .c file
+                //    instead of .h, making LibTooling could not find it.
                 llvm::outs() << "       - Full Definition: \n"
                              << "**Empty Field!**\n";
               }
