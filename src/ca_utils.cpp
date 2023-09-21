@@ -155,16 +155,19 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 #endif
 }
 
-bool getExternalStructType(clang::QualType FDType, llvm::raw_ostream &output,
-                           clang::SourceManager &SM) {
+bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
+                           clang::SourceManager &SM,
+                           const std::string &varName) {
+  auto varType = Type;
   bool isPointer = false;
-  if (FDType->isPointerType()) {
-    FDType = FDType->getPointeeType();
+  // Type: De-pointer the type and find the original type
+  if (Type->isPointerType()) {
+    Type = Type->getPointeeType();
     isPointer = true;
   }
 
-  if (FDType->isStructureOrClassType()) {
-    const auto RT = FDType->getAs<clang::RecordType>();
+  if (Type->isStructureOrClassType()) {
+    const auto RT = Type->getAs<clang::RecordType>();
     const auto RTD = RT->getDecl();
 
     const auto Range = RTD->getSourceRange();
@@ -172,7 +175,9 @@ bool getExternalStructType(clang::QualType FDType, llvm::raw_ostream &output,
                                SM.isWrittenInMainFile(Range.getEnd());
 
     if (!InCurrentFile) {
-      output << "   - Type: `" << RTD->getQualifiedNameAsString() << "`\n";
+      output << "   - Member: `" << varType.getAsString() << " "
+             << varName << "`\n"
+             << "   - Type: `" << RTD->getQualifiedNameAsString() << "`\n";
 
       output << "     - Location: `"
              << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
@@ -195,7 +200,7 @@ bool getExternalStructType(clang::QualType FDType, llvm::raw_ostream &output,
                << "**Empty Field!**\n";
       }
     }
-    return InCurrentFile;
+    return !InCurrentFile;
   } else {
     return false;
   }
