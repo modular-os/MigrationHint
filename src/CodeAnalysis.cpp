@@ -6,6 +6,7 @@
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
+#include <clang/Lex/Preprocessor.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
@@ -15,6 +16,7 @@
 #include <map>
 #include <string>
 
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "utils.hpp"
@@ -293,6 +295,10 @@ class ExternalStructMatcher
   int externalStructCnt;
 };
 
+/*
+
+TODO: Finish the callback function for Preprocessor
+
 class MacroPPCallbacks : public clang::PPCallbacks {
  public:
   explicit MacroPPCallbacks(clang::Preprocessor &PP) : PP(PP) {}
@@ -317,9 +323,20 @@ class MacroPPCallbacks : public clang::PPCallbacks {
   clang::Preprocessor &PP;
 };
 
+class MyASTConsumer : public clang::ASTConsumer,
+                      public clang::RecursiveASTVisitor<MyASTConsumer> {
+ public:
+  explicit MyASTConsumer(clang::Preprocessor &PP) : PP(PP) {}
+
+ private:
+  clang::Preprocessor &PP;
+};
 class MacroFrontendAction : public clang::PreprocessorFrontendAction {
  public:
   explicit MacroFrontendAction(clang::Preprocessor &PP) : PP(PP) {}
+  std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
+    return std::make_unique<MyASTConsumer>(PP);
+  }
   void ExecuteAction() override {
     PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
     PreprocessorFrontendAction::ExecuteAction();
@@ -328,6 +345,7 @@ class MacroFrontendAction : public clang::PreprocessorFrontendAction {
  private:
   clang::Preprocessor &PP;
 };
+*/
 
 /**********************************************************************
  * 2. Main Function
@@ -400,18 +418,15 @@ int main(int argc, const char **argv) {
 
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
-  // std::vector<std::unique_ptr<clang::PPCallbacks>> Callbacks;
-  // Callbacks.push_back(std::make_unique<MyToolVisitor>(Tool.getClangTool().getPreprocessor()));
 
-  // Tool.appendArgumentsAdjuster(getInsertArgumentAdjuster("-Xclang",
-  // "-detailed-preprocessing-record"));
-
+/*
+TODO: Finish the callback function for Preprocessor
   MacroFrontendAction MacroFinder(ASTs[0]->getPreprocessor());
   int Result =
       Tool.run(clang::tooling::newFrontendActionFactory(&MacroFinder).get());
 
   return 0;
-
+*/
   ExternalCallMatcher exCallMatcher;
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
