@@ -22,6 +22,8 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM);
 
+bool getExternalStructType(clang::QualType FDType, llvm::raw_ostream &output,
+                           clang::SourceManager &SM);
 }  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP

@@ -1,6 +1,8 @@
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Expr.h>
+#include <clang/AST/Type.h>
+#include <clang/Basic/SourceManager.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <string>
@@ -151,5 +153,53 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
                  << "Is in macro arg expansion\n";
   }
 #endif
+}
+
+bool getExternalStructType(clang::QualType FDType, llvm::raw_ostream &output,
+                           clang::SourceManager &SM) {
+  bool isPointer = false;
+  if (FDType->isPointerType()) {
+    FDType = FDType->getPointeeType();
+    isPointer = true;
+  }
+
+  if (FDType->isStructureOrClassType()) {
+    const auto RT = FDType->getAs<clang::RecordType>();
+    const auto RTD = RT->getDecl();
+
+    const auto Range = RTD->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+
+    if (!InCurrentFile) {
+      output << "   - Type: `" << RTD->getQualifiedNameAsString() << "`\n";
+
+      output << "     - Location: `"
+             << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
+
+      output << "      - Is Pointer: ";
+      if (isPointer) {
+        output << "`Yes`\n";
+      } else {
+        output << "`No`\n";
+      }
+
+      if (!RTD->field_empty()) {
+        output << "      - Full Definition: \n"
+               << "      ```c\n";
+        RTD->print(output.indent(6),
+                   clang::PrintingPolicy(clang::LangOptions()), 3);
+        output << "\n      ```\n";
+      } else {
+        output << "       - Full Definition: \n"
+               << "**Empty Field!**\n";
+      }
+    }
+    return InCurrentFile;
+  } else {
+    return false;
+  }
+
+  return false;
 }
 }  // namespace ca_utils
