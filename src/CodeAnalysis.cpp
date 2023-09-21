@@ -1,5 +1,6 @@
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
@@ -37,7 +38,20 @@ StatementMatcher ExternalCallMatcherPattern =
 
 // Bind Matcher to ExternalFieldDecl
 DeclarationMatcher ExternalStructMatcherPattern =
-    recordDecl().bind("externalFieldDecl");
+    functionDecl().bind("externalTypeFuncD");
+
+// TODO: Fix weird AnyOf problems.
+// DeclarationMatcher ExternalStructMatcherPattern =
+//     anyOf(recordDecl().bind("externalTypeFD"),
+//     varDecl().bind("externalTypeVD"),
+//           parmVarDecl().bind("externalTypePVD"),
+//           functionDecl().bind("externalTypeFuncD"));
+
+// Matcher is not that useful, because it can only match the struct type
+// But not the struct pointer
+// varDecl(hasType(recordDecl())).bind("externalTypeVD"),
+// varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
+// parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 
 /**********************************************************************
  * 1. Matcher Callbacks
@@ -185,8 +199,7 @@ class ExternalStructMatcher
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
-    if (auto RD =
-            Result.Nodes.getNodeAs<clang::RecordDecl>("externalFieldDecl")) {
+    if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>("externalTypeFD")) {
 #ifdef DEBUG
       llvm::outs() << "ExternalStructMatcher\n";
       llvm::outs() << FD->getQualifiedNameAsString() << "\n";
@@ -223,13 +236,49 @@ class ExternalStructMatcher
                        << FDType->isStructureOrClassType() << "\n";
 #endif
 
-          bool IsExternalStruct =
-              ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, FD->getNameAsString());
-          if (IsExternalStruct) {
+          bool IsExternalType = ca_utils::getExternalStructType(
+              FD->getType(), llvm::outs(), SM, FD->getNameAsString());
+          if (IsExternalType) {
             ++externalStructCnt;
           }
         }
         llvm::outs() << "\n\n---\n\n\n";
+      }
+    } else if (auto VD =
+                   Result.Nodes.getNodeAs<clang::VarDecl>("externalTypeVD")) {
+      if (SM.isInMainFile(VD->getLocation())) {
+        auto isExternalType = ca_utils::getExternalStructType(
+            VD->getType(), llvm::outs(), SM, VD->getNameAsString());
+        if (isExternalType) {
+          llvm::outs() << "VarDecl("
+                       << ca_utils::getLocationString(SM, VD->getLocation())
+                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+        }
+      }
+    } else if (auto PVD = Result.Nodes.getNodeAs<clang::ParmVarDecl>(
+                   "externalTypePVD")) {
+      if (SM.isInMainFile(PVD->getLocation())) {
+        auto isExternalType = ca_utils::getExternalStructType(
+            PVD->getType(), llvm::outs(), SM, PVD->getNameAsString());
+        if (isExternalType) {
+          llvm::outs() << "ParamVarDecl("
+                       << ca_utils::getLocationString(SM, PVD->getLocation())
+                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+        }
+      }
+    } else if (auto FD = Result.Nodes.getNodeAs<clang::FunctionDecl>(
+                   "externalTypeFuncD")) {
+      if (SM.isInMainFile(FD->getLocation())) {
+      llvm::outs() << "FuncD "
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << " " << FD->getReturnType().getAsString() << "\n";
+        auto isExternalType = ca_utils::getExternalStructType(
+            FD->getReturnType(), llvm::outs(), SM, FD->getNameAsString());
+        if (isExternalType) {
+          llvm::outs() << "FunctionDecl("
+                       << ca_utils::getLocationString(SM, FD->getLocation())
+                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+        }
       }
     } else {
 #ifdef DEBUG
@@ -388,7 +437,7 @@ int main(int argc, const char **argv) {
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
-  Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+  // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
