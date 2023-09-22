@@ -37,8 +37,9 @@ StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 // Bind Matcher to ExternalFieldDecl
-DeclarationMatcher ExternalStructMatcherPattern =
-    functionDecl().bind("externalTypeFuncD");
+DeclarationMatcher ExternalStructMatcherPattern = anyOf(
+    recordDecl().bind("externalTypeFD"), parmVarDecl().bind("externalTypePVD"),
+    functionDecl().bind("externalTypeFuncD"));
 
 // TODO: Fix weird AnyOf problems.
 // DeclarationMatcher ExternalStructMatcherPattern =
@@ -269,9 +270,11 @@ class ExternalStructMatcher
     } else if (auto FD = Result.Nodes.getNodeAs<clang::FunctionDecl>(
                    "externalTypeFuncD")) {
       if (SM.isInMainFile(FD->getLocation())) {
-      llvm::outs() << "FuncD "
-                   << ca_utils::getLocationString(SM, FD->getLocation())
-                   << " " << FD->getReturnType().getAsString() << "\n";
+#ifdef DEBUG
+        llvm::outs() << "FuncD "
+                     << ca_utils::getLocationString(SM, FD->getLocation())
+                     << " " << FD->getReturnType().getAsString() << "\n";
+#endif
         auto isExternalType = ca_utils::getExternalStructType(
             FD->getReturnType(), llvm::outs(), SM, FD->getNameAsString());
         if (isExternalType) {

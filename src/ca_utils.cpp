@@ -157,7 +157,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 
 bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
                            clang::SourceManager &SM,
-                           const std::string &varName) {
+                           const std::string &ExtraInfo,
+                           const int OutputIndent) {
   auto varType = Type;
   bool isPointer = false;
   // Type: De-pointer the type and find the original type
@@ -175,8 +176,11 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
                                SM.isWrittenInMainFile(Range.getEnd());
 
     if (!InCurrentFile) {
-      output << "   - Member: `" << varType.getAsString() << " "
-             << varName << "`\n"
+#ifdef DEBUG
+      output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
+             << "`\n"
+#endif
+          output
              << "   - Type: `" << RTD->getQualifiedNameAsString() << "`\n";
 
       output << "     - Location: `"
