@@ -38,7 +38,7 @@ StatementMatcher ExternalCallMatcherPattern =
 
 // Bind Matcher to ExternalFieldDecl
 // Notice: Since ParamVarDecl is the subclass of VarDecl,
-//        so they share the same Matcher pattern
+//        so they share the same Matcher pattern.
 DeclarationMatcher ExternalStructMatcherPattern =
     anyOf(recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"),
           functionDecl().bind("externalTypeFuncD"));
@@ -256,10 +256,41 @@ class ExternalStructMatcher
                        << ca_utils::getLocationString(SM, PVD->getLocation())
                        << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
-          auto isExternalType = ca_utils::getExternalStructType(
-              PVD->getType(), llvm::outs(), SM, PVD->getNameAsString());
-          if (isExternalType) {
+          std::string ExtraInfo =
+              "## ParamVarDecl: " + PVD->getNameAsString() + "\n";
+          ExtraInfo += "   - Location: " +
+                       ca_utils::getLocationString(SM, PVD->getLocation()) +
+                       "\n";
+          ExtraInfo += "   - Type: " + PVD->getType().getAsString() + "\n";
+          if (const auto ParentFuncDeclContext =
+                  PVD->getParentFunctionOrMethod()) {
+            // Notice: Method is only used in C++
+            if (const auto ParentFD =
+                    dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+              ExtraInfo +=
+                  "   - Function: " + ca_utils::getFuncDeclString(ParentFD) +
+                  "\n";
+            }
+          } else if (const auto TU = PVD->getTranslationUnitDecl()) {
+            ExtraInfo += "   - Parent: Global variable, no parent function.\n";
           }
+
+          // Output the init expr for the VarDecl
+          if (PVD->hasInit()) {
+            auto InitText = clang::Lexer::getSourceText(
+                clang::CharSourceRange::getTokenRange(
+                    PVD->getInit()->getSourceRange()),
+                SM, Result.Context->getLangOpts());
+            if (InitText.str() != "" && InitText.str() != "NULL") {
+              ExtraInfo +=
+                  "   - ParamVarDecl Has Init: " + InitText.str() + "\n";
+
+            } else {
+              ExtraInfo += "   - ParamVarDecl Has Init, but no text found\n";
+            }
+          }
+          auto isExternalType = ca_utils::getExternalStructType(
+              PVD->getType(), llvm::outs(), SM, ExtraInfo);
         }
       } else if (SM.isInMainFile(VD->getLocation())) {
 #ifdef DEBUG
@@ -281,9 +312,7 @@ class ExternalStructMatcher
                 "   - Parent: " + ca_utils::getFuncDeclString(ParentFD) + "\n";
           }
         } else if (const auto TU = VD->getTranslationUnitDecl()) {
-          ExtraInfo +=
-              "   - VarDecl Parent Function: Global variable, no parent "
-              "function\n";
+          ExtraInfo += "   - Parent: Global variable, no parent function.\n";
         }
 
         // Output the init expr for the VarDecl
@@ -292,7 +321,7 @@ class ExternalStructMatcher
               clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(
                                               VD->getInit()->getSourceRange()),
                                           SM, Result.Context->getLangOpts());
-          if (InitText.str() != "") {
+          if (InitText.str() != "" && InitText.str() != "NULL") {
             ExtraInfo += "   - VarDecl Has Init: " + InitText.str() + "\n";
 
           } else {
