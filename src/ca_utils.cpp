@@ -159,7 +159,9 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
                            clang::SourceManager &SM,
                            const std::string &ExtraInfo,
                            const int OutputIndent) {
+#ifdef DEBUG
   auto varType = Type;
+#endif
   bool isPointer = false;
   // Type: De-pointer the type and find the original type
   if (Type->isPointerType()) {
@@ -181,7 +183,8 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
              << "`\n"
 #endif
           output
-             << "   - Type: `" << RTD->getQualifiedNameAsString() << "`\n";
+             << ExtraInfo << "   - Type: `" << RTD->getQualifiedNameAsString()
+             << "`\n";
 
       output << "     - Location: `"
              << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
