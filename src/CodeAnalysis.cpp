@@ -37,8 +37,11 @@ StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 // Bind Matcher to ExternalFieldDecl
-DeclarationMatcher ExternalStructMatcherPattern = anyOf(
-    recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"));
+// Notice: Since ParamVarDecl is the subclass of VarDecl,
+//        so they share the same Matcher pattern
+DeclarationMatcher ExternalStructMatcherPattern =
+    anyOf(recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"),
+          functionDecl().bind("externalTypeFuncD"));
 
 // TODO: Fix weird AnyOf problems.
 // DeclarationMatcher ExternalStructMatcherPattern =
@@ -246,7 +249,19 @@ class ExternalStructMatcher
       }
     } else if (auto VD =
                    Result.Nodes.getNodeAs<clang::VarDecl>("externalTypeVD")) {
-      if (SM.isInMainFile(VD->getLocation())) {
+      if (auto PVD = dyn_cast<clang::ParmVarDecl>(VD)) {
+        if (SM.isInMainFile(PVD->getLocation())) {
+#ifdef DEBUG
+          llvm::outs() << "ParamVarDecl("
+                       << ca_utils::getLocationString(SM, PVD->getLocation())
+                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+          auto isExternalType = ca_utils::getExternalStructType(
+              PVD->getType(), llvm::outs(), SM, PVD->getNameAsString());
+          if (isExternalType) {
+          }
+        }
+      } else if (SM.isInMainFile(VD->getLocation())) {
 #ifdef DEBUG
         llvm::outs() << "VarDecl("
                      << ca_utils::getLocationString(SM, VD->getLocation())
@@ -257,10 +272,13 @@ class ExternalStructMatcher
         ExtraInfo += "   - Location: " +
                      ca_utils::getLocationString(SM, VD->getLocation()) + "\n";
         ExtraInfo += "   - Type: " + VD->getType().getAsString() + "\n";
-        if (const auto PFDC = VD->getParentFunctionOrMethod()) {
+        if (const auto ParentFuncDeclContext =
+                VD->getParentFunctionOrMethod()) {
           // Notice: Method is only used in C++
-          if (const auto PFD = dyn_cast<clang::FunctionDecl>(PFDC)) {
-            ExtraInfo += "   - Parent: " + ca_utils::getFuncDeclString(PFD) + "\n";
+          if (const auto ParentFD =
+                  dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+            ExtraInfo +=
+                "   - Parent: " + ca_utils::getFuncDeclString(ParentFD) + "\n";
           }
         } else if (const auto TU = VD->getTranslationUnitDecl()) {
           ExtraInfo +=
@@ -284,17 +302,6 @@ class ExternalStructMatcher
 
         auto isExternalType = ca_utils::getExternalStructType(
             VD->getType(), llvm::outs(), SM, ExtraInfo);
-      }
-    } else if (auto PVD = Result.Nodes.getNodeAs<clang::ParmVarDecl>(
-                   "externalTypePVD")) {
-      if (SM.isInMainFile(PVD->getLocation())) {
-        auto isExternalType = ca_utils::getExternalStructType(
-            PVD->getType(), llvm::outs(), SM, PVD->getNameAsString());
-        if (isExternalType) {
-          llvm::outs() << "ParamVarDecl("
-                       << ca_utils::getLocationString(SM, PVD->getLocation())
-                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-        }
       }
     } else if (auto FD = Result.Nodes.getNodeAs<clang::FunctionDecl>(
                    "externalTypeFuncD")) {
