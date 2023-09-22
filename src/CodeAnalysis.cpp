@@ -38,8 +38,7 @@ StatementMatcher ExternalCallMatcherPattern =
 
 // Bind Matcher to ExternalFieldDecl
 DeclarationMatcher ExternalStructMatcherPattern = anyOf(
-    recordDecl().bind("externalTypeFD"), parmVarDecl().bind("externalTypePVD"),
-    functionDecl().bind("externalTypeFuncD"));
+    recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"));
 
 // TODO: Fix weird AnyOf problems.
 // DeclarationMatcher ExternalStructMatcherPattern =
@@ -248,13 +247,43 @@ class ExternalStructMatcher
     } else if (auto VD =
                    Result.Nodes.getNodeAs<clang::VarDecl>("externalTypeVD")) {
       if (SM.isInMainFile(VD->getLocation())) {
-        auto isExternalType = ca_utils::getExternalStructType(
-            VD->getType(), llvm::outs(), SM, VD->getNameAsString());
-        if (isExternalType) {
-          llvm::outs() << "VarDecl("
-                       << ca_utils::getLocationString(SM, VD->getLocation())
-                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#ifdef DEBUG
+        llvm::outs() << "VarDecl("
+                     << ca_utils::getLocationString(SM, VD->getLocation())
+
+                     << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+        std::string ExtraInfo = "## VarDecl: " + VD->getNameAsString() + "\n";
+        ExtraInfo += "   - Location: " +
+                     ca_utils::getLocationString(SM, VD->getLocation()) + "\n";
+        ExtraInfo += "   - Type: " + VD->getType().getAsString() + "\n";
+        if (const auto PFDC = VD->getParentFunctionOrMethod()) {
+          // Notice: Method is only used in C++
+          if (const auto PFD = dyn_cast<clang::FunctionDecl>(PFDC)) {
+            ExtraInfo += "   - Parent: " + ca_utils::getFuncDeclString(PFD) + "\n";
+          }
+        } else if (const auto TU = VD->getTranslationUnitDecl()) {
+          ExtraInfo +=
+              "   - VarDecl Parent Function: Global variable, no parent "
+              "function\n";
         }
+
+        // Output the init expr for the VarDecl
+        if (VD->hasInit()) {
+          auto InitText =
+              clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(
+                                              VD->getInit()->getSourceRange()),
+                                          SM, Result.Context->getLangOpts());
+          if (InitText.str() != "") {
+            ExtraInfo += "   - VarDecl Has Init: " + InitText.str() + "\n";
+
+          } else {
+            ExtraInfo += "   - VarDecl Has Init, but no text found\n";
+          }
+        }
+
+        auto isExternalType = ca_utils::getExternalStructType(
+            VD->getType(), llvm::outs(), SM, ExtraInfo);
       }
     } else if (auto PVD = Result.Nodes.getNodeAs<clang::ParmVarDecl>(
                    "externalTypePVD")) {

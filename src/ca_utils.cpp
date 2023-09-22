@@ -180,13 +180,13 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
     if (!InCurrentFile) {
 #ifdef DEBUG
       output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
-             << "`\n"
+             << "`\n";
 #endif
           output
-             << ExtraInfo << "   - Type: `" << RTD->getQualifiedNameAsString()
+             << ExtraInfo << "   - External Type Detailed Info: `" << RTD->getQualifiedNameAsString()
              << "`\n";
 
-      output << "     - Location: `"
+      output << "      - Location: `"
              << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
 
       output << "      - Is Pointer: ";
