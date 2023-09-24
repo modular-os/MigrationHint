@@ -43,18 +43,13 @@ DeclarationMatcher ExternalStructMatcherPattern =
     anyOf(recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"),
           functionDecl().bind("externalTypeFuncD"));
 
-// TODO: Fix weird AnyOf problems.
-// DeclarationMatcher ExternalStructMatcherPattern =
-//     anyOf(recordDecl().bind("externalTypeFD"),
-//     varDecl().bind("externalTypeVD"),
-//           parmVarDecl().bind("externalTypePVD"),
-//           functionDecl().bind("externalTypeFuncD"));
-
+/*
 // Matcher is not that useful, because it can only match the struct type
 // But not the struct pointer
-// varDecl(hasType(recordDecl())).bind("externalTypeVD"),
-// varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
-// parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
+varDecl(hasType(recordDecl())).bind("externalTypeVD"),
+varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
+parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
+*/
 
 /**********************************************************************
  * 1. Matcher Callbacks
@@ -214,13 +209,15 @@ class ExternalStructMatcher
                      << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 
-        llvm::outs() << "\n## Function: `" << ca_utils::getFuncDeclString(FD)
+        llvm::outs() << "\n\n---\n\n\n## Function: `" << ca_utils::getFuncDeclString(FD)
                      << "`\n"
                      << "- Function Location: `"
                      << ca_utils::getLocationString(SM, FD->getLocation())
                      << "`\n";
         isInFunction = 1;
+#ifdef DEBUG
         llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
+#endif
 
         auto isExternalType = ca_utils::getExternalStructType(
             FD->getReturnType(), llvm::outs(), SM, FD->getNameAsString());
@@ -305,17 +302,17 @@ class ExternalStructMatcher
           }
         } else if (const auto TU = RD->getTranslationUnitDecl()) {
           BasicInfo += "- Parent: Global variable, no parent function.\n";
-          llvm::outs() << "hi " << isInFunction << "\n";
           if (isInFunction) {
-            // TODO: bugs of field-alter marks.
+#ifdef DEBUG
             llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
+#endif
             isInFunctionOldValue = isInFunction;
             isInFunction = 0;
-            BasicInfo = "\n## Global: \n" + BasicInfo;
+            BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
           }
         }
-
         llvm::outs() << BasicInfo;
+
         // Output the full definition for the fieldDecl
         llvm::outs() << "- Full Definition: \n"
                      << "```c\n";
@@ -383,13 +380,12 @@ class ExternalStructMatcher
         } else if (const auto TU = VD->getTranslationUnitDecl()) {
           ExtraInfo += "   - Parent: Global variable, no parent function.\n";
           if (isInFunction) {
-            // TODO: bugs of field-alter marks.
+#ifdef DEBUG
             llvm::outs() << "--Field changes here, VarDecl 1->0.\n";
+#endif
             isInFunctionOldValue = isInFunction;
             isInFunction = 0;
-            ExtraInfo = "\n## Global: \n" + ExtraInfo;
-            llvm::outs() << "------------------\n"
-                         << ExtraInfo << "---------------------\n";
+            ExtraInfo = "\n\n---\n\n\n## Global: \n" + ExtraInfo;
           }
         }
 
@@ -407,16 +403,16 @@ class ExternalStructMatcher
             ExtraInfo += "   - VarDecl Has Init, but no text found\n";
           }
         }
-        // llvm::outs() << "====================\n"
-        //              << ExtraInfo << "=====================\n";
 
         auto isExternalType = ca_utils::getExternalStructType(
             VD->getType(), llvm::outs(), SM, ExtraInfo);
         if (isExternalType) {
         } else {
+#ifdef DEBUG
+          llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+#endif
           // Recover the field control flag if the Decl is not external(so it is
           // passed)
-          llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
           isInFunction = isInFunctionOldValue;
         }
       }
@@ -431,15 +427,15 @@ class ExternalStructMatcher
 #ifdef DEBUG
     llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
-    llvm::outs() << "# Summary\n"
+    llvm::outs() << "\n\n---\n\n\n# Summary\n"
                  << "- Struct Count: " << structCnt << "\n"
                  << "- External Struct Count: " << externalStructCnt << "\n\n";
   }
 
  private:
+  int isInFunction;
   int structCnt;
   int externalStructCnt;
-  int isInFunction;
 };
 
 /*

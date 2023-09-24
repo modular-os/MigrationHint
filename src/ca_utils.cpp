@@ -182,9 +182,8 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
       output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
              << "`\n";
 #endif
-          output
-             << ExtraInfo << "   - External Type Detailed Info: `" << RTD->getQualifiedNameAsString()
-             << "`\n";
+      output << ExtraInfo << "   - External Type Detailed Info: `"
+             << RTD->getQualifiedNameAsString() << "`\n";
 
       output << "      - Location: `"
              << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
@@ -203,7 +202,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
                    clang::PrintingPolicy(clang::LangOptions()), 3);
         output << "\n      ```\n";
       } else {
-        output << "       - Full Definition: \n"
+        output << "       - Full Definition: "
                << "**Empty Field!**\n";
       }
     }
