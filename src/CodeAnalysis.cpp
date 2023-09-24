@@ -262,7 +262,7 @@ class ExternalStructMatcher
                            InitText.str() + "\n   ```\n";
 
             } else {
-              ExtraInfo += "   - ParamVarDecl Has Init, but no text found\n";
+              ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
             }
           }
           auto isExternalType = ca_utils::getExternalStructType(
@@ -339,9 +339,11 @@ class ExternalStructMatcher
           if (IsExternalType) {
             ++externalStructCnt;
           } else {
-            // Recover the field control flag if the Decl is not external(so it
-            // is passed).
+// Recover the field control flag if the Decl is not external(so it
+// is passed).
+#ifdef DEBUG
             llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+#endif
             isInFunction = isInFunctionOldValue;
           }
         }
@@ -404,7 +406,7 @@ class ExternalStructMatcher
                          "\n   ```\n";
 
           } else {
-            ExtraInfo += "   - VarDecl Has Init, but no text found\n";
+            ExtraInfo += "   - VarDecl Has Init, but no text found.\n";
           }
         }
 
