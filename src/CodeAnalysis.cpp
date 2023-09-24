@@ -204,6 +204,7 @@ class ExternalStructMatcher
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
+    int isInFunctionOldValue = isInFunction;
     if (auto FD =
             Result.Nodes.getNodeAs<clang::FunctionDecl>("externalTypeFuncD")) {
       if (SM.isInMainFile(FD->getLocation())) {
@@ -219,6 +220,7 @@ class ExternalStructMatcher
                      << ca_utils::getLocationString(SM, FD->getLocation())
                      << "`\n";
         isInFunction = 1;
+        llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
 
         auto isExternalType = ca_utils::getExternalStructType(
             FD->getReturnType(), llvm::outs(), SM, FD->getNameAsString());
@@ -306,8 +308,8 @@ class ExternalStructMatcher
           llvm::outs() << "hi " << isInFunction << "\n";
           if (isInFunction) {
             // TODO: bugs of field-alter marks.
-            llvm::outs() << "Field changes here.\n";
-
+            llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
+            isInFunctionOldValue = isInFunction;
             isInFunction = 0;
             BasicInfo = "\n## Global: \n" + BasicInfo;
           }
@@ -335,6 +337,11 @@ class ExternalStructMatcher
               FD->getType(), llvm::outs(), SM, ExtraInfo);
           if (IsExternalType) {
             ++externalStructCnt;
+          } else {
+            // Recover the field control flag if the Decl is not external(so it
+            // is passed).
+            llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+            isInFunction = isInFunctionOldValue;
           }
         }
         llvm::outs() << "\n\n---\n\n\n";
@@ -377,9 +384,12 @@ class ExternalStructMatcher
           ExtraInfo += "   - Parent: Global variable, no parent function.\n";
           if (isInFunction) {
             // TODO: bugs of field-alter marks.
-            llvm::outs() << "Field changes here.\n";
+            llvm::outs() << "--Field changes here, VarDecl 1->0.\n";
+            isInFunctionOldValue = isInFunction;
             isInFunction = 0;
             ExtraInfo = "\n## Global: \n" + ExtraInfo;
+            llvm::outs() << "------------------\n"
+                         << ExtraInfo << "---------------------\n";
           }
         }
 
@@ -397,9 +407,18 @@ class ExternalStructMatcher
             ExtraInfo += "   - VarDecl Has Init, but no text found\n";
           }
         }
+        // llvm::outs() << "====================\n"
+        //              << ExtraInfo << "=====================\n";
 
         auto isExternalType = ca_utils::getExternalStructType(
             VD->getType(), llvm::outs(), SM, ExtraInfo);
+        if (isExternalType) {
+        } else {
+          // Recover the field control flag if the Decl is not external(so it is
+          // passed)
+          llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+          isInFunction = isInFunctionOldValue;
+        }
       }
     } else {
 #ifdef DEBUG
