@@ -625,7 +625,7 @@ int main(int argc, const char **argv) {
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
   Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
-  // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+  Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
