@@ -2,6 +2,7 @@
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
+#include <clang/AST/OperationKinds.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/ASTUnit.h>
@@ -42,6 +43,10 @@ StatementMatcher ExternalCallMatcherPattern =
 DeclarationMatcher ExternalStructMatcherPattern =
     anyOf(recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"),
           functionDecl().bind("externalTypeFuncD"));
+
+// Add matchers to expressions
+StatementMatcher ExternalExprsMatcherPatter =
+    implicitCastExpr().bind("externalImplicitCE");
 
 /*
 // Matcher is not that useful, because it can only match the struct type
@@ -194,6 +199,7 @@ class ExternalStructMatcher
     externalStructCnt = 0;
     externalVarDeclCnt = 0;
     externalParamVarDeclCnt = 0;
+    externalImplicitExprCnt = 0;
     isInFunction = 0;
   }
 
@@ -423,7 +429,35 @@ class ExternalStructMatcher
           isInFunction = isInFunctionOldValue;
         }
       }
-    } else {
+    } else if (auto ICE = Result.Nodes.getNodeAs<clang::ImplicitCastExpr>(
+                   "externalImplicitCE")) {
+      if (SM.isInMainFile(ICE->getBeginLoc()) &&
+          SM.isInMainFile(ICE->getEndLoc())) {
+        if (ICE->getCastKind() == clang::CK_LValueToRValue ||
+            ICE->getCastKind() == clang::CK_IntegralToPointer) {
+#ifdef DEBUG
+          llvm::outs() << "ImplicitCastExpr("
+                       << ca_utils::getLocationString(SM, ICE->getBeginLoc())
+                       << "): " << ICE->getType().getAsString()
+                       << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+          std::string ExtraInfo = "";
+          ExtraInfo += "### ImplicitCastExpr\n";
+          ExtraInfo += "   - Location: " +
+                       ca_utils::getLocationString(SM, ICE->getBeginLoc()) +
+                       "\n";
+          ExtraInfo += "   - CastKind: " + std::string(ICE->getCastKindName());
+          int isExternal = ca_utils::getExternalStructType(
+              ICE->getType(), llvm::outs(), SM, ExtraInfo);
+          if (isExternal) {
+            ++externalImplicitExprCnt;
+          }
+        }
+        //  clang::CK_LValueToRValue IntegralToPointer
+      }
+    }
+
+    else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
 #endif
@@ -438,6 +472,8 @@ class ExternalStructMatcher
                  << "- External Struct Count: " << externalStructCnt << "\n"
                  << "- External VarDecl Count: " << externalVarDeclCnt << "\n"
                  << "- External ParamVarDecl Count: " << externalParamVarDeclCnt
+                 << "\n"
+                 << "- External ImplicitExpr Count: " << externalImplicitExprCnt
                  << "\n\n";
   }
 
@@ -449,6 +485,7 @@ class ExternalStructMatcher
   int externalStructCnt;
   int externalVarDeclCnt;
   int externalParamVarDeclCnt;
+  int externalImplicitExprCnt;
 };
 
 /*
@@ -587,6 +624,7 @@ int main(int argc, const char **argv) {
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
   Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
+  Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
   // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
