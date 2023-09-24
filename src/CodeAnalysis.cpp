@@ -220,8 +220,11 @@ class ExternalStructMatcher
         llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
 #endif
 
-        auto isExternalType = ca_utils::getExternalStructType(
-            FD->getReturnType(), llvm::outs(), SM, FD->getNameAsString());
+        // Deal with the external return type
+        llvm::outs() << "- Return Type: `" + FD->getReturnType().getAsString() +
+                            "`\n";
+        ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM,
+                                        "");
 
         // Traverse the FuncDecl's ParamVarDecls
         for (const auto &PVD : FD->parameters()) {
