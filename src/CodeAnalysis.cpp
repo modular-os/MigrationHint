@@ -191,8 +191,9 @@ class ExternalStructMatcher
 #endif
     llvm::outs() << "# External Struct Type Report\n\n";
     llvm::outs() << "## Global Decls: \n";
-    structCnt = 0;
     externalStructCnt = 0;
+    externalVarDeclCnt = 0;
+    externalParamVarDeclCnt = 0;
     isInFunction = 0;
   }
 
@@ -209,8 +210,8 @@ class ExternalStructMatcher
                      << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 
-        llvm::outs() << "\n\n---\n\n\n## Function: `" << ca_utils::getFuncDeclString(FD)
-                     << "`\n"
+        llvm::outs() << "\n\n---\n\n\n## Function: `"
+                     << ca_utils::getFuncDeclString(FD) << "`\n"
                      << "- Function Location: `"
                      << ca_utils::getLocationString(SM, FD->getLocation())
                      << "`\n";
@@ -263,8 +264,9 @@ class ExternalStructMatcher
           }
           auto isExternalType = ca_utils::getExternalStructType(
               PVD->getType(), llvm::outs(), SM, ExtraInfo);
-        }
-        if (isExternalType) {
+          if (isExternalType) {
+            ++externalParamVarDeclCnt;
+          }
         }
       }
     } else if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>(
@@ -282,7 +284,6 @@ class ExternalStructMatcher
 
       if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
         // Output the basic info for specific RecordDecl
-        ++structCnt;
         std::string BasicInfo = "";
 
         BasicInfo =
@@ -407,6 +408,7 @@ class ExternalStructMatcher
         auto isExternalType = ca_utils::getExternalStructType(
             VD->getType(), llvm::outs(), SM, ExtraInfo);
         if (isExternalType) {
+          ++externalVarDeclCnt;
         } else {
 #ifdef DEBUG
           llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
@@ -428,14 +430,20 @@ class ExternalStructMatcher
     llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
     llvm::outs() << "\n\n---\n\n\n# Summary\n"
-                 << "- Struct Count: " << structCnt << "\n"
-                 << "- External Struct Count: " << externalStructCnt << "\n\n";
+                 << "- External Struct Count: " << externalStructCnt << "\n"
+                 << "- External VarDecl Count: " << externalVarDeclCnt << "\n"
+                 << "- External ParamVarDecl Count: " << externalParamVarDeclCnt
+                 << "\n\n";
   }
 
  private:
+  /*Field control flags*/
   int isInFunction;
-  int structCnt;
+
+  /*Statistics*/
   int externalStructCnt;
+  int externalVarDeclCnt;
+  int externalParamVarDeclCnt;
 };
 
 /*
