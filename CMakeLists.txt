@@ -80,8 +80,8 @@ include_directories(SYSTEM "${LLVM_INCLUDE_DIRS};${CLANG_INCLUDE_DIRS}")
 #===============================================================================
 # 3. CodeAnalysis BUILD CONFIGURATION
 #===============================================================================
-# Use the same C++ standard as LLVM does
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "")
+# Use a newer C++ standard than LLVM does (17) to suppress warnings about new features
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "")
 
 # Build type
 if(NOT CMAKE_BUILD_TYPE)

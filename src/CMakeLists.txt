@@ -19,10 +19,15 @@ target_include_directories(ca_utils PUBLIC
 
 set(CodeAnalysis_TOOLS
   CodeAnalysis
+  Indexer
 )
 
 set(CodeAnalysis_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/CodeAnalysis.cpp"
+)
+
+set(Indexer_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/Indexer.cpp"
 )
 
 # CONFIGURE THE TOOLS
