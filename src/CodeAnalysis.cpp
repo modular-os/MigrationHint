@@ -567,10 +567,10 @@ class MacroPPCallbacks : public clang::PPCallbacks {
 //   clang::Preprocessor &PP;
 // };
 using namespace clang;
-class Find_Includes : public PPCallbacks {
+class Find_Includes_Proxy : public PPCallbacks {
  public:
   bool has_include;
-  inline Find_Includes(clang::PPCallbacks &master) : master(master) {}
+  inline Find_Includes_Proxy(clang::PPCallbacks &master) : master(master) {}
 
   void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
                           StringRef FileName, bool IsAngled,
@@ -589,6 +589,41 @@ class Find_Includes : public PPCallbacks {
   clang::PPCallbacks &master;
 };
 
+class Find_Includes_Callback : public PPCallbacks {
+ public:
+  explicit inline Find_Includes_Callback(
+      const clang::CompilerInstance &compiler)
+      : compiler(compiler) {
+    name = compiler.getSourceManager()
+               .getFileEntryForID(compiler.getSourceManager().getMainFileID())
+               ->getName();
+  }
+
+ public:
+  inline clang::PPCallbacks *createPreprocessorCallbacks() {
+    return new Find_Includes_Proxy(*this);
+  }
+
+  virtual inline void InclusionDirective(
+      SourceLocation HashLoc, const Token &IncludeTok, StringRef FileName,
+      bool IsAngled, CharSourceRange FilenameRange, OptionalFileEntryRef File,
+      StringRef SearchPath, StringRef RelativePath, const Module *Imported,
+      SrcMgr::CharacteristicKind FileType) {
+    auto &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(HashLoc)) {
+      llvm::outs() << "InclusionDirective: "
+                   << ca_utils::getLocationString(SM, HashLoc) << "\n";
+    }
+  }
+
+ private:
+  const clang::CompilerInstance &compiler;
+  std::string name;
+
+  typedef std::pair<int, std::string> IncludeInfo;
+  typedef std::vector<IncludeInfo> Includes;
+  Includes includes;
+};
 class Include_Matching_Action : public PreprocessOnlyAction {
   // bool BeginSourceFileAction(CompilerInstance &ci, StringRef) {
   //   std::unique_ptr<Find_Includes> find_includes_callback(new
@@ -611,7 +646,13 @@ class Include_Matching_Action : public PreprocessOnlyAction {
   // }
 
  protected:
-  virtual void ExecuteAction();
+  virtual void ExecuteAction() {
+    // Find_Includes_Callback callbackFunc(getCompilerInstance());
+    getCompilerInstance().getPreprocessor().addPPCallbacks(
+        std::make_unique<Find_Includes_Callback>(getCompilerInstance()));
+
+    clang::PreprocessOnlyAction::ExecuteAction();
+  }
 };
 
 // */
