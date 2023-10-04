@@ -604,15 +604,42 @@ class Find_Includes_Callback : public PPCallbacks {
     return new Find_Includes_Proxy(*this);
   }
 
-  virtual inline void InclusionDirective(
-      SourceLocation HashLoc, const Token &IncludeTok, StringRef FileName,
-      bool IsAngled, CharSourceRange FilenameRange, OptionalFileEntryRef File,
-      StringRef SearchPath, StringRef RelativePath, const Module *Imported,
-      SrcMgr::CharacteristicKind FileType) {
+  void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
+                          StringRef FileName, bool IsAngled,
+                          CharSourceRange FilenameRange,
+                          OptionalFileEntryRef File, StringRef SearchPath,
+                          StringRef RelativePath, const Module *Imported,
+                          SrcMgr::CharacteristicKind FileType) override {
     auto &SM = compiler.getSourceManager();
     if (SM.isInMainFile(HashLoc)) {
       llvm::outs() << "InclusionDirective: "
-                   << ca_utils::getLocationString(SM, HashLoc) << "\n";
+                   << ca_utils::getLocationString(SM, HashLoc) << " "
+                   << SearchPath.str() << " " << RelativePath.str() << "\n";
+    }
+  }
+  void MacroExpands(const clang::Token &MacroNameTok,
+                    const clang::MacroDefinition &MD, clang::SourceRange Range,
+                    const clang::MacroArgs *Args) override {
+    auto &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(Range.getBegin())) {
+      llvm::outs() << "[MPP]Macro: "
+                   << ca_utils::getLocationString(SM, Range.getBegin()) << " "
+                   << compiler.getPreprocessor().getSpelling(MacroNameTok)
+                   << "\n";
+    }
+    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
+  }
+
+  void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
+                   clang::SrcMgr::CharacteristicKind FileType,
+                   clang::FileID PrevFID) override {
+    const clang::SourceManager &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(Loc)) {
+      llvm::outs() << "[MPP]Header: " << ca_utils::getLocationString(SM, Loc)
+                   << "\n";
+      if (Reason == EnterFile) {
+        llvm::outs() << "[MPP]Header: " << SM.getFilename(Loc) << "\n";
+      }
     }
   }
 
