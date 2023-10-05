@@ -7,6 +7,7 @@
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Lex/PPCallbacks.h>
 #include <clang/Lex/Preprocessor.h>
@@ -552,42 +553,26 @@ class MacroPPCallbacks : public clang::PPCallbacks {
 //  private:
 //   clang::Preprocessor &PP;
 // };
-// class MacroFrontendAction : public clang::PreprocessorFrontendAction {
-//  public:
-//   explicit MacroFrontendAction(clang::Preprocessor &PP) : PP(PP) {}
-//   std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
-//     return std::make_unique<MyASTConsumer>(PP);
-//   }
-//   void ExecuteAction() override {
-//     PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
-//     PreprocessorFrontendAction::ExecuteAction();
-//   }
-
-//  private:
-//   clang::Preprocessor &PP;
-// };
-using namespace clang;
-class Find_Includes_Proxy : public PPCallbacks {
+class MacroFrontendAction : public clang::PreprocessorFrontendAction {
  public:
-  bool has_include;
-  inline Find_Includes_Proxy(clang::PPCallbacks &master) : master(master) {}
+  // std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
+  //   return std::make_unique<MyASTConsumer>(PP);
+  // }
+  // void ExecuteAction() override {
+  //   PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
+  //   PreprocessorFrontendAction::ExecuteAction();
+  // }
 
-  void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
-                          StringRef FileName, bool IsAngled,
-                          CharSourceRange FilenameRange,
-                          OptionalFileEntryRef File, StringRef SearchPath,
-                          StringRef RelativePath, const Module *Imported,
-                          SrcMgr::CharacteristicKind FileType) {
-    // do something with the include
-    has_include = true;
-    master.InclusionDirective(HashLoc, IncludeTok, FileName, IsAngled,
-                              FilenameRange, File, SearchPath, RelativePath,
-                              Imported, FileType);
+  virtual void ExecuteAction() {
+    // Find_Includes_Callback callbackFunc(getCompilerInstance());
+    getCompilerInstance().getPreprocessor().addPPCallbacks(
+        std::make_unique<MacroPPCallbacks>(
+            getCompilerInstance().getPreprocessor()));
+
+    clang::PreprocessorFrontendAction::ExecuteAction();
   }
-
- private:
-  clang::PPCallbacks &master;
 };
+using namespace clang;
 
 class Find_Includes_Callback : public PPCallbacks {
  public:
@@ -600,10 +585,6 @@ class Find_Includes_Callback : public PPCallbacks {
   }
 
  public:
-  inline clang::PPCallbacks *createPreprocessorCallbacks() {
-    return new Find_Includes_Proxy(*this);
-  }
-
   void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
                           StringRef FileName, bool IsAngled,
                           CharSourceRange FilenameRange,
@@ -673,7 +654,7 @@ class Include_Matching_Action : public PreprocessOnlyAction {
   // }
 
  protected:
-  virtual void ExecuteAction() {
+  void ExecuteAction() override {
     // Find_Includes_Callback callbackFunc(getCompilerInstance());
     getCompilerInstance().getPreprocessor().addPPCallbacks(
         std::make_unique<Find_Includes_Callback>(getCompilerInstance()));
@@ -756,47 +737,22 @@ int main(int argc, const char **argv) {
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
 
-  // /*
-  // TODO: Finish the callback function for Preprocessor
-  // auto &PP = ASTs[0]->getPreprocessor();
-  // llvm::outs() <<"hihi\n";
-  // PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
-  // int Result = Tool.run(
-  //     clang::tooling::newFrontendActionFactory<clang::SyntaxOnlyAction>()
-  //         .get());
   int Result = Tool.run(
       clang::tooling::newFrontendActionFactory<Include_Matching_Action>()
           .get());
 
-  // Tool.se
-  // auto Lexer = PP.getCurrentLexer();
-  // clang::Token token;
-  //   do {
-  //       Lexer->LexIncludeFilename(token);
-  //       PP.HandleEndOfTokenLexer(token);
-  //   } while (token.isNot(clang::tok::eof));
-
-  // 创建PrintDependencyDirectivesSourceMinimizerAction对象
-
-  // 运行ClangTool，使用PrintDependencyDirectivesSourceMinimizerAction
-  // clang::PrintDependencyDirectivesSourceMinimizerAction pddp;
-  // std::unique_ptr<clang::FrontendAction> action =
-  // clang::tooling::newFrontendActionFactory<clang::PrintDependencyDirectivesSourceMinimizerAction>()->create();
-  // int result = Tool.run(action.get());
-  // int result =
-  // Tool.run(clang::tooling::newFrontendActionFactory(&pddp).get());
-
-  return 0;
-
-  // */
+  /*
+  // Comments while testing preprocessor callbacks.
   ExternalCallMatcher exCallMatcher;
-  // ExternalStructMatcher exStructMatcher;
+  ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
-  // Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
-  // Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
+  Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
+  Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
   Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   int status =
       Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
   return status;
+  */
+  return 0;
 }
