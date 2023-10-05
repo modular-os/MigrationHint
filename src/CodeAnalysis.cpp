@@ -490,10 +490,6 @@ class ExternalStructMatcher
   int externalImplicitExprCnt;
 };
 
-// /*
-
-// TODO: Finish the callback function for Preprocessor
-
 class MacroPPCallbacks : public clang::PPCallbacks {
  public:
   explicit MacroPPCallbacks(clang::Preprocessor &PP) : PP(PP) {
@@ -520,49 +516,8 @@ class MacroPPCallbacks : public clang::PPCallbacks {
  private:
   clang::Preprocessor &PP;
 };
-// class Include_Matching_Action : public ASTFrontendAction
-// {
-//   bool BeginSourceFileAction(CompilerInstance &ci, StringRef)
-//   {
-//     std::unique_ptr<Find_Includes> find_includes_callback(new
-//     Find_Includes());
-
-//     Preprocessor &pp = ci.getPreprocessor();
-//     pp.addPPCallbacks(std::move(find_includes_callback));
-
-//     return true;
-//   }
-
-//   void EndSourceFileAction()
-//   {
-//     CompilerInstance &ci = getCompilerInstance();
-//     Preprocessor &pp = ci.getPreprocessor();
-//     Find_Includes *find_includes_callback =
-//     static_cast<Find_Includes>(pp.getPPCallbacks());
-
-//     // do whatever you want with the callback now
-//     if (find_includes_callback->has_include)
-//       std::cout << "Found at least one include" << std::endl;
-//   }
-// };
-// class MyASTConsumer : public clang::ASTConsumer,
-//                       public clang::RecursiveASTVisitor<MyASTConsumer> {
-//  public:
-//   explicit MyASTConsumer(clang::Preprocessor &PP) : PP(PP) {}
-
-//  private:
-//   clang::Preprocessor &PP;
-// };
 class MacroFrontendAction : public clang::PreprocessorFrontendAction {
  public:
-  // std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
-  //   return std::make_unique<MyASTConsumer>(PP);
-  // }
-  // void ExecuteAction() override {
-  //   PP.addPPCallbacks(std::make_unique<MacroPPCallbacks>(PP));
-  //   PreprocessorFrontendAction::ExecuteAction();
-  // }
-
   virtual void ExecuteAction() {
     // Find_Includes_Callback callbackFunc(getCompilerInstance());
     getCompilerInstance().getPreprocessor().addPPCallbacks(
@@ -633,37 +588,20 @@ class Find_Includes_Callback : public PPCallbacks {
   Includes includes;
 };
 class Include_Matching_Action : public PreprocessOnlyAction {
-  // bool BeginSourceFileAction(CompilerInstance &ci, StringRef) {
-  //   std::unique_ptr<Find_Includes> find_includes_callback(new
-  //   Find_Includes());
-
-  //   Preprocessor &pp = ci.getPreprocessor();
-  //   pp.addPPCallbacks(std::move(find_includes_callback));
-
-  //   return true;
-  // }
-  // void EndSourceFileAction() {
-  //   CompilerInstance &ci = getCompilerInstance();
-  //   Preprocessor &pp = ci.getPreprocessor();
-  //   Find_Includes *find_includes_callback =
-  //       dyn_cast<Find_Includes>(pp.getPPCallbacks());
-
-  //   // do whatever you want with the callback now
-  //   if (find_includes_callback->has_include)
-  //     std::cout << "Found at least one include" << std::endl;
-  // }
+#ifdef DEPRECATED
+// The following code is deprecated temporarily. May be useful in the future.
+  virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
+  virtual void EndSourceFileAction() {}
+#endif
 
  protected:
   void ExecuteAction() override {
-    // Find_Includes_Callback callbackFunc(getCompilerInstance());
     getCompilerInstance().getPreprocessor().addPPCallbacks(
         std::make_unique<Find_Includes_Callback>(getCompilerInstance()));
 
     clang::PreprocessOnlyAction::ExecuteAction();
   }
 };
-
-// */
 
 /**********************************************************************
  * 2. Main Function
