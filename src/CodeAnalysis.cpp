@@ -50,16 +50,95 @@ DeclarationMatcher ExternalStructMatcherPattern =
 StatementMatcher ExternalExprsMatcherPatter =
     implicitCastExpr().bind("externalImplicitCE");
 
-/*
+#ifdef DEPRECATED
 // Matcher is not that useful, because it can only match the struct type
 // But not the struct pointer
 varDecl(hasType(recordDecl())).bind("externalTypeVD"),
 varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
 parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
-*/
+#endif
 
 /**********************************************************************
- * 1. Matcher Callbacks
+ * 1. Preprocessor Callbacks
+ **********************************************************************/
+class MacroPPCallbacks : public clang::PPCallbacks {
+ public:
+  explicit inline MacroPPCallbacks(const clang::CompilerInstance &compiler)
+      : compiler(compiler) {
+    name = compiler.getSourceManager()
+               .getFileEntryForID(compiler.getSourceManager().getMainFileID())
+               ->getName();
+  }
+
+ public:
+  void InclusionDirective(clang::SourceLocation HashLoc,
+                          const clang::Token &IncludeTok,
+                          clang::StringRef FileName, bool IsAngled,
+                          clang::CharSourceRange FilenameRange,
+                          clang::OptionalFileEntryRef File,
+                          clang::StringRef SearchPath,
+                          clang::StringRef RelativePath,
+                          const clang::Module *Imported,
+                          clang::SrcMgr::CharacteristicKind FileType) override {
+    auto &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(HashLoc)) {
+      llvm::outs() << "InclusionDirective: "
+                   << ca_utils::getLocationString(SM, HashLoc) << " "
+                   << SearchPath.str() << " " << RelativePath.str() << "\n";
+    }
+  }
+  void MacroExpands(const clang::Token &MacroNameTok,
+                    const clang::MacroDefinition &MD, clang::SourceRange Range,
+                    const clang::MacroArgs *Args) override {
+    auto &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(Range.getBegin())) {
+      llvm::outs() << "[MPP]Macro: "
+                   << ca_utils::getLocationString(SM, Range.getBegin()) << " "
+                   << compiler.getPreprocessor().getSpelling(MacroNameTok)
+                   << "\n";
+    }
+    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
+  }
+
+  void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
+                   clang::SrcMgr::CharacteristicKind FileType,
+                   clang::FileID PrevFID) override {
+    const clang::SourceManager &SM = compiler.getSourceManager();
+    if (SM.isInMainFile(Loc)) {
+      llvm::outs() << "[MPP]Header: " << ca_utils::getLocationString(SM, Loc)
+                   << "\n";
+      if (Reason == EnterFile) {
+        llvm::outs() << "[MPP]Header: " << SM.getFilename(Loc) << "\n";
+      }
+    }
+  }
+
+ private:
+  const clang::CompilerInstance &compiler;
+  std::string name;
+
+  typedef std::pair<int, std::string> IncludeInfo;
+  typedef std::vector<IncludeInfo> Includes;
+  Includes includes;
+};
+class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
+#ifdef DEPRECATED
+  // The following code is deprecated temporarily. May be useful in the future.
+  virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
+  virtual void EndSourceFileAction() {}
+#endif
+
+ protected:
+  void ExecuteAction() override {
+    getCompilerInstance().getPreprocessor().addPPCallbacks(
+        std::make_unique<MacroPPCallbacks>(getCompilerInstance()));
+
+    clang::PreprocessOnlyAction::ExecuteAction();
+  }
+};
+
+/**********************************************************************
+ * 2. Matcher Callbacks
  **********************************************************************/
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
@@ -490,121 +569,8 @@ class ExternalStructMatcher
   int externalImplicitExprCnt;
 };
 
-class MacroPPCallbacks : public clang::PPCallbacks {
- public:
-  explicit MacroPPCallbacks(clang::Preprocessor &PP) : PP(PP) {
-    llvm::outs() << "hi\n";
-  }
-
-  void MacroExpands(const clang::Token &MacroNameTok,
-                    const clang::MacroDefinition &MD, clang::SourceRange Range,
-                    const clang::MacroArgs *Args) override {
-    llvm::outs() << "[MPP]Macro: " << PP.getSpelling(MacroNameTok) << "\n";
-    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
-  }
-
-  void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
-                   clang::SrcMgr::CharacteristicKind FileType,
-                   clang::FileID PrevFID) override {
-    const clang::SourceManager &SM = PP.getSourceManager();
-    llvm::outs() << "[MPP]Header: " << SM.getFilename(Loc) << "\n";
-    if (Reason == EnterFile) {
-      llvm::outs() << "[MPP]Header: " << SM.getFilename(Loc) << "\n";
-    }
-  }
-
- private:
-  clang::Preprocessor &PP;
-};
-class MacroFrontendAction : public clang::PreprocessorFrontendAction {
- public:
-  virtual void ExecuteAction() {
-    // Find_Includes_Callback callbackFunc(getCompilerInstance());
-    getCompilerInstance().getPreprocessor().addPPCallbacks(
-        std::make_unique<MacroPPCallbacks>(
-            getCompilerInstance().getPreprocessor()));
-
-    clang::PreprocessorFrontendAction::ExecuteAction();
-  }
-};
-using namespace clang;
-
-class Find_Includes_Callback : public PPCallbacks {
- public:
-  explicit inline Find_Includes_Callback(
-      const clang::CompilerInstance &compiler)
-      : compiler(compiler) {
-    name = compiler.getSourceManager()
-               .getFileEntryForID(compiler.getSourceManager().getMainFileID())
-               ->getName();
-  }
-
- public:
-  void InclusionDirective(SourceLocation HashLoc, const Token &IncludeTok,
-                          StringRef FileName, bool IsAngled,
-                          CharSourceRange FilenameRange,
-                          OptionalFileEntryRef File, StringRef SearchPath,
-                          StringRef RelativePath, const Module *Imported,
-                          SrcMgr::CharacteristicKind FileType) override {
-    auto &SM = compiler.getSourceManager();
-    if (SM.isInMainFile(HashLoc)) {
-      llvm::outs() << "InclusionDirective: "
-                   << ca_utils::getLocationString(SM, HashLoc) << " "
-                   << SearchPath.str() << " " << RelativePath.str() << "\n";
-    }
-  }
-  void MacroExpands(const clang::Token &MacroNameTok,
-                    const clang::MacroDefinition &MD, clang::SourceRange Range,
-                    const clang::MacroArgs *Args) override {
-    auto &SM = compiler.getSourceManager();
-    if (SM.isInMainFile(Range.getBegin())) {
-      llvm::outs() << "[MPP]Macro: "
-                   << ca_utils::getLocationString(SM, Range.getBegin()) << " "
-                   << compiler.getPreprocessor().getSpelling(MacroNameTok)
-                   << "\n";
-    }
-    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
-  }
-
-  void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
-                   clang::SrcMgr::CharacteristicKind FileType,
-                   clang::FileID PrevFID) override {
-    const clang::SourceManager &SM = compiler.getSourceManager();
-    if (SM.isInMainFile(Loc)) {
-      llvm::outs() << "[MPP]Header: " << ca_utils::getLocationString(SM, Loc)
-                   << "\n";
-      if (Reason == EnterFile) {
-        llvm::outs() << "[MPP]Header: " << SM.getFilename(Loc) << "\n";
-      }
-    }
-  }
-
- private:
-  const clang::CompilerInstance &compiler;
-  std::string name;
-
-  typedef std::pair<int, std::string> IncludeInfo;
-  typedef std::vector<IncludeInfo> Includes;
-  Includes includes;
-};
-class Include_Matching_Action : public PreprocessOnlyAction {
-#ifdef DEPRECATED
-// The following code is deprecated temporarily. May be useful in the future.
-  virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
-  virtual void EndSourceFileAction() {}
-#endif
-
- protected:
-  void ExecuteAction() override {
-    getCompilerInstance().getPreprocessor().addPPCallbacks(
-        std::make_unique<Find_Includes_Callback>(getCompilerInstance()));
-
-    clang::PreprocessOnlyAction::ExecuteAction();
-  }
-};
-
 /**********************************************************************
- * 2. Main Function
+ * 3. Main Function
  **********************************************************************/
 int main(int argc, const char **argv) {
   /*
@@ -676,8 +642,7 @@ int main(int argc, const char **argv) {
   Tool.buildASTs(ASTs);
 
   int Result = Tool.run(
-      clang::tooling::newFrontendActionFactory<Include_Matching_Action>()
-          .get());
+      clang::tooling::newFrontendActionFactory<MacroPPOnlyAction>().get());
 
   /*
   // Comments while testing preprocessor callbacks.
