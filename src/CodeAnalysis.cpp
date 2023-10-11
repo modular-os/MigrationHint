@@ -84,18 +84,26 @@ class MacroPPCallbacks : public clang::PPCallbacks {
     if (SM.isInMainFile(HashLoc)) {
       llvm::outs() << "InclusionDirective: "
                    << ca_utils::getLocationString(SM, HashLoc) << " "
-                   << SearchPath.str() << " " << RelativePath.str() << "\n";
+                   << SearchPath.str() + "/" + RelativePath.str() << "\n";
     }
   }
   void MacroExpands(const clang::Token &MacroNameTok,
                     const clang::MacroDefinition &MD, clang::SourceRange Range,
                     const clang::MacroArgs *Args) override {
     auto &SM = compiler.getSourceManager();
+    auto &PP = compiler.getPreprocessor();
     if (SM.isInMainFile(Range.getBegin())) {
       llvm::outs() << "[MPP]Macro: "
                    << ca_utils::getLocationString(SM, Range.getBegin()) << " "
                    << compiler.getPreprocessor().getSpelling(MacroNameTok)
                    << "\n";
+      // clang::MacroInfo *MI = PP.getMacroInfo(MacroNameTok.getIdentifierInfo());
+      // if (MI) {
+      //   unsigned int ExpansionLevel = MI->getNumTokens();
+      //   llvm::outs() << "Expansion Level: " << ExpansionLevel << "\n";
+      // } else {
+      //   llvm::outs() << "Expansion Level: Unknown\n";
+      // }
     }
     // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
