@@ -92,18 +92,36 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                     const clang::MacroArgs *Args) override {
     auto &SM = compiler.getSourceManager();
     auto &PP = compiler.getPreprocessor();
+    const clang::LangOptions &LO = PP.getLangOpts();
     if (SM.isInMainFile(Range.getBegin())) {
-      llvm::outs() << "[MPP]Macro: "
+      llvm::outs() << "\n[MPP]Macro: "
                    << ca_utils::getLocationString(SM, Range.getBegin()) << " "
-                   << compiler.getPreprocessor().getSpelling(MacroNameTok)
-                   << "\n";
-      // clang::MacroInfo *MI = PP.getMacroInfo(MacroNameTok.getIdentifierInfo());
-      // if (MI) {
-      //   unsigned int ExpansionLevel = MI->getNumTokens();
-      //   llvm::outs() << "Expansion Level: " << ExpansionLevel << "\n";
-      // } else {
-      //   llvm::outs() << "Expansion Level: Unknown\n";
-      // }
+                   << PP.getSpelling(MacroNameTok) << " ";
+
+      clang::SourceLocation MacroBeginLoc =
+          MD.getMacroInfo()->getDefinitionLoc();
+      clang::SourceLocation MacroEndLoc =
+          MD.getMacroInfo()->getDefinitionEndLoc();
+// By default, the method "getSourceText" will miss the final token of
+// sourcefile. Hence we should enlarge the char-range manually.
+#ifdef DEPRECATED
+      // Not just miss a character, but a token.
+      clang::SourceLocation MacroEndLocPlusOne =
+          MacroEndLoc.getLocWithOffset(1);
+#endif
+      clang::Token NextToken;
+      clang::Lexer::getRawToken(MacroEndLoc, NextToken, SM, LO);
+      clang::SourceLocation MacroEndLocPlusOne = NextToken.getEndLoc();
+
+      clang::CharSourceRange MacroRange = clang::CharSourceRange::getCharRange(
+          MacroBeginLoc, MacroEndLocPlusOne);
+
+      // Use Lexer to the raw infomation.
+      clang::Token MacroToken;
+      clang::Lexer::getRawToken(MacroBeginLoc, MacroToken, SM, LO);
+      std::string FullMacroText =
+          clang::Lexer::getSourceText(MacroRange, SM, LO).str();
+      llvm::outs() << "Full Macro Text: " << FullMacroText << "\n";
     }
     // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
