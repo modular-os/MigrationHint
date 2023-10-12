@@ -143,10 +143,6 @@ class MacroPPCallbacks : public clang::PPCallbacks {
  private:
   const clang::CompilerInstance &compiler;
   std::string name;
-
-  typedef std::pair<int, std::string> IncludeInfo;
-  typedef std::vector<IncludeInfo> Includes;
-  Includes includes;
 };
 class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
 #ifdef DEPRECATED
