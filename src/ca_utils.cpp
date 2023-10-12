@@ -2,7 +2,9 @@
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/Type.h>
+#include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
+#include <clang/Lex/Preprocessor.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <string>
@@ -212,5 +214,31 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
   }
 
   return false;
+}
+
+std::string getMacroDeclString(const clang::MacroDefinition &MD,
+                               const clang::SourceManager &SM,
+                               const clang::LangOptions &LO) {
+  clang::SourceLocation MacroBeginLoc = MD.getMacroInfo()->getDefinitionLoc();
+  clang::SourceLocation MacroEndLoc = MD.getMacroInfo()->getDefinitionEndLoc();
+// By default, the method "getSourceText" will miss the final token of
+// sourcefile. Hence we should enlarge the char-range manually.
+#ifdef DEPRECATED
+  // Not just miss a character, but a token.
+  clang::SourceLocation MacroEndLocPlusOne = MacroEndLoc.getLocWithOffset(1);
+#endif
+  clang::Token NextToken;
+  clang::Lexer::getRawToken(MacroEndLoc, NextToken, SM, LO);
+  clang::SourceLocation MacroEndLocPlusOne = NextToken.getEndLoc();
+
+  clang::CharSourceRange MacroRange =
+      clang::CharSourceRange::getCharRange(MacroBeginLoc, MacroEndLocPlusOne);
+
+  // Use Lexer to the raw infomation.
+  clang::Token MacroToken;
+  clang::Lexer::getRawToken(MacroBeginLoc, MacroToken, SM, LO);
+  std::string FullMacroText =
+      clang::Lexer::getSourceText(MacroRange, SM, LO).str();
+  return FullMacroText;
 }
 }  // namespace ca_utils
