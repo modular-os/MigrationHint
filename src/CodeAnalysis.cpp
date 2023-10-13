@@ -19,10 +19,12 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/Lex/MacroArgs.h"
 #include "utils.hpp"
 
 /**********************************************************************
@@ -70,6 +72,25 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                ->getName();
   }
 
+ private:
+  int getMacroExpansionStackDepth(std::string MacroString,
+                                  const clang::MacroArgs *Args) {
+    if (MacroExpansionStack.size() == 0) {
+      MacroExpansionStack.push_back(MacroString);
+      return 0;
+    }
+    int itr = MacroExpansionStack.size(), flag = 0;
+    while (itr--) {
+      if (MacroExpansionStack[itr].find(MacroString) != std::string::npos) {
+        flag = 1;
+        break;
+      }
+      MacroExpansionStack.pop_back();
+    }
+    MacroExpansionStack.push_back(MacroString);
+    return MacroExpansionStack.size() - 1;
+  }
+
  public:
   void InclusionDirective(clang::SourceLocation HashLoc,
                           const clang::Token &IncludeTok,
@@ -87,6 +108,7 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                    << SearchPath.str() + "/" + RelativePath.str() << "\n";
     }
   }
+
   void MacroExpands(const clang::Token &MacroNameTok,
                     const clang::MacroDefinition &MD, clang::SourceRange Range,
                     const clang::MacroArgs *Args) override {
@@ -97,8 +119,42 @@ class MacroPPCallbacks : public clang::PPCallbacks {
       llvm::outs() << "\n[MPP]Macro: "
                    << ca_utils::getLocationString(SM, Range.getBegin()) << " "
                    << PP.getSpelling(MacroNameTok) << " ";
-      llvm::outs() << "Full Macro Text: "
-                   << ca_utils::getMacroDeclString(MD, SM, LO) << "\n";
+
+      // auto BeginLoc = Range.getBegin();
+      // auto EndLoc = Range.getEnd();
+
+      // std::string MacroExpansion;
+      // for (auto Loc = BeginLoc; Loc != EndLoc;
+      //      Loc = Loc.getLocWithOffset(1)) {
+      //   if (SM.isMacroArgExpansion(Loc)) {
+      //     auto buffer =
+      //     MacroExpansion += PP.getSpelling(Loc, buffer);
+      //   } else {
+      //     break;
+      //   }
+      // }
+      auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
+      llvm::outs() << "Full Macro Text: " << MacroDefinition << "\n";
+      if (Args) {
+        llvm::outs() << Args->getNumMacroArguments() << "\n";
+        for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
+#ifdef DEPRECATED
+          // Output the expanded args for macro, may depend on the following
+          // expansion of other macros.
+          const auto &Arg =
+              const_cast<clang::MacroArgs *>(Args)->getPreExpArgument(I, PP);
+          // Traverse the Args
+          llvm::outs() << "Argument " << I << ": ";
+          for (auto &it : Arg) {
+            llvm::outs() << PP.getSpelling(it) << " ";
+          }
+          llvm::outs() << "\n";
+#endif
+          const auto Arg = Args->getUnexpArgument(I);
+          llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
+                       << "\n";
+        }
+      }
     }
     // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
@@ -143,6 +199,8 @@ class MacroPPCallbacks : public clang::PPCallbacks {
  private:
   const clang::CompilerInstance &compiler;
   std::string name;
+
+  std::vector<std::string> MacroExpansionStack;
 };
 class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
 #ifdef DEPRECATED
