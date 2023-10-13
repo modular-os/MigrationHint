@@ -229,10 +229,10 @@ std::string getMacroDeclString(const clang::MacroDefinition &MD,
 #endif
   clang::Token NextToken;
   clang::Lexer::getRawToken(MacroEndLoc, NextToken, SM, LO);
-  clang::SourceLocation MacroEndLocPlusOne = NextToken.getEndLoc();
+  // clang::SourceLocation MacroEndLocPlusOne = NextToken.getEndLoc();
 
   clang::CharSourceRange MacroRange =
-      clang::CharSourceRange::getCharRange(MacroBeginLoc, MacroEndLocPlusOne);
+      clang::CharSourceRange::getCharRange(MacroBeginLoc, MacroEndLoc);
 
   // Use Lexer to the raw infomation.
   clang::Token MacroToken;
