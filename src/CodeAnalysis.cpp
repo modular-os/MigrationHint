@@ -633,6 +633,27 @@ class ExternalStructMatcher
   int externalImplicitExprCnt;
 };
 
+// llvm::cl::opt<bool> HelloOption("hi",
+//                                 llvm::cl::desc("Description of custom
+//                                 option"), llvm::cl::init(false));
+llvm::cl::opt<std::string> OptionSourceFilePath(
+    "s",
+    llvm::cl::desc("Path to the source file which is expected to be analyzed."),
+    llvm::cl::value_desc("path-to-sourcefile"));
+llvm::cl::opt<bool> OptionEnableFunctionAnalysis(
+    "enable-function-analysis",
+    llvm::cl::desc("Enable external function analysis to source file"),
+    llvm::cl::init(false));
+llvm::cl::opt<bool> OptionEnableStructAnalysis(
+    "enable-struct-analysis",
+    llvm::cl::desc("Enable external struct type analysis to source file"),
+    llvm::cl::init(false));
+llvm::cl::opt<bool> OptionEnablePPAnalysis(
+    "enable-pp-analysis",
+    llvm::cl::desc("Enable preprocess analysis to source file, show details of "
+                   "all the header files and macros."),
+    llvm::cl::init(false));
+
 /**********************************************************************
  * 3. Main Function
  **********************************************************************/
@@ -660,19 +681,45 @@ int main(int argc, const char **argv) {
            "wish.\n";
     return 1;
   }
+
+  llvm::cl::ParseCommandLineOptions(argc, argv);
+
+  // if (HelloOption) {
+  //   llvm::outs() << "Hello World!\n";
+  // }
+  std::vector<std::string> SourceFilePaths;
+  int status = 1;
+  if (!OptionSourceFilePath.empty()) {
+    llvm::outs() << "Source File Path: " << OptionSourceFilePath << "\n";
+    SourceFilePaths.push_back(OptionSourceFilePath);
+  } else {
+    llvm::outs()
+        << "Error! Missing critical option: No source file path found! You can "
+           "use option -S to specify the source file path.\n";
+    exit(1);
+  }
+#ifdef DEPRECATED
+#endif
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
       clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
                                                   llvm::cl::OneOrMore);
-  auto compileCommands =
-      OptionsParser->getCompilations().getAllCompileCommands();
-  auto fileLists = OptionsParser->getSourcePathList();
 
   // Database can also be imported manually with JSONCompilationDatabase
-  clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
-                                 OptionsParser->getSourcePathList());
+  std::string ErrMsg;
+  auto CompileDatabase =
+      clang::tooling::CompilationDatabase::autoDetectFromSource(
+          OptionSourceFilePath, ErrMsg);
+  clang::tooling::ClangTool Tool(*CompileDatabase, SourceFilePaths);
+  // Database can also be imported manually with JSONCompilationDatabase
+  // clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
+  //                                OptionsParser->getSourcePathList());
+  // return 0;
 
 #ifdef DEBUG
   // Validate the compile commands and source file lists.
+  auto compileCommands =
+      OptionsParser->getCompilations().getAllCompileCommands();
+  auto fileLists = OptionsParser->getSourcePathList();
 
   // traverse compile_commands
   llvm::outs() << "[Debug] Validating compile database: "
@@ -704,22 +751,26 @@ int main(int argc, const char **argv) {
 
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
+  if (OptionEnablePPAnalysis) {
+    status *= Tool.run(
+        clang::tooling::newFrontendActionFactory<MacroPPOnlyAction>().get());
+  }
 
-  int Result = Tool.run(
-      clang::tooling::newFrontendActionFactory<MacroPPOnlyAction>().get());
-
-  /*
+  // /*
   // Comments while testing preprocessor callbacks.
   ExternalCallMatcher exCallMatcher;
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
-  Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
-  Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
-  Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
-  int status =
-      Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  if (OptionEnableStructAnalysis) {
+    Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
+    Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
+  }
+  if (OptionEnableFunctionAnalysis) {
+    Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+  }
+  status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
 
   return status;
-  */
-  return 0;
+  // */
+  // return 0;
 }

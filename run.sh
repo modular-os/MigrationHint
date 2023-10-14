@@ -37,7 +37,9 @@ pushd $BUILD
     cmake .. -G Ninja
     ninja
     set -x
-    ./bin/CodeAnalysis ${TARGET_SOURCE1} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    ./bin/CodeAnalysis -h
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} 2>&1\
+    --enable-function-analysis | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis ${TARGET_SOURCE1} ${TARGET_SOURCE2} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     set +x
 popd
