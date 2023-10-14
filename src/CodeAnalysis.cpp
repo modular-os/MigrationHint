@@ -80,7 +80,7 @@ class MacroPPCallbacks : public clang::PPCallbacks {
     std::vector<std::string> CurrMacro;
     CurrMacro.push_back(MacroString);
     if (Args) {
-      llvm::outs() << Args->getNumMacroArguments() << "\n";
+      // llvm::outs() << Args->getNumMacroArguments() << "\n";
       for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
 #ifdef DEPRECATED
         // Output the expanded args for macro, may depend on the following
@@ -95,8 +95,8 @@ class MacroPPCallbacks : public clang::PPCallbacks {
         llvm::outs() << "\n";
 #endif
         const auto Arg = Args->getUnexpArgument(I);
-        llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
-                     << "\n";
+        // llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
+        //              << "\n";
         CurrMacro.push_back(PP.getSpelling(*Arg));
       }
     }
@@ -148,52 +148,18 @@ class MacroPPCallbacks : public clang::PPCallbacks {
     auto &PP = compiler.getPreprocessor();
     const clang::LangOptions &LO = PP.getLangOpts();
     if (SM.isInMainFile(Range.getBegin())) {
-      llvm::outs() << "\n[MPP]Macro: "
-                   << ca_utils::getLocationString(SM, Range.getBegin()) << " "
-                   << PP.getSpelling(MacroNameTok) << " ";
-
-      // auto BeginLoc = Range.getBegin();
-      // auto EndLoc = Range.getEnd();
-
-      // std::string MacroExpansion;
-      // for (auto Loc = BeginLoc; Loc != EndLoc;
-      //      Loc = Loc.getLocWithOffset(1)) {
-      //   if (SM.isMacroArgExpansion(Loc)) {
-      //     auto buffer =
-      //     MacroExpansion += PP.getSpelling(Loc, buffer);
-      //   } else {
-      //     break;
-      //   }
-      // }
       auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
-      llvm::outs() << "Full Macro Text: " << MacroDefinition << "\n";
-      llvm::outs() << getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
-                                                  MacroDefinition, Args, PP)
-                   << "\n";
-      //       if (Args) {
-      //         llvm::outs() << Args->getNumMacroArguments() << "\n";
-      //         for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E;
-      //         ++I) {
-      // #ifdef DEPRECATED
-      //           // Output the expanded args for macro, may depend on the
-      //           following
-      //           // expansion of other macros.
-      //           const auto &Arg =
-      //               const_cast<clang::MacroArgs
-      //               *>(Args)->getPreExpArgument(I, PP);
-      //           // Traverse the Args
-      //           llvm::outs() << "Argument " << I << ": ";
-      //           for (auto &it : Arg) {
-      //             llvm::outs() << PP.getSpelling(it) << " ";
-      //           }
-      //           llvm::outs() << "\n";
-      // #endif
-      //           const auto Arg = Args->getUnexpArgument(I);
-      //           llvm::outs() << "Argument " << I << ": " <<
-      //           PP.getSpelling(*Arg)
-      //                        << "\n";
-      //         }
-      //       }
+      int MacroDepth = getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
+                                                   MacroDefinition, Args, PP);
+      if (MacroDepth == 0) {
+        llvm::outs() << "\n[MPP]Macro: \n";
+      }
+      llvm::outs().indent(MacroDepth * 3)
+          << PP.getSpelling(MacroNameTok) << ", "
+          << ca_utils::getLocationString(SM, Range.getBegin()) << "\n";
+
+      // llvm::outs() << "Full Macro Text: " << MacroDefinition << "\n";
+      // llvm::outs() < < < < "\n";
     }
     // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
