@@ -78,9 +78,12 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                                   const clang::MacroArgs *Args,
                                   const clang::Preprocessor &PP) {
     std::vector<std::string> CurrMacro;
+    CurrMacro.push_back(MacroName);
     CurrMacro.push_back(MacroString);
     if (Args) {
-      // llvm::outs() << Args->getNumMacroArguments() << "\n";
+#ifdef DEBUG
+      llvm::outs() << Args->getNumMacroArguments() << "\n";
+#endif
       for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
 #ifdef DEPRECATED
         // Output the expanded args for macro, may depend on the following
@@ -95,8 +98,10 @@ class MacroPPCallbacks : public clang::PPCallbacks {
         llvm::outs() << "\n";
 #endif
         const auto Arg = Args->getUnexpArgument(I);
-        // llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
-        //              << "\n";
+#ifdef DEBUG
+        llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
+                     << "\n";
+#endif
         CurrMacro.push_back(PP.getSpelling(*Arg));
       }
     }
@@ -109,6 +114,11 @@ class MacroPPCallbacks : public clang::PPCallbacks {
     while (MacroExpansionStack.size()) {
       for (auto MacroPart : MacroExpansionStack.back()) {
         if (MacroPart.find(MacroName) != std::string::npos) {
+          if (MacroPart == MacroExpansionStack.back().front() &&
+              MacroPart == MacroName) {
+            // If the currentMacro is identical to the macros in stack, return.
+            return MacroExpansionStack.size() - 1;
+          }
           flag = 1;
           break;
         }
