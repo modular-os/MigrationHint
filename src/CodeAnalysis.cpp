@@ -167,49 +167,8 @@ class MacroPPCallbacks : public clang::PPCallbacks {
       llvm::outs().indent(MacroDepth * 3)
           << PP.getSpelling(MacroNameTok) << ", "
           << ca_utils::getLocationString(SM, Range.getBegin()) << "\n";
-
-      // llvm::outs() << "Full Macro Text: " << MacroDefinition << "\n";
-      // llvm::outs() < < < < "\n";
     }
-    // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
-
-  // void FileChanged(clang::SourceLocation Loc, FileChangeReason Reason,
-  //                  clang::SrcMgr::CharacteristicKind FileType,
-  //                  clang::FileID PrevFID) override {
-  //   const clang::SourceManager &SM = compiler.getSourceManager();
-  //   if (SM.isInMainFile(Loc)) {
-  //     llvm::outs() << "[MPP]Header: " << Reason << " "
-  //                  << ca_utils::getLocationString(SM, Loc) << "\n";
-  //     if (Reason == EnterFile) {
-  //       llvm::outs() << "[MPP]Header EnterFile: " << SM.getFilename(Loc)
-  //                    << "\n";
-  //     }
-  //   }
-  // }
-
-  // void MacroDefined(const clang::Token &MacroNameTok,
-  //                           const clang::MacroDirective *MD) override {
-  //   auto &SM = compiler.getSourceManager();
-  //   if (SM.isInMainFile(MacroNameTok.getLocation())) {
-  //     llvm::outs() << "[MPP]MacroDefined: "
-  //                  << ca_utils::getLocationString(SM,
-  //                                                 MacroNameTok.getLocation())
-  //                  << " " <<
-  //                  compiler.getPreprocessor().getSpelling(MacroNameTok)
-  //                  << "\n";
-  //   }
-  // }
-  // void EnteredSubmodule(clang::Module *M, clang::SourceLocation ImportLoc,
-  //                       bool ForPragma) override {
-  //   auto &SM = compiler.getSourceManager();
-  //   if (SM.isInMainFile(ImportLoc)) {
-  //     llvm::outs() << "[MPP]EnteredSubmodule: "
-
-  //                  << ca_utils::getLocationString(SM, ImportLoc) << " "
-  //                  << M->getFullModuleName() << "\n";
-  //   }
-  // }
 
  private:
   const clang::CompilerInstance &compiler;
