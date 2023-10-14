@@ -66,7 +66,7 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 class MacroPPCallbacks : public clang::PPCallbacks {
  public:
   explicit inline MacroPPCallbacks(const clang::CompilerInstance &compiler)
-      : compiler(compiler) {
+      : compiler(compiler), MacroCounts(0), HeaderCounts(0) {
     name = compiler.getSourceManager()
                .getFileEntryForID(compiler.getSourceManager().getMainFileID())
                ->getName();
@@ -110,7 +110,7 @@ class MacroPPCallbacks : public clang::PPCallbacks {
       MacroExpansionStack.push_back(CurrMacro);
       return 0;
     }
-    int itr = MacroExpansionStack.size(), flag = 0;
+    int flag = 0;
     while (MacroExpansionStack.size()) {
       for (auto MacroPart : MacroExpansionStack.back()) {
         if (MacroPart.find(MacroName) != std::string::npos) {
@@ -145,9 +145,12 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                           clang::SrcMgr::CharacteristicKind FileType) override {
     auto &SM = compiler.getSourceManager();
     if (SM.isInMainFile(HashLoc)) {
-      llvm::outs() << "InclusionDirective: "
-                   << ca_utils::getLocationString(SM, HashLoc) << " "
-                   << SearchPath.str() + "/" + RelativePath.str() << "\n";
+      if (HeaderCounts == 0) {
+        llvm::outs() << "# Header File: \n";
+      }
+      llvm::outs() << ++HeaderCounts << ". `"
+                   << ca_utils::getLocationString(SM, HashLoc) << "`: `"
+                   << SearchPath.str() + "/" + RelativePath.str() << "`\n";
     }
   }
 
@@ -161,8 +164,11 @@ class MacroPPCallbacks : public clang::PPCallbacks {
       auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
       int MacroDepth = getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
                                                    MacroDefinition, Args, PP);
+      if (MacroCounts == 0) {
+        llvm::outs() << "# Macro Expansion Analysis: \n";
+      }
       if (MacroDepth == 0) {
-        llvm::outs() << "\n[MPP]Macro: \n";
+        llvm::outs() << "```\n\n## Macro " << ++MacroCounts << ": \n```\n";
       }
       llvm::outs().indent(MacroDepth * 3)
           << PP.getSpelling(MacroNameTok) << ", "
@@ -175,6 +181,8 @@ class MacroPPCallbacks : public clang::PPCallbacks {
   std::string name;
 
   std::vector<std::vector<std::string>> MacroExpansionStack;
+  int MacroCounts;
+  int HeaderCounts;
 };
 class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
 #ifdef DEPRECATED
