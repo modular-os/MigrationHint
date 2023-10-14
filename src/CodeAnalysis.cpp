@@ -73,21 +73,53 @@ class MacroPPCallbacks : public clang::PPCallbacks {
   }
 
  private:
-  int getMacroExpansionStackDepth(std::string MacroString,
-                                  const clang::MacroArgs *Args) {
+  int getMacroExpansionStackDepth(std::string MacroName,
+                                  std::string MacroString,
+                                  const clang::MacroArgs *Args,
+                                  const clang::Preprocessor &PP) {
+    std::vector<std::string> CurrMacro;
+    CurrMacro.push_back(MacroString);
+    if (Args) {
+      llvm::outs() << Args->getNumMacroArguments() << "\n";
+      for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
+#ifdef DEPRECATED
+        // Output the expanded args for macro, may depend on the following
+        // expansion of other macros.
+        const auto &Arg =
+            const_cast<clang::MacroArgs *>(Args)->getPreExpArgument(I, PP);
+        // Traverse the Args
+        llvm::outs() << "Argument " << I << ": ";
+        for (auto &it : Arg) {
+          llvm::outs() << PP.getSpelling(it) << " ";
+        }
+        llvm::outs() << "\n";
+#endif
+        const auto Arg = Args->getUnexpArgument(I);
+        llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
+                     << "\n";
+        CurrMacro.push_back(PP.getSpelling(*Arg));
+      }
+    }
+
     if (MacroExpansionStack.size() == 0) {
-      MacroExpansionStack.push_back(MacroString);
+      MacroExpansionStack.push_back(CurrMacro);
       return 0;
     }
     int itr = MacroExpansionStack.size(), flag = 0;
-    while (itr--) {
-      if (MacroExpansionStack[itr].find(MacroString) != std::string::npos) {
-        flag = 1;
-        break;
+    while (MacroExpansionStack.size()) {
+      for (auto MacroPart : MacroExpansionStack.back()) {
+        if (MacroPart.find(MacroName) != std::string::npos) {
+          flag = 1;
+          break;
+        }
       }
-      MacroExpansionStack.pop_back();
+      if (flag) {
+        break;
+      } else {
+        MacroExpansionStack.pop_back();
+      }
     }
-    MacroExpansionStack.push_back(MacroString);
+    MacroExpansionStack.push_back(CurrMacro);
     return MacroExpansionStack.size() - 1;
   }
 
@@ -135,26 +167,33 @@ class MacroPPCallbacks : public clang::PPCallbacks {
       // }
       auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
       llvm::outs() << "Full Macro Text: " << MacroDefinition << "\n";
-      if (Args) {
-        llvm::outs() << Args->getNumMacroArguments() << "\n";
-        for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
-#ifdef DEPRECATED
-          // Output the expanded args for macro, may depend on the following
-          // expansion of other macros.
-          const auto &Arg =
-              const_cast<clang::MacroArgs *>(Args)->getPreExpArgument(I, PP);
-          // Traverse the Args
-          llvm::outs() << "Argument " << I << ": ";
-          for (auto &it : Arg) {
-            llvm::outs() << PP.getSpelling(it) << " ";
-          }
-          llvm::outs() << "\n";
-#endif
-          const auto Arg = Args->getUnexpArgument(I);
-          llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
-                       << "\n";
-        }
-      }
+      llvm::outs() << getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
+                                                  MacroDefinition, Args, PP)
+                   << "\n";
+      //       if (Args) {
+      //         llvm::outs() << Args->getNumMacroArguments() << "\n";
+      //         for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E;
+      //         ++I) {
+      // #ifdef DEPRECATED
+      //           // Output the expanded args for macro, may depend on the
+      //           following
+      //           // expansion of other macros.
+      //           const auto &Arg =
+      //               const_cast<clang::MacroArgs
+      //               *>(Args)->getPreExpArgument(I, PP);
+      //           // Traverse the Args
+      //           llvm::outs() << "Argument " << I << ": ";
+      //           for (auto &it : Arg) {
+      //             llvm::outs() << PP.getSpelling(it) << " ";
+      //           }
+      //           llvm::outs() << "\n";
+      // #endif
+      //           const auto Arg = Args->getUnexpArgument(I);
+      //           llvm::outs() << "Argument " << I << ": " <<
+      //           PP.getSpelling(*Arg)
+      //                        << "\n";
+      //         }
+      //       }
     }
     // llvm::outs() << "Expansion: " << PP.getSpelling(Range) << "\n";
   }
@@ -200,11 +239,12 @@ class MacroPPCallbacks : public clang::PPCallbacks {
   const clang::CompilerInstance &compiler;
   std::string name;
 
-  std::vector<std::string> MacroExpansionStack;
+  std::vector<std::vector<std::string>> MacroExpansionStack;
 };
 class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
 #ifdef DEPRECATED
-  // The following code is deprecated temporarily. May be useful in the future.
+  // The following code is deprecated temporarily. May be useful in the
+  // future.
   virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
   virtual void EndSourceFileAction() {}
 #endif
@@ -586,8 +626,8 @@ class ExternalStructMatcher
 #ifdef DEBUG
           llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
 #endif
-          // Recover the field control flag if the Decl is not external(so it is
-          // passed)
+          // Recover the field control flag if the Decl is not external(so it
+          // is passed)
           isInFunction = isInFunctionOldValue;
         }
       }
