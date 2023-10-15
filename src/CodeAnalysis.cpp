@@ -651,6 +651,10 @@ llvm::cl::opt<bool> OptionEnablePPAnalysis(
                    "all the header files and macros."),
     llvm::cl::init(false));
 llvm::cl::extrahelp MoreHelp(R"(
+Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
+        2. The Compilation Database should be named as compile_commands.json.
+        3. You can input only one source file as you wish.
+
 Developed by Zhe Tang<tangzh6101@gmail.com> for modular-OS project.
 Version 1.0.0
 )");
@@ -667,29 +671,17 @@ int main(int argc, const char **argv) {
     // std::printf(
     //     "Usage: CodeAnalysis [path to compile_commands.json] [path to
     //     source " "file]\n");
-    llvm::outs()
-        << "Usage: ./CodeAnalysis [path to source file]\n"
-        << "Example: CodeAnalysis ./test.cpp\n"
-        << "Notice: 1. The compile_commands.json file should be in the "
-           "same "
-           "\n"
-           "directory as the source file or in the parent directory of "
-           "the \n"
-           "source file.\n"
-        << "        2. The compile_commands.json file should be named as "
-           "compile_commands.json.\n"
-        << "        3. You can input any number of source file as you "
-           "wish.\n";
+    llvm::outs() << "Usage: ./CodeAnalysis --help for detailed usage.\n";
     return 1;
   }
-
-  llvm::cl::ParseCommandLineOptions(argc, argv);
-
-  // if (HelloOption) {
-  //   llvm::outs() << "Hello World!\n";
-  // }
+  // Basic infrastructures
   std::vector<std::string> SourceFilePaths;
   int status = 1;
+  std::string ErrMsg;
+
+  // Begin parsing options.
+  llvm::cl::ParseCommandLineOptions(argc, argv);
+
   if (!OptionSourceFilePath.empty()) {
     llvm::outs() << "Source File Path: " << OptionSourceFilePath << "\n";
     SourceFilePaths.push_back(OptionSourceFilePath);
@@ -700,21 +692,20 @@ int main(int argc, const char **argv) {
     exit(1);
   }
 #ifdef DEPRECATED
-#endif
+  // Deprecated, now we use llvm::cl::opt to parse the options.
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
       clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
                                                   llvm::cl::OneOrMore);
+  // Database can also be imported manually with JSONCompilationDatabase
+  clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
+                                 OptionsParser->getSourcePathList());
+#endif
 
   // Database can also be imported manually with JSONCompilationDatabase
-  std::string ErrMsg;
   auto CompileDatabase =
       clang::tooling::CompilationDatabase::autoDetectFromSource(
           OptionSourceFilePath, ErrMsg);
   clang::tooling::ClangTool Tool(*CompileDatabase, SourceFilePaths);
-  // Database can also be imported manually with JSONCompilationDatabase
-  // clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
-  //                                OptionsParser->getSourcePathList());
-  // return 0;
 
 #ifdef DEBUG
   // Validate the compile commands and source file lists.
