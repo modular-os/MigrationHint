@@ -348,81 +348,166 @@ class ExternalStructMatcher
     isInFunction = 0;
   }
 
+  void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
+                               clang::SourceManager &SM,
+                               const clang::LangOptions &LO) {
+    if (SM.isInMainFile(FD->getLocation())) {
+#ifdef DEBUG
+      llvm::outs() << "FunctionDecl("
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+
+      llvm::outs() << "\n\n---\n\n\n## Function: `"
+                   << ca_utils::getFuncDeclString(FD) << "`\n"
+                   << "- Function Location: `"
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << "`\n";
+      isInFunction = 1;
+#ifdef DEBUG
+      llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
+#endif
+
+      // Deal with the external return type
+      llvm::outs() << "- Return Type: `" + FD->getReturnType().getAsString() +
+                          "`\n";
+      ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM,
+                                      "");
+
+      // Traverse the FuncDecl's ParamVarDecls
+      for (const auto &PVD : FD->parameters()) {
+#ifdef DEBUG
+        llvm::outs() << "ParamVarDecl("
+                     << ca_utils::getLocationString(SM, PVD->getLocation())
+                     << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+        std::string ExtraInfo =
+            "### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
+        ExtraInfo += "   - Location: `" +
+                     ca_utils::getLocationString(SM, PVD->getLocation()) +
+                     "`\n";
+        ExtraInfo += "   - Type: `" + PVD->getType().getAsString() + "`\n";
+        if (const auto ParentFuncDeclContext =
+                PVD->getParentFunctionOrMethod()) {
+          // Notice: Method is only used in C++
+          if (const auto ParentFD =
+                  dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+            ExtraInfo += "   - Function: `" +
+                         ca_utils::getFuncDeclString(ParentFD) + "`\n";
+          }
+        } else if (const auto TU = PVD->getTranslationUnitDecl()) {
+          ExtraInfo += "   - Parent: Global variable, no parent function.\n";
+        }
+
+        // Output the init expr for the VarDecl
+        if (PVD->hasInit()) {
+          auto InitText =
+              clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(
+                                              PVD->getInit()->getSourceRange()),
+                                          SM, LO);
+          if (InitText.str() != "" && InitText.str() != "NULL") {
+            ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
+                         InitText.str() + "\n   ```\n";
+
+          } else {
+            ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
+          }
+        }
+        auto isExternalType = ca_utils::getExternalStructType(
+            PVD->getType(), llvm::outs(), SM, ExtraInfo);
+        if (isExternalType) {
+          ++externalParamVarDeclCnt;
+        }
+      }
+    }
+  }
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
+    auto &LO = Result.Context->getLangOpts();
     int isInFunctionOldValue = isInFunction;
     if (auto FD =
             Result.Nodes.getNodeAs<clang::FunctionDecl>("externalTypeFuncD")) {
-      if (SM.isInMainFile(FD->getLocation())) {
-#ifdef DEBUG
-        llvm::outs() << "FunctionDecl("
-                     << ca_utils::getLocationString(SM, FD->getLocation())
-                     << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
+      handleExternalTypeFuncD(FD, SM, LO);
+      //       if (SM.isInMainFile(FD->getLocation())) {
+      // #ifdef DEBUG
+      //         llvm::outs() << "FunctionDecl("
+      //                      << ca_utils::getLocationString(SM,
+      //                      FD->getLocation())
+      //                      << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+      // #endif
 
-        llvm::outs() << "\n\n---\n\n\n## Function: `"
-                     << ca_utils::getFuncDeclString(FD) << "`\n"
-                     << "- Function Location: `"
-                     << ca_utils::getLocationString(SM, FD->getLocation())
-                     << "`\n";
-        isInFunction = 1;
-#ifdef DEBUG
-        llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
-#endif
+      //         llvm::outs() << "\n\n---\n\n\n## Function: `"
+      //                      << ca_utils::getFuncDeclString(FD) << "`\n"
+      //                      << "- Function Location: `"
+      //                      << ca_utils::getLocationString(SM,
+      //                      FD->getLocation())
+      //                      << "`\n";
+      //         isInFunction = 1;
+      // #ifdef DEBUG
+      //         llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
+      // #endif
 
-        // Deal with the external return type
-        llvm::outs() << "- Return Type: `" + FD->getReturnType().getAsString() +
-                            "`\n";
-        ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM,
-                                        "");
+      //         // Deal with the external return type
+      //         llvm::outs() << "- Return Type: `" +
+      //         FD->getReturnType().getAsString() +
+      //                             "`\n";
+      //         ca_utils::getExternalStructType(FD->getReturnType(),
+      //         llvm::outs(), SM,
+      //                                         "");
 
-        // Traverse the FuncDecl's ParamVarDecls
-        for (const auto &PVD : FD->parameters()) {
-#ifdef DEBUG
-          llvm::outs() << "ParamVarDecl("
-                       << ca_utils::getLocationString(SM, PVD->getLocation())
-                       << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
-          std::string ExtraInfo =
-              "### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
-          ExtraInfo += "   - Location: `" +
-                       ca_utils::getLocationString(SM, PVD->getLocation()) +
-                       "`\n";
-          ExtraInfo += "   - Type: `" + PVD->getType().getAsString() + "`\n";
-          if (const auto ParentFuncDeclContext =
-                  PVD->getParentFunctionOrMethod()) {
-            // Notice: Method is only used in C++
-            if (const auto ParentFD =
-                    dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
-              ExtraInfo += "   - Function: `" +
-                           ca_utils::getFuncDeclString(ParentFD) + "`\n";
-            }
-          } else if (const auto TU = PVD->getTranslationUnitDecl()) {
-            ExtraInfo += "   - Parent: Global variable, no parent function.\n";
-          }
+      //         // Traverse the FuncDecl's ParamVarDecls
+      //         for (const auto &PVD : FD->parameters()) {
+      // #ifdef DEBUG
+      //           llvm::outs() << "ParamVarDecl("
+      //                        << ca_utils::getLocationString(SM,
+      //                        PVD->getLocation())
+      //                        << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+      // #endif
+      //           std::string ExtraInfo =
+      //               "### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
+      //           ExtraInfo += "   - Location: `" +
+      //                        ca_utils::getLocationString(SM,
+      //                        PVD->getLocation()) +
+      //                        "`\n";
+      //           ExtraInfo += "   - Type: `" + PVD->getType().getAsString() +
+      //           "`\n"; if (const auto ParentFuncDeclContext =
+      //                   PVD->getParentFunctionOrMethod()) {
+      //             // Notice: Method is only used in C++
+      //             if (const auto ParentFD =
+      //                     dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext))
+      //                     {
+      //               ExtraInfo += "   - Function: `" +
+      //                            ca_utils::getFuncDeclString(ParentFD) +
+      //                            "`\n";
+      //             }
+      //           } else if (const auto TU = PVD->getTranslationUnitDecl()) {
+      //             ExtraInfo += "   - Parent: Global variable, no parent
+      //             function.\n";
+      //           }
 
-          // Output the init expr for the VarDecl
-          if (PVD->hasInit()) {
-            auto InitText = clang::Lexer::getSourceText(
-                clang::CharSourceRange::getTokenRange(
-                    PVD->getInit()->getSourceRange()),
-                SM, Result.Context->getLangOpts());
-            if (InitText.str() != "" && InitText.str() != "NULL") {
-              ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
-                           InitText.str() + "\n   ```\n";
+      //           // Output the init expr for the VarDecl
+      //           if (PVD->hasInit()) {
+      //             auto InitText = clang::Lexer::getSourceText(
+      //                 clang::CharSourceRange::getTokenRange(
+      //                     PVD->getInit()->getSourceRange()),
+      //                 SM, Result.Context->getLangOpts());
+      //             if (InitText.str() != "" && InitText.str() != "NULL") {
+      //               ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
+      //                            InitText.str() + "\n   ```\n";
 
-            } else {
-              ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
-            }
-          }
-          auto isExternalType = ca_utils::getExternalStructType(
-              PVD->getType(), llvm::outs(), SM, ExtraInfo);
-          if (isExternalType) {
-            ++externalParamVarDeclCnt;
-          }
-        }
-      }
+      //             } else {
+      //               ExtraInfo += "   - ParamVarDecl Has Init, but no text
+      //               found.\n";
+      //             }
+      //           }
+      //           auto isExternalType = ca_utils::getExternalStructType(
+      //               PVD->getType(), llvm::outs(), SM, ExtraInfo);
+      //           if (isExternalType) {
+      //             ++externalParamVarDeclCnt;
+      //           }
+      //         }
+      //       }
     } else if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>(
                    "externalTypeFD")) {
 #ifdef DEBUG
