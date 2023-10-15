@@ -602,6 +602,37 @@ class ExternalStructMatcher
     }
   }
 
+  void handleExternalCall(const clang::CallExpr *CE, clang::SourceManager &SM) {
+    if (auto FD = CE->getDirectCallee()) {
+      // output the basic information of the function declaration
+      if (!SM.isInMainFile(FD->getLocation()) &&
+          SM.isInMainFile(CE->getBeginLoc())) {
+        llvm::outs() << "\n### External Function Call: ";
+        ca_utils::printFuncDecl(FD, SM);
+        llvm::outs() << "   - Call Location: ";
+        ca_utils::printCaller(CE, SM);
+      }
+#ifdef DEBUG
+      /// Determine whether this declaration came from an AST file (such as
+      /// a precompiled header or module) rather than having been parsed.
+      llvm::outs() << "----------------------------------------\n";
+      if (!FD->isFromASTFile()) {
+        llvm::outs() << "Found external function call: "
+                     << FD->getQualifiedNameAsString() << "\n";
+      }
+
+      if (FD->isExternC()) {
+        llvm::outs() << "Found external C function call: "
+                     << FD->getQualifiedNameAsString() << "\n";
+      }
+#endif
+    } else {
+#ifdef DEBUG
+      llvm::outs() << "No function declaration found for call\n";
+#endif
+    }
+  }
+
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
@@ -621,34 +652,37 @@ class ExternalStructMatcher
       handleExternalImplicitCE(ICE, SM);
     } else if (auto CE =
                    Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
-      if (auto FD = CE->getDirectCallee()) {
-        // output the basic information of the function declaration
-        if (!SM.isInMainFile(FD->getLocation()) &&
-            SM.isInMainFile(CE->getBeginLoc())) {
-          llvm::outs() << "\n### External Function Call: ";
-          ca_utils::printFuncDecl(FD, SM);
-          llvm::outs() << "   - Call Location: ";
-          ca_utils::printCaller(CE, SM);
-        }
-#ifdef DEBUG
-        /// Determine whether this declaration came from an AST file (such as
-        /// a precompiled header or module) rather than having been parsed.
-        llvm::outs() << "----------------------------------------\n";
-        if (!FD->isFromASTFile()) {
-          llvm::outs() << "Found external function call: "
-                       << FD->getQualifiedNameAsString() << "\n";
-        }
+      handleExternalCall(CE, SM);
+      //       if (auto FD = CE->getDirectCallee()) {
+      //         // output the basic information of the function declaration
+      //         if (!SM.isInMainFile(FD->getLocation()) &&
+      //             SM.isInMainFile(CE->getBeginLoc())) {
+      //           llvm::outs() << "\n### External Function Call: ";
+      //           ca_utils::printFuncDecl(FD, SM);
+      //           llvm::outs() << "   - Call Location: ";
+      //           ca_utils::printCaller(CE, SM);
+      //         }
+      // #ifdef DEBUG
+      //         /// Determine whether this declaration came from an AST file
+      //         (such as
+      //         /// a precompiled header or module) rather than having been
+      //         parsed. llvm::outs() <<
+      //         "----------------------------------------\n"; if
+      //         (!FD->isFromASTFile()) {
+      //           llvm::outs() << "Found external function call: "
+      //                        << FD->getQualifiedNameAsString() << "\n";
+      //         }
 
-        if (FD->isExternC()) {
-          llvm::outs() << "Found external C function call: "
-                       << FD->getQualifiedNameAsString() << "\n";
-        }
-#endif
-      } else {
-#ifdef DEBUG
-        llvm::outs() << "No function declaration found for call\n";
-#endif
-      }
+      //         if (FD->isExternC()) {
+      //           llvm::outs() << "Found external C function call: "
+      //                        << FD->getQualifiedNameAsString() << "\n";
+      //         }
+      // #endif
+      //       } else {
+      // #ifdef DEBUG
+      //         llvm::outs() << "No function declaration found for call\n";
+      // #endif
+      //       }
     } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
