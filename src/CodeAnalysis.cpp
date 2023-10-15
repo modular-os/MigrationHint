@@ -633,9 +633,6 @@ class ExternalStructMatcher
   int externalImplicitExprCnt;
 };
 
-// llvm::cl::opt<bool> HelloOption("hi",
-//                                 llvm::cl::desc("Description of custom
-//                                 option"), llvm::cl::init(false));
 llvm::cl::opt<std::string> OptionSourceFilePath(
     "s",
     llvm::cl::desc("Path to the source file which is expected to be analyzed."),
@@ -653,6 +650,10 @@ llvm::cl::opt<bool> OptionEnablePPAnalysis(
     llvm::cl::desc("Enable preprocess analysis to source file, show details of "
                    "all the header files and macros."),
     llvm::cl::init(false));
+llvm::cl::extrahelp MoreHelp(R"(
+Developed by Zhe Tang<tangzh6101@gmail.com> for modular-OS project.
+Version 1.0.0
+)");
 
 /**********************************************************************
  * 3. Main Function
@@ -768,7 +769,10 @@ int main(int argc, const char **argv) {
   if (OptionEnableFunctionAnalysis) {
     Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
   }
-  status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+
+  if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
+    status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
 
   return status;
   // */
