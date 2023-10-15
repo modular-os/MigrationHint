@@ -625,41 +625,6 @@ class ExternalStructMatcher
         // output the basic information of the function declaration
         if (!SM.isInMainFile(FD->getLocation()) &&
             SM.isInMainFile(CE->getBeginLoc())) {
-          //               llvm::outs() << "# External Function Call
-          //               Report\n\n";
-
-          // // Traverse the FilenameToCallExprs
-          // int cnt = 0;
-          // for (auto &it : FilenameToCallExprs) {
-          //   llvm::outs() << "## Header File: " << it.first << "\n";
-          //   llvm::outs() << "- External Function Count: " << it.second.size()
-          //                << "\n\n";
-          //   int file_cnt = 0;
-          //   for (auto &it2 : it.second) {
-          //     auto FD = it2.first;
-          //     llvm::outs() << ++file_cnt << ". ";
-          //     int caller_cnt = 0;
-
-          //     for (auto &it3 : it2.second) {
-          //       if (!caller_cnt) {
-          //         auto FD = it3->getDirectCallee();
-          //         ca_utils::printFuncDecl(FD, SM);
-          //         llvm::outs() << "   - Caller Counts: **" <<
-          //         it2.second.size()
-          //                      << "**, details:\n";
-          //       }
-          //       llvm::outs() << "      " << ++caller_cnt << ". ";
-          //       ca_utils::printCaller(it3, SM);
-          //     }
-          //     llvm::outs() << "\n";
-          //     ++cnt;
-          //   }
-
-          //   llvm::outs() << "---\n\n";
-          // }
-
-          // llvm::outs() << "# Summary\n"
-          //              << "- External Function Call Count: " << cnt << "\n";
           llvm::outs() << "\n### External Function Call: ";
           ca_utils::printFuncDecl(FD, SM);
           llvm::outs() << "   - Call Location: ";
