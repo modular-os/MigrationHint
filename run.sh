@@ -38,7 +38,7 @@ pushd $BUILD
     ninja
     set -x
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} 2>&1\
-    --enable-struct-analysis | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    --enable-function-analysis | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     ./bin/CodeAnalysis -h
     # ./bin/CodeAnalysis ${TARGET_SOURCE1} ${TARGET_SOURCE2} 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     set +x

@@ -601,7 +601,7 @@ class ExternalStructMatcher
       }
     }
   }
-  
+
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
@@ -619,6 +619,71 @@ class ExternalStructMatcher
     } else if (auto ICE = Result.Nodes.getNodeAs<clang::ImplicitCastExpr>(
                    "externalImplicitCE")) {
       handleExternalImplicitCE(ICE, SM);
+    } else if (auto CE =
+                   Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
+      if (auto FD = CE->getDirectCallee()) {
+        // output the basic information of the function declaration
+        if (!SM.isInMainFile(FD->getLocation()) &&
+            SM.isInMainFile(CE->getBeginLoc())) {
+          //               llvm::outs() << "# External Function Call
+          //               Report\n\n";
+
+          // // Traverse the FilenameToCallExprs
+          // int cnt = 0;
+          // for (auto &it : FilenameToCallExprs) {
+          //   llvm::outs() << "## Header File: " << it.first << "\n";
+          //   llvm::outs() << "- External Function Count: " << it.second.size()
+          //                << "\n\n";
+          //   int file_cnt = 0;
+          //   for (auto &it2 : it.second) {
+          //     auto FD = it2.first;
+          //     llvm::outs() << ++file_cnt << ". ";
+          //     int caller_cnt = 0;
+
+          //     for (auto &it3 : it2.second) {
+          //       if (!caller_cnt) {
+          //         auto FD = it3->getDirectCallee();
+          //         ca_utils::printFuncDecl(FD, SM);
+          //         llvm::outs() << "   - Caller Counts: **" <<
+          //         it2.second.size()
+          //                      << "**, details:\n";
+          //       }
+          //       llvm::outs() << "      " << ++caller_cnt << ". ";
+          //       ca_utils::printCaller(it3, SM);
+          //     }
+          //     llvm::outs() << "\n";
+          //     ++cnt;
+          //   }
+
+          //   llvm::outs() << "---\n\n";
+          // }
+
+          // llvm::outs() << "# Summary\n"
+          //              << "- External Function Call Count: " << cnt << "\n";
+          llvm::outs() << "\n### External Function Call: ";
+          ca_utils::printFuncDecl(FD, SM);
+          llvm::outs() << "   - Call Location: ";
+          ca_utils::printCaller(CE, SM);
+        }
+#ifdef DEBUG
+        /// Determine whether this declaration came from an AST file (such as
+        /// a precompiled header or module) rather than having been parsed.
+        llvm::outs() << "----------------------------------------\n";
+        if (!FD->isFromASTFile()) {
+          llvm::outs() << "Found external function call: "
+                       << FD->getQualifiedNameAsString() << "\n";
+        }
+
+        if (FD->isExternC()) {
+          llvm::outs() << "Found external C function call: "
+                       << FD->getQualifiedNameAsString() << "\n";
+        }
+#endif
+      } else {
+#ifdef DEBUG
+        llvm::outs() << "No function declaration found for call\n";
+#endif
+      }
     } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
@@ -775,7 +840,9 @@ int main(int argc, const char **argv) {
     Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
   }
   if (OptionEnableFunctionAnalysis) {
-    Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+    // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+
+    Finder.addMatcher(ExternalCallMatcherPattern, &exStructMatcher);
   }
 
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
