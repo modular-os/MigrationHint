@@ -574,6 +574,33 @@ class ExternalStructMatcher
       }
     }
   }
+
+  void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
+                                clang::SourceManager &SM) {
+    if (SM.isInMainFile(ICE->getBeginLoc()) &&
+        SM.isInMainFile(ICE->getEndLoc())) {
+      if (ICE->getCastKind() == clang::CK_LValueToRValue ||
+          ICE->getCastKind() == clang::CK_IntegralToPointer) {
+        // Only handle clang::CK_LValueToRValue IntegralToPointer
+#ifdef DEBUG
+        llvm::outs() << "ImplicitCastExpr("
+                     << ca_utils::getLocationString(SM, ICE->getBeginLoc())
+                     << "): " << ICE->getType().getAsString()
+                     << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+#endif
+        std::string ExtraInfo = "";
+        ExtraInfo += "### ImplicitCastExpr\n";
+        ExtraInfo += "   - Location: " +
+                     ca_utils::getLocationString(SM, ICE->getBeginLoc()) + "\n";
+        ExtraInfo += "   - CastKind: " + std::string(ICE->getCastKindName());
+        int isExternal = ca_utils::getExternalStructType(
+            ICE->getType(), llvm::outs(), SM, ExtraInfo);
+        if (isExternal) {
+          ++externalImplicitExprCnt;
+        }
+      }
+    }
+  }
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
@@ -832,33 +859,35 @@ class ExternalStructMatcher
       //       }
     } else if (auto ICE = Result.Nodes.getNodeAs<clang::ImplicitCastExpr>(
                    "externalImplicitCE")) {
-      if (SM.isInMainFile(ICE->getBeginLoc()) &&
-          SM.isInMainFile(ICE->getEndLoc())) {
-        if (ICE->getCastKind() == clang::CK_LValueToRValue ||
-            ICE->getCastKind() == clang::CK_IntegralToPointer) {
-#ifdef DEBUG
-          llvm::outs() << "ImplicitCastExpr("
-                       << ca_utils::getLocationString(SM, ICE->getBeginLoc())
-                       << "): " << ICE->getType().getAsString()
-                       << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
-          std::string ExtraInfo = "";
-          ExtraInfo += "### ImplicitCastExpr\n";
-          ExtraInfo += "   - Location: " +
-                       ca_utils::getLocationString(SM, ICE->getBeginLoc()) +
-                       "\n";
-          ExtraInfo += "   - CastKind: " + std::string(ICE->getCastKindName());
-          int isExternal = ca_utils::getExternalStructType(
-              ICE->getType(), llvm::outs(), SM, ExtraInfo);
-          if (isExternal) {
-            ++externalImplicitExprCnt;
-          }
-        }
-        //  clang::CK_LValueToRValue IntegralToPointer
-      }
-    }
-
-    else {
+      handleExternalImplicitCE(ICE, SM);
+      //       if (SM.isInMainFile(ICE->getBeginLoc()) &&
+      //           SM.isInMainFile(ICE->getEndLoc())) {
+      //         if (ICE->getCastKind() == clang::CK_LValueToRValue ||
+      //             ICE->getCastKind() == clang::CK_IntegralToPointer) {
+      // #ifdef DEBUG
+      //           llvm::outs() << "ImplicitCastExpr("
+      //                        << ca_utils::getLocationString(SM,
+      //                        ICE->getBeginLoc())
+      //                        << "): " << ICE->getType().getAsString()
+      //                        << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+      // #endif
+      //           std::string ExtraInfo = "";
+      //           ExtraInfo += "### ImplicitCastExpr\n";
+      //           ExtraInfo += "   - Location: " +
+      //                        ca_utils::getLocationString(SM,
+      //                        ICE->getBeginLoc()) +
+      //                        "\n";
+      //           ExtraInfo += "   - CastKind: " +
+      //           std::string(ICE->getCastKindName()); int isExternal =
+      //           ca_utils::getExternalStructType(
+      //               ICE->getType(), llvm::outs(), SM, ExtraInfo);
+      //           if (isExternal) {
+      //             ++externalImplicitExprCnt;
+      //           }
+      //         }
+      //         //  clang::CK_LValueToRValue IntegralToPointer
+      //       }
+    } else {
 #ifdef DEBUG
       llvm::outs() << "No call or fieldDecl expression found\n";
 #endif
