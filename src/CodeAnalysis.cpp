@@ -421,6 +421,84 @@ class ExternalStructMatcher
       }
     }
   }
+
+  void handleExternalTypeFD(const clang::RecordDecl *RD,
+                            clang::SourceManager &SM,
+                            int &isInFunctionOldValue) {
+#ifdef DEBUG
+    llvm::outs() << "ExternalStructMatcher\n";
+    llvm::outs() << FD->getQualifiedNameAsString() << "\n";
+    llvm::outs() << FD->getType().getAsString() << " " << FD->getNameAsString()
+                 << "\n";
+    auto RD = FD->getParent();
+    llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
+#endif
+    // Dealing with the relationships between RecordDecl and fieldDecl
+    // output the basic information of the RecordDecl
+
+    if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
+      // Output the basic info for specific RecordDecl
+      std::string BasicInfo = "";
+
+      BasicInfo = "### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
+
+      // Output the basic location info for the fieldDecl
+      BasicInfo += "- Location: `" +
+                   ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
+
+      if (const auto ParentFuncDeclContext = RD->getParentFunctionOrMethod()) {
+        // Notice: Method is only used in C++
+        if (const auto ParentFD =
+                dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+          BasicInfo +=
+              "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
+        }
+      } else if (const auto TU = RD->getTranslationUnitDecl()) {
+        BasicInfo += "- Parent: Global variable, no parent function.\n";
+        if (isInFunction) {
+#ifdef DEBUG
+          llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
+#endif
+          isInFunctionOldValue = isInFunction;
+          isInFunction = 0;
+          BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
+        }
+      }
+      llvm::outs() << BasicInfo;
+
+      // Output the full definition for the fieldDecl
+      llvm::outs() << "- Full Definition: \n"
+                   << "```c\n";
+      RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
+      llvm::outs() << "\n```\n";
+
+      // Traverse its fieldDecl and find external struct member
+      llvm::outs() << "- External Struct Members: \n";
+      for (const auto &FD : RD->fields()) {
+#ifdef DEBUG
+        llvm::outs() << "\t" << FD->getType().getAsString() << " "
+                     << FD->getNameAsString() << " "
+                     << FDType->isStructureOrClassType() << "\n";
+#endif
+        std::string ExtraInfo = "";
+        ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
+                     FD->getNameAsString() + "`\n";
+        bool IsExternalType = ca_utils::getExternalStructType(
+            FD->getType(), llvm::outs(), SM, ExtraInfo);
+        if (IsExternalType) {
+          ++externalStructCnt;
+        } else {
+// Recover the field control flag if the Decl is not external(so it
+// is passed).
+#ifdef DEBUG
+          llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+#endif
+          isInFunction = isInFunctionOldValue;
+        }
+      }
+      llvm::outs() << "\n\n---\n\n\n";
+    }
+  }
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
     auto &SM = *Result.SourceManager;
@@ -510,81 +588,91 @@ class ExternalStructMatcher
       //       }
     } else if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>(
                    "externalTypeFD")) {
-#ifdef DEBUG
-      llvm::outs() << "ExternalStructMatcher\n";
-      llvm::outs() << FD->getQualifiedNameAsString() << "\n";
-      llvm::outs() << FD->getType().getAsString() << " "
-                   << FD->getNameAsString() << "\n";
-      auto RD = FD->getParent();
-      llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
-#endif
-      // Dealing with the relationships between RecordDecl and fieldDecl
-      // output the basic information of the RecordDecl
+      handleExternalTypeFD(RD, SM, isInFunctionOldValue);
+      // #ifdef DEBUG
+      //       llvm::outs() << "ExternalStructMatcher\n";
+      //       llvm::outs() << FD->getQualifiedNameAsString() << "\n";
+      //       llvm::outs() << FD->getType().getAsString() << " "
+      //                    << FD->getNameAsString() << "\n";
+      //       auto RD = FD->getParent();
+      //       llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
+      // #endif
+      //       // Dealing with the relationships between RecordDecl and
+      //       fieldDecl
+      //       // output the basic information of the RecordDecl
 
-      if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
-        // Output the basic info for specific RecordDecl
-        std::string BasicInfo = "";
+      //       if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation()))
+      //       {
+      //         // Output the basic info for specific RecordDecl
+      //         std::string BasicInfo = "";
 
-        BasicInfo =
-            "### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
+      //         BasicInfo =
+      //             "### StructDecl: `" + RD->getQualifiedNameAsString() +
+      //             "`\n";
 
-        // Output the basic location info for the fieldDecl
-        BasicInfo += "- Location: `" +
-                     ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
+      //         // Output the basic location info for the fieldDecl
+      //         BasicInfo += "- Location: `" +
+      //                      ca_utils::getLocationString(SM, RD->getLocation())
+      //                      + "`\n";
 
-        if (const auto ParentFuncDeclContext =
-                RD->getParentFunctionOrMethod()) {
-          // Notice: Method is only used in C++
-          if (const auto ParentFD =
-                  dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
-            BasicInfo +=
-                "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
-          }
-        } else if (const auto TU = RD->getTranslationUnitDecl()) {
-          BasicInfo += "- Parent: Global variable, no parent function.\n";
-          if (isInFunction) {
-#ifdef DEBUG
-            llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
-#endif
-            isInFunctionOldValue = isInFunction;
-            isInFunction = 0;
-            BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
-          }
-        }
-        llvm::outs() << BasicInfo;
+      //         if (const auto ParentFuncDeclContext =
+      //                 RD->getParentFunctionOrMethod()) {
+      //           // Notice: Method is only used in C++
+      //           if (const auto ParentFD =
+      //                   dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext))
+      //                   {
+      //             BasicInfo +=
+      //                 "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) +
+      //                 "`\n";
+      //           }
+      //         } else if (const auto TU = RD->getTranslationUnitDecl()) {
+      //           BasicInfo += "- Parent: Global variable, no parent
+      //           function.\n"; if (isInFunction) {
+      // #ifdef DEBUG
+      //             llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
+      // #endif
+      //             isInFunctionOldValue = isInFunction;
+      //             isInFunction = 0;
+      //             BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
+      //           }
+      //         }
+      //         llvm::outs() << BasicInfo;
 
-        // Output the full definition for the fieldDecl
-        llvm::outs() << "- Full Definition: \n"
-                     << "```c\n";
-        RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
-        llvm::outs() << "\n```\n";
+      //         // Output the full definition for the fieldDecl
+      //         llvm::outs() << "- Full Definition: \n"
+      //                      << "```c\n";
+      //         RD->print(llvm::outs(),
+      //         clang::PrintingPolicy(clang::LangOptions())); llvm::outs() <<
+      //         "\n```\n";
 
-        // Traverse its fieldDecl and find external struct member
-        llvm::outs() << "- External Struct Members: \n";
-        for (const auto &FD : RD->fields()) {
-#ifdef DEBUG
-          llvm::outs() << "\t" << FD->getType().getAsString() << " "
-                       << FD->getNameAsString() << " "
-                       << FDType->isStructureOrClassType() << "\n";
-#endif
-          std::string ExtraInfo = "";
-          ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
-                       FD->getNameAsString() + "`\n";
-          bool IsExternalType = ca_utils::getExternalStructType(
-              FD->getType(), llvm::outs(), SM, ExtraInfo);
-          if (IsExternalType) {
-            ++externalStructCnt;
-          } else {
-// Recover the field control flag if the Decl is not external(so it
-// is passed).
-#ifdef DEBUG
-            llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
-#endif
-            isInFunction = isInFunctionOldValue;
-          }
-        }
-        llvm::outs() << "\n\n---\n\n\n";
-      }
+      //         // Traverse its fieldDecl and find external struct member
+      //         llvm::outs() << "- External Struct Members: \n";
+      //         for (const auto &FD : RD->fields()) {
+      // #ifdef DEBUG
+      //           llvm::outs() << "\t" << FD->getType().getAsString() << " "
+      //                        << FD->getNameAsString() << " "
+      //                        << FDType->isStructureOrClassType() << "\n";
+      // #endif
+      //           std::string ExtraInfo = "";
+      //           ExtraInfo += "   - Member: `" + FD->getType().getAsString() +
+      //           " " +
+      //                        FD->getNameAsString() + "`\n";
+      //           bool IsExternalType = ca_utils::getExternalStructType(
+      //               FD->getType(), llvm::outs(), SM, ExtraInfo);
+      //           if (IsExternalType) {
+      //             ++externalStructCnt;
+      //           } else {
+      // // Recover the field control flag if the Decl is not external(so it
+      // // is passed).
+      // #ifdef DEBUG
+      //             llvm::outs() << "Recovering... " << isInFunctionOldValue <<
+      //             "\n";
+      // #endif
+      //             isInFunction = isInFunctionOldValue;
+      //           }
+      //         }
+      //         llvm::outs() << "\n\n---\n\n\n";
+      //       }
     } else if (auto VD =
                    Result.Nodes.getNodeAs<clang::VarDecl>("externalTypeVD")) {
 #ifdef DEPRECATED
