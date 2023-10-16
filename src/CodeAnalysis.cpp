@@ -347,6 +347,7 @@ class ExternalDependencyMatcher
     externalVarDeclCnt = 0;
     externalParamVarDeclCnt = 0;
     externalImplicitExprCnt = 0;
+    externalFunctionCallCnt = 0;
     isInFunction = 0;
   }
 
@@ -613,6 +614,7 @@ class ExternalDependencyMatcher
         ca_utils::printFuncDecl(FD, SM);
         llvm::outs() << "   - Call Location: ";
         ca_utils::printCaller(CE, SM);
+        ++externalFunctionCallCnt;
       }
 #ifdef DEBUG
       /// Determine whether this declaration came from an AST file (such as
@@ -672,7 +674,9 @@ class ExternalDependencyMatcher
                  << "- External ParamVarDecl Count: " << externalParamVarDeclCnt
                  << "\n"
                  << "- External ImplicitExpr Count: " << externalImplicitExprCnt
-                 << "\n\n";
+                 << "\n"
+                 << "- External Function Call Count: "
+                 << externalFunctionCallCnt << "\n\n";
   }
 
  private:
@@ -684,6 +688,7 @@ class ExternalDependencyMatcher
   int externalVarDeclCnt;
   int externalParamVarDeclCnt;
   int externalImplicitExprCnt;
+  int externalFunctionCallCnt;
 };
 
 llvm::cl::opt<std::string> OptionSourceFilePath(
@@ -814,7 +819,8 @@ int main(int argc, const char **argv) {
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
-      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &exDependencyMatcher);
+      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern,
+                        &exDependencyMatcher);
     }
     if (OptionEnableStructAnalysis) {
       Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
