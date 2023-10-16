@@ -38,15 +38,17 @@ static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
 
 // Setting AST Matchers for call expr
 using namespace clang::ast_matchers;
+DeclarationMatcher BasicExternalFuncDeclMatcherPattern =
+    functionDecl().bind("externalTypeFuncD");
+
 StatementMatcher ExternalCallMatcherPattern =
     callExpr(callee(functionDecl())).bind("externalCall");
 
 // Bind Matcher to ExternalFieldDecl
 // Notice: Since ParamVarDecl is the subclass of VarDecl,
 //        so they share the same Matcher pattern.
-DeclarationMatcher ExternalStructMatcherPattern =
-    anyOf(recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"),
-          functionDecl().bind("externalTypeFuncD"));
+DeclarationMatcher ExternalStructMatcherPattern = anyOf(
+    recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"));
 
 // Add matchers to expressions
 StatementMatcher ExternalExprsMatcherPatter =
@@ -692,6 +694,11 @@ llvm::cl::opt<bool> OptionEnableFunctionAnalysis(
     "enable-function-analysis",
     llvm::cl::desc("Enable external function analysis to source file"),
     llvm::cl::init(false));
+llvm::cl::opt<bool> OptionEnableFunctionAnalysisByHeaders(
+    "enable-function-analysis-by-headers",
+    llvm::cl::desc("Enable external function analysis to source file, all the "
+                   "function declarations are grouped by header files."),
+    llvm::cl::init(false));
 llvm::cl::opt<bool> OptionEnableStructAnalysis(
     "enable-struct-analysis",
     llvm::cl::desc("Enable external struct type analysis to source file"),
@@ -804,17 +811,21 @@ int main(int argc, const char **argv) {
   ExternalCallMatcher exCallMatcher;
   ExternalStructMatcher exStructMatcher;
   clang::ast_matchers::MatchFinder Finder;
-  if (OptionEnableStructAnalysis) {
-    Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
-    Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
-  }
-  if (OptionEnableFunctionAnalysis) {
-    // Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
-
-    Finder.addMatcher(ExternalCallMatcherPattern, &exStructMatcher);
-  }
-
-  if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
+  if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
+      OptionEnableFunctionAnalysisByHeaders) {
+    if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
+      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &exStructMatcher);
+    }
+    if (OptionEnableStructAnalysis) {
+      Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
+      Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
+    }
+    if (OptionEnableFunctionAnalysis) {
+      Finder.addMatcher(ExternalCallMatcherPattern, &exStructMatcher);
+    }
+    if (OptionEnableFunctionAnalysisByHeaders) {
+      Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+    }
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
 
