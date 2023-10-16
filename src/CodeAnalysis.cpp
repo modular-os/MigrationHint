@@ -334,7 +334,7 @@ class ExternalCallMatcher
       FilenameToCallExprs;
 };
 
-class ExternalStructMatcher
+class ExternalDependencyMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
   void onStartOfTranslationUnit() override {
@@ -809,19 +809,19 @@ int main(int argc, const char **argv) {
   // /*
   // Comments while testing preprocessor callbacks.
   ExternalCallMatcher exCallMatcher;
-  ExternalStructMatcher exStructMatcher;
+  ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
-      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &exStructMatcher);
+      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &exDependencyMatcher);
     }
     if (OptionEnableStructAnalysis) {
-      Finder.addMatcher(ExternalStructMatcherPattern, &exStructMatcher);
-      Finder.addMatcher(ExternalExprsMatcherPatter, &exStructMatcher);
+      Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
+      Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
     }
     if (OptionEnableFunctionAnalysis) {
-      Finder.addMatcher(ExternalCallMatcherPattern, &exStructMatcher);
+      Finder.addMatcher(ExternalCallMatcherPattern, &exDependencyMatcher);
     }
     if (OptionEnableFunctionAnalysisByHeaders) {
       Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
