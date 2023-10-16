@@ -1,19 +1,24 @@
+#pragma once
+
+#ifndef _CA_AST_HELPERS_HPP
+#define _CA_AST_HELPERS_HPP
+
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/OperationKinds.h>
-#include <clang/Basic/SourceLocation.h>
+// #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendActions.h>
-#include <clang/Lex/PPCallbacks.h>
-#include <clang/Lex/Preprocessor.h>
-#include <clang/Tooling/CommonOptionsParser.h>
-#include <clang/Tooling/Tooling.h>
-#include <llvm/Support/CommandLine.h>
+// #include <clang/Lex/PPCallbacks.h>
+// #include <clang/Lex/Preprocessor.h>
+// #include <clang/Tooling/CommonOptionsParser.h>
+// #include <clang/Tooling/Tooling.h>
+// #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
@@ -21,202 +26,24 @@
 #include <string>
 #include <vector>
 
-#include "ca_ASTHelpers.hpp"
-#include "ca_PreprocessorHelpers.hpp"
-#include "ca_utils.hpp"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/MacroArgs.h"
-
+#include "ca_utils.hpp"
+#include "ca_PreprocessorHelpers.hpp"
+#include "ca_ASTHelpers.hpp"
+namespace ca {
 /**********************************************************************
- * 0. Global Infrastructure
+ * 2. Matcher Callbacks
  **********************************************************************/
-// Basic Infrastructure
-std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
-// Apply a custom category to all command-line options so that they are
-// the only ones displayed.
-static llvm::cl::OptionCategory MyToolCategory("Code-Analysis");
+class ExternalCallMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  explicit inline ExternalCallMatcher(clang::SourceManager &SM) : AST_SM(SM) {}
 
-// Setting AST Matchers for call expr
-using namespace clang::ast_matchers;
-DeclarationMatcher BasicExternalFuncDeclMatcherPattern =
-    functionDecl().bind("externalTypeFuncD");
-
-StatementMatcher ExternalCallMatcherPattern =
-    callExpr(callee(functionDecl())).bind("externalCall");
-
-// Bind Matcher to ExternalFieldDecl
-// Notice: Since ParamVarDecl is the subclass of VarDecl,
-//        so they share the same Matcher pattern.
-DeclarationMatcher ExternalStructMatcherPattern = anyOf(
-    recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"));
-
-// Add matchers to expressions
-StatementMatcher ExternalExprsMatcherPatter =
-    implicitCastExpr().bind("externalImplicitCE");
-
-#ifdef DEPRECATED
-// Matcher is not that useful, because it can only match the struct type
-// But not the struct pointer
-varDecl(hasType(recordDecl())).bind("externalTypeVD"),
-varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
-parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
-#endif
-
-// /**********************************************************************
-//  * 1. Preprocessor Callbacks
-//  **********************************************************************/
-// class MacroPPCallbacks : public clang::PPCallbacks {
-//  public:
-//   explicit inline MacroPPCallbacks(const clang::CompilerInstance &compiler)
-//       : compiler(compiler), MacroCounts(0), HeaderCounts(0) {
-//     name = compiler.getSourceManager()
-//                .getFileEntryForID(compiler.getSourceManager().getMainFileID())
-//                ->getName();
-//   }
-
-//  private:
-//   int getMacroExpansionStackDepth(std::string MacroName,
-//                                   std::string MacroString,
-//                                   const clang::MacroArgs *Args,
-//                                   const clang::Preprocessor &PP) {
-//     std::vector<std::string> CurrMacro;
-//     CurrMacro.push_back(MacroName);
-//     CurrMacro.push_back(MacroString);
-//     if (Args) {
-// #ifdef DEBUG
-//       llvm::outs() << Args->getNumMacroArguments() << "\n";
-// #endif
-//       for (unsigned I = 0, E = Args->getNumMacroArguments(); I != E; ++I) {
-// #ifdef DEPRECATED
-//         // Output the expanded args for macro, may depend on the following
-//         // expansion of other macros.
-//         const auto &Arg =
-//             const_cast<clang::MacroArgs *>(Args)->getPreExpArgument(I, PP);
-//         // Traverse the Args
-//         llvm::outs() << "Argument " << I << ": ";
-//         for (auto &it : Arg) {
-//           llvm::outs() << PP.getSpelling(it) << " ";
-//         }
-//         llvm::outs() << "\n";
-// #endif
-//         const auto Arg = Args->getUnexpArgument(I);
-// #ifdef DEBUG
-//         llvm::outs() << "Argument " << I << ": " << PP.getSpelling(*Arg)
-//                      << "\n";
-// #endif
-//         CurrMacro.push_back(PP.getSpelling(*Arg));
-//       }
-//     }
-
-//     if (MacroExpansionStack.size() == 0) {
-//       MacroExpansionStack.push_back(CurrMacro);
-//       return 0;
-//     }
-//     int flag = 0;
-//     while (MacroExpansionStack.size()) {
-//       for (auto MacroPart : MacroExpansionStack.back()) {
-//         if (MacroPart.find(MacroName) != std::string::npos) {
-//           if (MacroPart == MacroExpansionStack.back().front() &&
-//               MacroPart == MacroName) {
-//             // If the currentMacro is identical to the macros in stack,
-//             return. return MacroExpansionStack.size() - 1;
-//           }
-//           flag = 1;
-//           break;
-//         }
-//       }
-//       if (flag) {
-//         break;
-//       } else {
-//         MacroExpansionStack.pop_back();
-//       }
-//     }
-//     MacroExpansionStack.push_back(CurrMacro);
-//     return MacroExpansionStack.size() - 1;
-//   }
-
-//  public:
-//   void InclusionDirective(clang::SourceLocation HashLoc,
-//                           const clang::Token &IncludeTok,
-//                           clang::StringRef FileName, bool IsAngled,
-//                           clang::CharSourceRange FilenameRange,
-//                           clang::OptionalFileEntryRef File,
-//                           clang::StringRef SearchPath,
-//                           clang::StringRef RelativePath,
-//                           const clang::Module *Imported,
-//                           clang::SrcMgr::CharacteristicKind FileType)
-//                           override {
-//     auto &SM = compiler.getSourceManager();
-//     if (SM.isInMainFile(HashLoc)) {
-//       if (HeaderCounts == 0) {
-//         llvm::outs() << "# Header File: \n";
-//       }
-//       llvm::outs() << ++HeaderCounts << ". `"
-//                    << ca_utils::getLocationString(SM, HashLoc) << "`: `"
-//                    << SearchPath.str() + "/" + RelativePath.str() << "`\n";
-//     }
-//   }
-
-//   void MacroExpands(const clang::Token &MacroNameTok,
-//                     const clang::MacroDefinition &MD, clang::SourceRange
-//                     Range, const clang::MacroArgs *Args) override {
-//     auto &SM = compiler.getSourceManager();
-//     auto &PP = compiler.getPreprocessor();
-//     const clang::LangOptions &LO = PP.getLangOpts();
-//     if (SM.isInMainFile(Range.getBegin())) {
-//       auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
-//       int MacroDepth =
-//       getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
-//                                                    MacroDefinition, Args,
-//                                                    PP);
-//       if (MacroCounts == 0) {
-//         llvm::outs() << "# Macro Expansion Analysis: \n";
-//       }
-//       if (MacroDepth == 0) {
-//         llvm::outs() << "```\n\n## Macro " << ++MacroCounts << ": \n```\n";
-//       }
-//       llvm::outs().indent(MacroDepth * 3)
-//           << PP.getSpelling(MacroNameTok) << ", "
-//           << ca_utils::getLocationString(SM, Range.getBegin()) << "\n";
-//     }
-//   }
-
-//  private:
-//   const clang::CompilerInstance &compiler;
-//   std::string name;
-
-//   std::vector<std::vector<std::string>> MacroExpansionStack;
-//   int MacroCounts;
-//   int HeaderCounts;
-// };
-// class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
-// #ifdef DEPRECATED
-//   // The following code is deprecated temporarily. May be useful in the
-//   // future.
-//   virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
-//   virtual void EndSourceFileAction() {}
-// #endif
-
-//  protected:
-//   void ExecuteAction() override {
-//     getCompilerInstance().getPreprocessor().addPPCallbacks(
-//         std::make_unique<MacroPPCallbacks>(getCompilerInstance()));
-
-//     clang::PreprocessOnlyAction::ExecuteAction();
-//   }
-// };
-
-// /**********************************************************************
-//  * 2. Matcher Callbacks
-//  **********************************************************************/
-// class ExternalCallMatcher
-//     : public clang::ast_matchers::MatchFinder::MatchCallback {
-//  public:
-//   explicit inline ExternalCallMatcher(clang::SourceManager &SM) : AST_SM(SM) {}
-
-//   void onStartOfTranslationUnit() override {
+  void onStartOfTranslationUnit() override;
+//    {
 // #ifdef DEBUG
 //     llvm::outs() << "In onStartOfTranslationUnit\n";
 // #endif
@@ -227,8 +54,9 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     FilenameToCallExprs.clear();
 //   }
 
-//   virtual void run(
-//       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+//        {
 //     auto &SM = *Result.SourceManager;
 //     if (auto CE = Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
 //       if (auto FD = CE->getDirectCallee()) {
@@ -294,7 +122,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void onEndOfTranslationUnit() override {
+  void onEndOfTranslationUnit() override;
+//    {
 // #ifdef DEBUG
 //     llvm::outs() << "In onEndOfTranslationUnit\n";
 // #endif
@@ -335,17 +164,18 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //                  << "- External Function Call Count: " << cnt << "\n";
 //   }
 
-//  private:
-//   std::map<std::string,
-//            std::map<std::string, std::vector<const clang::CallExpr *>>>
-//       FilenameToCallExprs;
-//   clang::SourceManager &AST_SM;
-// };
+ private:
+  std::map<std::string,
+           std::map<std::string, std::vector<const clang::CallExpr *>>>
+      FilenameToCallExprs;
+  clang::SourceManager &AST_SM;
+};
 
-// class ExternalDependencyMatcher
-//     : public clang::ast_matchers::MatchFinder::MatchCallback {
-//  public:
-//   void onStartOfTranslationUnit() override {
+class ExternalDependencyMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  void onStartOfTranslationUnit() override;
+//    {
 // #ifdef DEBUG
 //     llvm::outs() << "In onStartOfTranslationUnit\n";
 // #endif
@@ -359,9 +189,10 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     isInFunction = 0;
 //   }
 
-//   void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
-//                                clang::SourceManager &SM,
-//                                const clang::LangOptions &LO) {
+  void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
+                               clang::SourceManager &SM,
+                               const clang::LangOptions &LO);
+//                                 {
 //     if (SM.isInMainFile(FD->getLocation())) {
 // #ifdef DEBUG
 //       llvm::outs() << "FunctionDecl("
@@ -433,9 +264,10 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void handleExternalTypeFD(const clang::RecordDecl *RD,
-//                             clang::SourceManager &SM,
-//                             int &isInFunctionOldValue) {
+  void handleExternalTypeFD(const clang::RecordDecl *RD,
+                            clang::SourceManager &SM,
+                            int &isInFunctionOldValue);
+//                              {
 // #ifdef DEBUG
 //     llvm::outs() << "ExternalStructMatcher\n";
 //     llvm::outs() << FD->getQualifiedNameAsString() << "\n";
@@ -512,9 +344,10 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void handleExternalTypeVD(const clang::VarDecl *VD, clang::SourceManager &SM,
-//                             const clang::LangOptions &LO,
-//                             int &isInFunctionOldValue) {
+  void handleExternalTypeVD(const clang::VarDecl *VD, clang::SourceManager &SM,
+                            const clang::LangOptions &LO,
+                            int &isInFunctionOldValue);
+//                              {
 // #ifdef DEPRECATED
 //     /*
 //     Deprecated, now we print the info of ParamVarDecl in FuncDecl/
@@ -588,8 +421,9 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
-//                                 clang::SourceManager &SM) {
+  void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
+                                clang::SourceManager &SM);
+//                                  {
 //     if (SM.isInMainFile(ICE->getBeginLoc()) &&
 //         SM.isInMainFile(ICE->getEndLoc())) {
 //       if (ICE->getCastKind() == clang::CK_LValueToRValue ||
@@ -615,7 +449,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void handleExternalCall(const clang::CallExpr *CE, clang::SourceManager &SM) {
+  void handleExternalCall(const clang::CallExpr *CE, clang::SourceManager &SM);
+//    {
 //     if (auto FD = CE->getDirectCallee()) {
 //       // output the basic information of the function declaration
 //       if (!SM.isInMainFile(FD->getLocation()) &&
@@ -647,8 +482,9 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   virtual void run(
-//       const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+//        {
 //     auto &SM = *Result.SourceManager;
 //     auto &LO = Result.Context->getLangOpts();
 //     int isInFunctionOldValue = isInFunction;
@@ -674,7 +510,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //     }
 //   }
 
-//   void onEndOfTranslationUnit() override {
+  void onEndOfTranslationUnit() override;
+//    {
 // #ifdef DEBUG
 //     llvm::outs() << "In onEndOfTranslationUnit\n";
 // #endif
@@ -689,164 +526,18 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //                  << externalFunctionCallCnt << "\n\n";
 //   }
 
-//  private:
-//   /*Field control flags*/
-//   int isInFunction;
+ private:
+  /*Field control flags*/
+  int isInFunction;
 
-//   /*Statistics*/
-//   int externalStructCnt;
-//   int externalVarDeclCnt;
-//   int externalParamVarDeclCnt;
-//   int externalImplicitExprCnt;
-//   int externalFunctionCallCnt;
-// };
+  /*Statistics*/
+  int externalStructCnt;
+  int externalVarDeclCnt;
+  int externalParamVarDeclCnt;
+  int externalImplicitExprCnt;
+  int externalFunctionCallCnt;
+};
 
-llvm::cl::opt<std::string> OptionSourceFilePath(
-    "s",
-    llvm::cl::desc("Path to the source file which is expected to be analyzed."),
-    llvm::cl::value_desc("path-to-sourcefile"));
-llvm::cl::opt<bool> OptionEnableFunctionAnalysis(
-    "enable-function-analysis",
-    llvm::cl::desc("Enable external function analysis to source file"),
-    llvm::cl::init(false));
-llvm::cl::opt<bool> OptionEnableFunctionAnalysisByHeaders(
-    "enable-function-analysis-by-headers",
-    llvm::cl::desc("Enable external function analysis to source file, all the "
-                   "function declarations are grouped by header files."),
-    llvm::cl::init(false));
-llvm::cl::opt<bool> OptionEnableStructAnalysis(
-    "enable-struct-analysis",
-    llvm::cl::desc("Enable external struct type analysis to source file"),
-    llvm::cl::init(false));
-llvm::cl::opt<bool> OptionEnablePPAnalysis(
-    "enable-pp-analysis",
-    llvm::cl::desc("Enable preprocess analysis to source file, show details of "
-                   "all the header files and macros."),
-    llvm::cl::init(false));
-llvm::cl::extrahelp MoreHelp(R"(
-Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
-        2. The Compilation Database should be named as compile_commands.json.
-        3. You can input only one source file as you wish.
-
-Developed by Zhe Tang<tangzh6101@gmail.com> for modular-OS project.
-Version 1.0.0
-)");
-
-/**********************************************************************
- * 3. Main Function
- **********************************************************************/
-int main(int argc, const char **argv) {
-  /*
-   * Usage:
-   ** ./CodeAnalysis [path to source file]
-   */
-  if (argc < 2) {
-    // std::printf(
-    //     "Usage: CodeAnalysis [path to compile_commands.json] [path to
-    //     source " "file]\n");
-    llvm::outs() << "Usage: ./CodeAnalysis --help for detailed usage.\n";
-    return 1;
-  }
-  // Basic infrastructures
-  std::vector<std::string> SourceFilePaths;
-  int status = 1;
-  std::string ErrMsg;
-
-  // Begin parsing options.
-  llvm::cl::ParseCommandLineOptions(argc, argv);
-
-  if (!OptionSourceFilePath.empty()) {
-    llvm::outs() << "Source File Path: " << OptionSourceFilePath << "\n";
-    SourceFilePaths.push_back(OptionSourceFilePath);
-  } else {
-    llvm::outs()
-        << "Error! Missing critical option: No source file path found! You can "
-           "use option -S to specify the source file path.\n";
-    exit(1);
-  }
-#ifdef DEPRECATED
-  // Deprecated, now we use llvm::cl::opt to parse the options.
-  llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
-      clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory,
-                                                  llvm::cl::OneOrMore);
-  // Database can also be imported manually with JSONCompilationDatabase
-  clang::tooling::ClangTool Tool(OptionsParser->getCompilations(),
-                                 OptionsParser->getSourcePathList());
-#endif
-
-  // Database can also be imported manually with JSONCompilationDatabase
-  auto CompileDatabase =
-      clang::tooling::CompilationDatabase::autoDetectFromSource(
-          OptionSourceFilePath, ErrMsg);
-  clang::tooling::ClangTool Tool(*CompileDatabase, SourceFilePaths);
-
-#ifdef DEBUG
-  // Validate the compile commands and source file lists.
-  auto compileCommands =
-      OptionsParser->getCompilations().getAllCompileCommands();
-  auto fileLists = OptionsParser->getSourcePathList();
-
-  // traverse compile_commands
-  llvm::outs() << "[Debug] Validating compile database: "
-               << "\n";
-  for (auto &it : compileCommands) {
-    // Output the filename and directory
-    llvm::outs() << "[Debug] Filename: " << it.Filename << "\n";
-    llvm::outs() << "[Debug] Directory: " << it.Directory << "\n";
-    // llvm::outs() << it.CommandLine << "\n";
-    // Output the command line content
-    llvm::outs() << "[Debug] Command Line: "
-                 << "\n";
-    for (auto &it2 : it.CommandLine) {
-      llvm::outs() << it2 << "\n";
-    }
-    break;
-  }
-  llvm::outs() << "[Debug] End of compile database."
-               << "\n";
-
-  llvm::outs() << "[Debug] Validating source file lists: "
-               << "\n";
-  for (auto &it : fileLists) {
-    llvm::outs() << it << "\n";
-  }
-  llvm::outs() << "[Debug] End of source file lists"
-               << "\n";
-#endif
-
-  // Prepare the basic infrastructure
-  Tool.buildASTs(ASTs);
-  if (OptionEnablePPAnalysis) {
-    status *= Tool.run(
-        clang::tooling::newFrontendActionFactory<ca::MacroPPOnlyAction>()
-            .get());
-  }
-
-  // /*
-  // Comments while testing preprocessor callbacks.
-  ca::ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager());
-  ca::ExternalDependencyMatcher exDependencyMatcher;
-  clang::ast_matchers::MatchFinder Finder;
-  if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
-      OptionEnableFunctionAnalysisByHeaders) {
-    if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
-      Finder.addMatcher(BasicExternalFuncDeclMatcherPattern,
-                        &exDependencyMatcher);
-    }
-    if (OptionEnableStructAnalysis) {
-      Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
-      Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
-    }
-    if (OptionEnableFunctionAnalysis) {
-      Finder.addMatcher(ExternalCallMatcherPattern, &exDependencyMatcher);
-    }
-    if (OptionEnableFunctionAnalysisByHeaders) {
-      Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
-    }
-    status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
-  }
-
-  return status;
-  // */
-  // return 0;
 }
+
+#endif  // !_CA_AST_HELPERS_HPP
