@@ -385,7 +385,7 @@ class ExternalDependencyMatcher
                      << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
         std::string ExtraInfo =
-            "### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
+            "\n### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
         ExtraInfo += "   - Location: `" +
                      ca_utils::getLocationString(SM, PVD->getLocation()) +
                      "`\n";
@@ -443,7 +443,8 @@ class ExternalDependencyMatcher
       // Output the basic info for specific RecordDecl
       std::string BasicInfo = "";
 
-      BasicInfo = "### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
+      BasicInfo =
+          "\n### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
 
       // Output the basic location info for the fieldDecl
       BasicInfo += "- Location: `" +
@@ -525,7 +526,8 @@ class ExternalDependencyMatcher
 
                    << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
-      std::string ExtraInfo = "### VarDecl: `" + VD->getNameAsString() + "`\n";
+      std::string ExtraInfo =
+          "\n### VarDecl: `" + VD->getNameAsString() + "`\n";
       ExtraInfo += "   - Location: `" +
                    ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
       ExtraInfo += "   - Type: `" + VD->getType().getAsString() + "`\n";
@@ -592,7 +594,7 @@ class ExternalDependencyMatcher
                      << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
         std::string ExtraInfo = "";
-        ExtraInfo += "### ImplicitCastExpr\n";
+        ExtraInfo += "\n### ImplicitCastExpr\n";
         ExtraInfo += "   - Location: " +
                      ca_utils::getLocationString(SM, ICE->getBeginLoc()) + "\n";
         ExtraInfo += "   - CastKind: " + std::string(ICE->getCastKindName());
