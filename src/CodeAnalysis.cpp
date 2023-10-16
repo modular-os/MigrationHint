@@ -341,8 +341,8 @@ class ExternalDependencyMatcher
 #ifdef DEBUG
     llvm::outs() << "In onStartOfTranslationUnit\n";
 #endif
-    llvm::outs() << "# External Struct Type Report\n\n";
-    llvm::outs() << "## Global Decls: \n";
+    llvm::outs() << "# External Dependencies Report\n\n";
+    llvm::outs() << "## Global: \n";
     externalStructCnt = 0;
     externalVarDeclCnt = 0;
     externalParamVarDeclCnt = 0;
