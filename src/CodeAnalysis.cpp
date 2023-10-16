@@ -21,13 +21,13 @@
 #include <string>
 #include <vector>
 
+#include "ca_ASTHelpers.hpp"
+#include "ca_PreprocessorHelpers.hpp"
+#include "ca_utils.hpp"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/MacroArgs.h"
-#include "ca_utils.hpp"
-#include "ca_PreprocessorHelpers.hpp"
-#include "ca_ASTHelpers.hpp"
 
 /**********************************************************************
  * 0. Global Infrastructure
@@ -120,8 +120,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //         if (MacroPart.find(MacroName) != std::string::npos) {
 //           if (MacroPart == MacroExpansionStack.back().front() &&
 //               MacroPart == MacroName) {
-//             // If the currentMacro is identical to the macros in stack, return.
-//             return MacroExpansionStack.size() - 1;
+//             // If the currentMacro is identical to the macros in stack,
+//             return. return MacroExpansionStack.size() - 1;
 //           }
 //           flag = 1;
 //           break;
@@ -146,7 +146,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //                           clang::StringRef SearchPath,
 //                           clang::StringRef RelativePath,
 //                           const clang::Module *Imported,
-//                           clang::SrcMgr::CharacteristicKind FileType) override {
+//                           clang::SrcMgr::CharacteristicKind FileType)
+//                           override {
 //     auto &SM = compiler.getSourceManager();
 //     if (SM.isInMainFile(HashLoc)) {
 //       if (HeaderCounts == 0) {
@@ -159,15 +160,17 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 //   }
 
 //   void MacroExpands(const clang::Token &MacroNameTok,
-//                     const clang::MacroDefinition &MD, clang::SourceRange Range,
-//                     const clang::MacroArgs *Args) override {
+//                     const clang::MacroDefinition &MD, clang::SourceRange
+//                     Range, const clang::MacroArgs *Args) override {
 //     auto &SM = compiler.getSourceManager();
 //     auto &PP = compiler.getPreprocessor();
 //     const clang::LangOptions &LO = PP.getLangOpts();
 //     if (SM.isInMainFile(Range.getBegin())) {
 //       auto MacroDefinition = ca_utils::getMacroDeclString(MD, SM, LO);
-//       int MacroDepth = getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
-//                                                    MacroDefinition, Args, PP);
+//       int MacroDepth =
+//       getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
+//                                                    MacroDefinition, Args,
+//                                                    PP);
 //       if (MacroCounts == 0) {
 //         llvm::outs() << "# Macro Expansion Analysis: \n";
 //       }
@@ -211,6 +214,8 @@ parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
+  explicit inline ExternalCallMatcher(clang::SourceManager &SM) : AST_SM(SM) {}
+
   void onStartOfTranslationUnit() override {
 #ifdef DEBUG
     llvm::outs() << "In onStartOfTranslationUnit\n";
@@ -293,7 +298,7 @@ class ExternalCallMatcher
 #ifdef DEBUG
     llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
-    auto &SM = ASTs[0]->getSourceManager();
+    auto &SM = AST_SM;
 
     llvm::outs() << "# External Function Call Report\n\n";
 
@@ -334,6 +339,7 @@ class ExternalCallMatcher
   std::map<std::string,
            std::map<std::string, std::vector<const clang::CallExpr *>>>
       FilenameToCallExprs;
+  clang::SourceManager &AST_SM;
 };
 
 class ExternalDependencyMatcher
@@ -812,12 +818,13 @@ int main(int argc, const char **argv) {
   Tool.buildASTs(ASTs);
   if (OptionEnablePPAnalysis) {
     status *= Tool.run(
-        clang::tooling::newFrontendActionFactory<ca::MacroPPOnlyAction>().get());
+        clang::tooling::newFrontendActionFactory<ca::MacroPPOnlyAction>()
+            .get());
   }
 
   // /*
   // Comments while testing preprocessor callbacks.
-  ExternalCallMatcher exCallMatcher;
+  ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager());
   ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
