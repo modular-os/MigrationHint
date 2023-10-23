@@ -2,7 +2,7 @@
 # Description: CMakeLists.txt for the CodeAnalysis project.
 #===============================================================================
 # CMakeLists.txt for the CodeAnalysis project. 
-# The CMakelists framework was originally inspired by the framework used in https://github.com/banach-space/CodeAnalysis.
+# The CMakelists framework was originally inspired by the framework used in https://github.com/banach-space/clang-tutor
 # Author: Zhe Tang
 # Date:   2023-08-26
 # Email:  tangzh6101[at]gmail.com
@@ -40,7 +40,7 @@ message(STATUS "Using Clang compiler: ${CMAKE_C_COMPILER}")
 set(CA_LLVM_INCLUDE_DIR "${CA_Clang_INSTALL_DIR}/include/llvm")
 if(NOT EXISTS "${CA_LLVM_INCLUDE_DIR}")
 message(FATAL_ERROR
-  " CA_Clang_INSTALL_DIR (${CA_LLVM_INCLUDE_DIR}) is invalid.")
+  " CA_Clang_INCLUDE_DIR (${CA_LLVM_INCLUDE_DIR}) is invalid.")
 endif()
 
 set(CA_LLVM_CMAKE_FILE
