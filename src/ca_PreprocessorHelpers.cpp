@@ -25,6 +25,8 @@
 // #include <iostream>
 // #include <map>
 // #include <string>
+#include <llvm/Support/raw_ostream.h>
+
 #include <vector>
 
 // #include "clang/AST/RecursiveASTVisitor.h"
@@ -38,6 +40,41 @@ namespace ca {
 /**********************************************************************
  * 1. Preprocessor Callbacks
  **********************************************************************/
+bool MacroPPCallbacks::matchMacroFromExpansion(
+    const std::string &MacroName, const std::string &MacroExpansion) {
+  // std::string A = "example";
+  // std::string B = "This is an example (string)";
+
+  size_t pos = 0;
+  while ((pos = MacroExpansion.find(MacroName, pos)) != std::string::npos) {
+#ifdef DEPRECATED
+    // Check that there is either a space or the beginning of the matched string
+    // before the target position
+    if (pos > 0 && MacroExpansion[pos - 1] != ' ' &&
+        MacroExpansion[pos - 1] != MacroName[0]) {
+      pos += MacroName.length();
+      continue;
+    }
+#endif
+
+    // Check that there is either a space, a left parenthesis, or the end of the
+    // matched string after the target position
+    if (pos + MacroName.length() < MacroExpansion.length() &&
+        MacroExpansion[pos + MacroName.length()] != ' ' &&
+        MacroExpansion[pos + MacroName.length()] != '(' &&
+        MacroExpansion[pos + MacroName.length()] != ',' &&
+        MacroExpansion[pos + MacroName.length()] != ';' &&
+        MacroExpansion[pos + MacroName.length()] !=
+            MacroName[MacroName.length() - 1]) {
+      pos += MacroName.length();
+      continue;
+    }
+
+    return true;
+  }
+  return false;
+}
+
 int MacroPPCallbacks::getMacroExpansionStackDepth(
     std::string MacroName, std::string MacroString,
     const clang::MacroArgs *Args, const clang::Preprocessor &PP) {
@@ -75,20 +112,47 @@ int MacroPPCallbacks::getMacroExpansionStackDepth(
   }
   int flag = 0;
   while (MacroExpansionStack.size()) {
+    int cnt = 0;
     for (auto MacroPart : MacroExpansionStack.back()) {
+      ++cnt;
+      if (cnt == 1) {
+        if (MacroPart == MacroName) {
+#ifdef DEBUG
+          llvm::outs() << "---" << cnt << ": " << MacroPart << "\n";
+#endif
+          // If the currentMacro is identical to the macros in stack, return.
+          return MacroExpansionStack.size() - 1;
+        }
+      } else {  // cnt > 1, which is macro expansion and args.
+        if ((cnt == 2 && matchMacroFromExpansion(MacroName, MacroPart)) ||
+            (cnt > 2 && MacroPart == MacroName)) {
+          flag = 1;
+#ifdef DEBUG
+          llvm::outs() << cnt << ": " << MacroPart << "\n";
+#endif
+          break;
+        }
+      }
+#ifdef DEPRECATED
       if (MacroPart.find(MacroName) != std::string::npos) {
         if (MacroPart == MacroExpansionStack.back().front() &&
             MacroPart == MacroName) {
           // If the currentMacro is identical to the macros in stack, return.
+          llvm::outs() << "---" << MacroPart << "\n";
           return MacroExpansionStack.size() - 1;
         }
         flag = 1;
+        llvm::outs() << MacroPart << "\n";
         break;
       }
+#endif
     }
     if (flag) {
       break;
     } else {
+#ifdef DEBUG
+      llvm::outs() << MacroExpansionStack.back().front() << ", ";
+#endif
       MacroExpansionStack.pop_back();
     }
   }
@@ -133,6 +197,9 @@ void MacroPPCallbacks::MacroExpands(const clang::Token &MacroNameTok,
     llvm::outs().indent(MacroDepth * 3)
         << PP.getSpelling(MacroNameTok) << ", "
         << ca_utils::getLocationString(SM, Range.getBegin()) << "\n";
+#ifdef DEBUG
+    llvm::outs() << "---\n" << MacroDefinition << "===\n";
+#endif
   }
 }
 

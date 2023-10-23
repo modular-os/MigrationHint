@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #ifndef _CA_PREPROCESSOR_HELPERS_HPP
 #define _CA_PREPROCESSOR_HELPERS_HPP
 
@@ -51,6 +52,9 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                                   std::string MacroString,
                                   const clang::MacroArgs *Args,
                                   const clang::Preprocessor &PP);
+
+  bool matchMacroFromExpansion(const std::string &MacroName,
+                              const std::string &MacroExpansion);
 
  public:
   void InclusionDirective(clang::SourceLocation HashLoc,
