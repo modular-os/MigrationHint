@@ -61,9 +61,12 @@ bool MacroPPCallbacks::matchMacroFromExpansion(
     // matched string after the target position
     if (pos + MacroName.length() < MacroExpansion.length() &&
         MacroExpansion[pos + MacroName.length()] != ' ' &&
+        MacroExpansion[pos + MacroName.length()] != '\t' &&
         MacroExpansion[pos + MacroName.length()] != '(' &&
+        MacroExpansion[pos + MacroName.length()] != ')' &&
         MacroExpansion[pos + MacroName.length()] != ',' &&
         MacroExpansion[pos + MacroName.length()] != ';' &&
+        MacroExpansion[pos + MacroName.length()] != '|' &&
         MacroExpansion[pos + MacroName.length()] !=
             MacroName[MacroName.length() - 1]) {
       pos += MacroName.length();
