@@ -1,3 +1,4 @@
+#/bin/bash
 if [! -f linux-6.2.15.tar.xz]; then
         wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.2.15.tar.xz
     fi
