@@ -34,6 +34,7 @@
 // #include "ca_utils.hpp"
 // #include "ca_PreprocessorHelpers.hpp"
 #include <clang/Tooling/CompilationDatabase.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ca_ASTHelpers.hpp"
 namespace ca {
@@ -158,8 +159,37 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
 
     llvm::outs() << "# Summary\n"
                  << "- External Function Call Count: " << cnt << "\n";
+  } else if (mode == Collect) {
+    // llvm::outs() << "Hi" << "\n";
+    for (auto &it : FilenameToCallExprs) {
+      auto HeaderName = it.first;
+      if ((*ModuleFunctionCallCnt).find(HeaderName) ==
+          (*ModuleFunctionCallCnt).end()) {
+        (*ModuleFunctionCallCnt)[HeaderName] = std::map<std::string, int>();
+      }
+      for (auto &it2 : it.second) {
+        auto FD = it2.first;
+        std::string FuncNameWithLoc = "";
+        int caller_cnt = 0;
+        for (auto &it3 : it2.second) {
+          if (!caller_cnt) {
+            auto FD = it3->getDirectCallee();
+            FuncNameWithLoc +=
+                ca_utils::getFuncDeclString(FD) + "(" +
+                ca_utils::getLocationString(SM, FD->getLocation()) + ")";
+          }
+          ++caller_cnt;
+        }
+        if ((*ModuleFunctionCallCnt)[HeaderName].find(FuncNameWithLoc) ==
+            (*ModuleFunctionCallCnt)[HeaderName].end()) {
+          (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] = 0;
+        }
+        (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] +=
+            caller_cnt * 100000 + 1;
+      }
+    }
   } else {
-    llvm::outs() << "Hi" << "\n";
+    assert(false && "Unkown work type for ExternalDependencyMatcher.\n");
   }
 }
 
@@ -524,6 +554,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   */
   std::string ErrMsg;
   std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+  std::map<std::string, std::map<std::string, int>> CollectResults;
   int returnStatus = 1;
   using namespace clang::ast_matchers;
   StatementMatcher ExternalCallMatcherPattern = callExpr().bind("externalCall");
@@ -551,11 +582,32 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
       exit(1);
     }
     ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager(),
-                                      ca::ExternalCallMatcher::Collect);
+                                      ca::ExternalCallMatcher::Collect,
+                                      &CollectResults);
     clang::ast_matchers::MatchFinder Finder;
     Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
     returnStatus *=
         Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
+
+  /*
+    3. Output the results
+  */
+  llvm::outs() << "# External Module Call Report\n\n";
+
+  // Traverse the FilenameToCallExprs
+  int cnt = 0;
+  for (auto &it : CollectResults) {
+    llvm::outs() << "## Header File: " << it.first << "\n";
+    int file_cnt = 0;
+    for (auto &it2 : it.second) {
+      auto FD = it2.first;
+      llvm::outs() << ++file_cnt << ". "
+                   << "`" << it2.first << "`: `" << it2.second << "`\n";
+      ++cnt;
+    }
+
+    llvm::outs() << "---\n\n";
   }
 
   return returnStatus;

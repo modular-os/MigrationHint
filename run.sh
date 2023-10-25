@@ -24,6 +24,8 @@ TARGET_SOURCE1=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
 # TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
 TARGET_SOURCE2=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb.c
 TARGET_SOURCE3=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/ksm.c
+TARGET_SOURCE4=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/huge_memory.c
+TARGET_SOURCE5=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/khugepaged.c
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Make a build dir if there isn't one
@@ -45,7 +47,7 @@ pushd $BUILD
     # --enable-struct-analysis \
     # --enable-pp-analysis \
     # 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3} \
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     --enable-module-analysis \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -h

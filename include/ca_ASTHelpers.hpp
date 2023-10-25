@@ -49,9 +49,9 @@ class ExternalCallMatcher
           *_ModuleFunctionCallCnt = nullptr)
       : ModuleFunctionCallCnt(_ModuleFunctionCallCnt), AST_SM(SM), mode(_mode) {
     if (mode == Collect && ModuleFunctionCallCnt == nullptr) {
-      assert(
+      assert( false && 
           "Error! You should specify ModuleFunctionCallCnt to store results "
-          "while collecting.");
+          "while collecting.\n");
     }
   }
 
