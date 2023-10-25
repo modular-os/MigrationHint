@@ -35,13 +35,25 @@
 #include "clang/Lex/MacroArgs.h"
 namespace ca {
 int ModuleAnalysisHelper(std::string sourceFiles);
+
 /**********************************************************************
  * 2. Matcher Callbacks
  **********************************************************************/
 class ExternalCallMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
-  explicit inline ExternalCallMatcher(clang::SourceManager &SM) : AST_SM(SM) {}
+  enum WorkMode { Print, Collect };
+  explicit inline ExternalCallMatcher(
+      clang::SourceManager &SM, WorkMode _mode = Print,
+      std::map<std::string, std::map<std::string, int>>
+          *_ModuleFunctionCallCnt = nullptr)
+      : ModuleFunctionCallCnt(_ModuleFunctionCallCnt), AST_SM(SM), mode(_mode) {
+    if (mode == Collect && ModuleFunctionCallCnt == nullptr) {
+      assert(
+          "Error! You should specify ModuleFunctionCallCnt to store results "
+          "while collecting.");
+    }
+  }
 
   void onStartOfTranslationUnit() override;
 
@@ -54,7 +66,9 @@ class ExternalCallMatcher
   std::map<std::string,
            std::map<std::string, std::vector<const clang::CallExpr *>>>
       FilenameToCallExprs;
+  std::map<std::string, std::map<std::string, int>> *ModuleFunctionCallCnt;
   clang::SourceManager &AST_SM;
+  WorkMode mode;
 };
 
 class ExternalDependencyMatcher

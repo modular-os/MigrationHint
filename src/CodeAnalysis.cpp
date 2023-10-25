@@ -199,7 +199,8 @@ int main(int argc, const char **argv) {
             .get());
   }
 
-  ca::ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager());
+  ca::ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager(),
+                                        ca::ExternalCallMatcher::Print);
   ca::ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||

@@ -124,39 +124,43 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
   llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
   auto &SM = AST_SM;
+  if (mode == Print) {
+    llvm::outs() << "# External Function Call Report\n\n";
 
-  llvm::outs() << "# External Function Call Report\n\n";
+    // Traverse the FilenameToCallExprs
+    int cnt = 0;
+    for (auto &it : FilenameToCallExprs) {
+      llvm::outs() << "## Header File: " << it.first << "\n";
+      llvm::outs() << "- External Function Count: " << it.second.size()
+                   << "\n\n";
+      int file_cnt = 0;
+      for (auto &it2 : it.second) {
+        auto FD = it2.first;
+        llvm::outs() << ++file_cnt << ". ";
+        int caller_cnt = 0;
 
-  // Traverse the FilenameToCallExprs
-  int cnt = 0;
-  for (auto &it : FilenameToCallExprs) {
-    llvm::outs() << "## Header File: " << it.first << "\n";
-    llvm::outs() << "- External Function Count: " << it.second.size() << "\n\n";
-    int file_cnt = 0;
-    for (auto &it2 : it.second) {
-      auto FD = it2.first;
-      llvm::outs() << ++file_cnt << ". ";
-      int caller_cnt = 0;
-
-      for (auto &it3 : it2.second) {
-        if (!caller_cnt) {
-          auto FD = it3->getDirectCallee();
-          ca_utils::printFuncDecl(FD, SM);
-          llvm::outs() << "   - Caller Counts: **" << it2.second.size()
-                       << "**, details:\n";
+        for (auto &it3 : it2.second) {
+          if (!caller_cnt) {
+            auto FD = it3->getDirectCallee();
+            ca_utils::printFuncDecl(FD, SM);
+            llvm::outs() << "   - Caller Counts: **" << it2.second.size()
+                         << "**, details:\n";
+          }
+          llvm::outs() << "      " << ++caller_cnt << ". ";
+          ca_utils::printCaller(it3, SM);
         }
-        llvm::outs() << "      " << ++caller_cnt << ". ";
-        ca_utils::printCaller(it3, SM);
+        llvm::outs() << "\n";
+        ++cnt;
       }
-      llvm::outs() << "\n";
-      ++cnt;
+
+      llvm::outs() << "---\n\n";
     }
 
-    llvm::outs() << "---\n\n";
+    llvm::outs() << "# Summary\n"
+                 << "- External Function Call Count: " << cnt << "\n";
+  } else {
+    llvm::outs() << "Hi" << "\n";
   }
-
-  llvm::outs() << "# Summary\n"
-               << "- External Function Call Count: " << cnt << "\n";
 }
 
 void ExternalDependencyMatcher::onStartOfTranslationUnit() {
@@ -546,7 +550,8 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
       llvm::outs() << "Error! No AST found for " << SourcePath << "\n";
       exit(1);
     }
-    ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager());
+    ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager(),
+                                      ca::ExternalCallMatcher::Collect);
     clang::ast_matchers::MatchFinder Finder;
     Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
     returnStatus *=
