@@ -89,6 +89,13 @@ llvm::cl::opt<bool> OptionEnablePPAnalysis(
     llvm::cl::desc("Enable preprocess analysis to source file, show details of "
                    "all the header files and macros."),
     llvm::cl::init(false));
+llvm::cl::opt<bool> OptionEnableModuleAnalysis(
+    "enable-module-analysis",
+    llvm::cl::desc("Compute the external function set for a sequence of source "
+                   "files. Note: The source file path should be specified "
+                   "using the -s option, and distinct source files should be "
+                   "provided as comma-separated intervals."),
+    llvm::cl::init(false));
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
         2. The Compilation Database should be named as compile_commands.json.
@@ -124,6 +131,10 @@ int main(int argc, const char **argv) {
   if (!OptionSourceFilePath.empty()) {
     llvm::outs() << "Source File Path: " << OptionSourceFilePath << "\n";
     SourceFilePaths.push_back(OptionSourceFilePath);
+    if (OptionEnableModuleAnalysis) {
+      ca::ModuleAnalysisHelper(OptionSourceFilePath);
+      return 0;
+    }
   } else {
     llvm::outs()
         << "Error! Missing critical option: No source file path found! You can "

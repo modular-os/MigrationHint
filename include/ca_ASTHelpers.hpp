@@ -34,6 +34,7 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/MacroArgs.h"
 namespace ca {
+int ModuleAnalysisHelper(std::string sourceFiles);
 /**********************************************************************
  * 2. Matcher Callbacks
  **********************************************************************/

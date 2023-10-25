@@ -17,7 +17,8 @@
 // #include <clang/Lex/PPCallbacks.h>
 // #include <clang/Lex/Preprocessor.h>
 // #include <clang/Tooling/CommonOptionsParser.h>
-// #include <clang/Tooling/Tooling.h>
+#include <clang/Tooling/Tooling.h>
+#include <llvm/Support/raw_ostream.h>
 // #include <llvm/Support/CommandLine.h>
 // #include <llvm/Support/raw_ostream.h>
 
@@ -491,6 +492,24 @@ void ExternalDependencyMatcher::onEndOfTranslationUnit() {
                << "\n"
                << "- External Function Call Count: " << externalFunctionCallCnt
                << "\n\n";
+}
+
+int ModuleAnalysisHelper(std::string sourceFiles) {
+  std::vector<std::string> sources;
+  int pos = 0, previousPos = 0;
+  while ((pos = sourceFiles.find(",", pos)) != std::string::npos) {
+    auto source = sourceFiles.substr(previousPos, pos - previousPos);
+    sources.push_back(source);
+    ++pos;
+    previousPos = pos;
+  }
+  auto source = sourceFiles.substr(previousPos, sourceFiles.size() - previousPos);
+  sources.push_back(source);
+  for(auto& itr: sources){
+    llvm::outs() << itr << "\n";
+  }
+
+  return 0;
 }
 
 }  // namespace ca
