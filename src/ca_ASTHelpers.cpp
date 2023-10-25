@@ -17,8 +17,8 @@
 // #include <clang/Lex/PPCallbacks.h>
 // #include <clang/Lex/Preprocessor.h>
 // #include <clang/Tooling/CommonOptionsParser.h>
-#include <clang/Tooling/Tooling.h>
-#include <llvm/Support/raw_ostream.h>
+// #include <clang/Tooling/Tooling.h>
+// #include <llvm/Support/raw_ostream.h>
 // #include <llvm/Support/CommandLine.h>
 // #include <llvm/Support/raw_ostream.h>
 
@@ -29,10 +29,12 @@
 
 // #include "clang/AST/RecursiveASTVisitor.h"
 // #include "clang/ASTMatchers/ASTMatchFinder.h"
-// #include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
 // #include "clang/Lex/MacroArgs.h"
 // #include "ca_utils.hpp"
 // #include "ca_PreprocessorHelpers.hpp"
+#include <clang/Tooling/CompilationDatabase.h>
+
 #include "ca_ASTHelpers.hpp"
 namespace ca {
 /**********************************************************************
@@ -106,7 +108,9 @@ void ExternalCallMatcher::run(
       }
 #endif
     } else {
+#ifdef DEBUG
       llvm::outs() << "No function declaration found for call\n";
+#endif
     }
   } else {
 #ifdef DEBUG
@@ -409,7 +413,8 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
       ExtraInfo += "\n### ImplicitCastExpr\n";
       ExtraInfo += "   - Location: " +
                    ca_utils::getLocationString(SM, ICE->getBeginLoc()) + "\n";
-      ExtraInfo += "   - CastKind: " + std::string(ICE->getCastKindName());
+      ExtraInfo +=
+          "   - CastKind: " + std::string(ICE->getCastKindName()) + "\n";
       int isExternal = ca_utils::getExternalStructType(
           ICE->getType(), llvm::outs(), SM, ExtraInfo);
       if (isExternal) {
@@ -495,21 +500,60 @@ void ExternalDependencyMatcher::onEndOfTranslationUnit() {
 }
 
 int ModuleAnalysisHelper(std::string sourceFiles) {
-  std::vector<std::string> sources;
+  /*
+    0. Handle the source file paths
+  */
+  std::vector<std::string> SourcePaths;
   int pos = 0, previousPos = 0;
   while ((pos = sourceFiles.find(",", pos)) != std::string::npos) {
     auto source = sourceFiles.substr(previousPos, pos - previousPos);
-    sources.push_back(source);
+    SourcePaths.push_back(source);
     ++pos;
     previousPos = pos;
   }
-  auto source = sourceFiles.substr(previousPos, sourceFiles.size() - previousPos);
-  sources.push_back(source);
-  for(auto& itr: sources){
-    llvm::outs() << itr << "\n";
+  auto source =
+      sourceFiles.substr(previousPos, sourceFiles.size() - previousPos);
+  SourcePaths.push_back(source);
+
+  /*
+    1. Basic infrastructures
+  */
+  std::string ErrMsg;
+  std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+  int returnStatus = 1;
+  using namespace clang::ast_matchers;
+  StatementMatcher ExternalCallMatcherPattern = callExpr().bind("externalCall");
+  /*
+  TODO: Weird bugs to include path of ast matcher
+      StatementMatcher ExternalCallMatcherPattern =
+      callExpr(callee(FunctionDecl())).bind("externalCall");
+  */
+
+  /*
+    2. Begin handling modules
+  */
+  for (auto &SourcePath : SourcePaths) {
+#ifdef DEBUG
+    llvm::outs() << source << "\n";
+#endif
+    auto CompileDatabase =
+        clang::tooling::CompilationDatabase::autoDetectFromSource(SourcePath,
+                                                                  ErrMsg);
+    clang::tooling::ClangTool Tool(*CompileDatabase, SourcePath);
+    ASTs.clear();
+    Tool.buildASTs(ASTs);
+    if (ASTs.size() == 0) {
+      llvm::outs() << "Error! No AST found for " << SourcePath << "\n";
+      exit(1);
+    }
+    ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager());
+    clang::ast_matchers::MatchFinder Finder;
+    Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
+    returnStatus *=
+        Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
 
-  return 0;
+  return returnStatus;
 }
 
 }  // namespace ca

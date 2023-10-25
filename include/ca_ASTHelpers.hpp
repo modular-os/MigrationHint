@@ -17,7 +17,7 @@
 // #include <clang/Lex/PPCallbacks.h>
 // #include <clang/Lex/Preprocessor.h>
 // #include <clang/Tooling/CommonOptionsParser.h>
-// #include <clang/Tooling/Tooling.h>
+#include <clang/Tooling/Tooling.h>
 // #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
