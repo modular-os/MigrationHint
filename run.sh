@@ -41,11 +41,11 @@ pushd $BUILD
     cmake .. -G Ninja
     ninja
     set -x
-    # ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
     # --enable-function-analysis  \
-    # --enable-function-analysis-by-headers \
     # --enable-struct-analysis \
     # --enable-pp-analysis \
+    # ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
+    # --enable-function-analysis-by-headers \
     # 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     --enable-module-analysis \

@@ -185,7 +185,11 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
           (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] = 0;
         }
         (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] +=
-            caller_cnt * 100000 + 1;
+            1 * 100000 + caller_cnt;
+        /*
+        // New Metrics
+        caller_cnt * 100000 + 1;
+        */
       }
     }
   } else {
@@ -600,11 +604,22 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   for (auto &it : CollectResults) {
     llvm::outs() << "## Header File: " << it.first << "\n";
     int file_cnt = 0;
-    for (auto &it2 : it.second) {
-      auto FD = it2.first;
+    // for (auto &it2 : it.second) {
+    //   auto FD = it2.first;
+    //   llvm::outs() << ++file_cnt << ". "
+    //                << "`" << it2.first << "`: `" << it2.second << "`\n";
+    //   ++cnt;
+    // }
+    std::vector<std::pair<std::string, int>> sortedFiles(it.second.begin(),
+                                                         it.second.end());
+    std::sort(sortedFiles.begin(), sortedFiles.end(),
+              [](const std::pair<std::string, int> &a,
+                 const std::pair<std::string, int> &b) {
+                return a.second > b.second;
+              });
+    for (auto &it2 : sortedFiles) {
       llvm::outs() << ++file_cnt << ". "
-                   << "`" << it2.first << "`: `" << it2.second << "`\n";
-      ++cnt;
+                << "`" << it2.first << "`: `" << it2.second << "`\n";
     }
 
     llvm::outs() << "---\n\n";
