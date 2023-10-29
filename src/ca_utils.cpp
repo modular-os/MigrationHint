@@ -106,35 +106,29 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 #endif
 }
 
-std::string getMacroName(const clang::SourceManager &SM, clang::SourceLocation Loc) {
+std::string getMacroName(const clang::SourceManager &SM,
+                         clang::SourceLocation Loc) {
   // 获取源码文本
   const char *StartBuf = SM.getCharacterData(Loc);
-  // clang::FileID FID;
-  // unsigned Offset;
-  // std::tie(FID, Offset) = SM.getDecomposedExpansionLoc(Loc);
   const char *EndBuf = StartBuf;
-  while (*EndBuf != '\0' && *EndBuf != '(') ++EndBuf;
-  // ++EndBuf;
+  int unmatchedBracesNum = 0;
+  while (*EndBuf != '\0') {
+    if (*EndBuf == ')') {
+      --unmatchedBracesNum;
+      if (unmatchedBracesNum <= 0) {
+        ++EndBuf;
+        break;
+      }
+    }
+    if (*EndBuf == '(') {
+      ++unmatchedBracesNum;
+    }
+    ++EndBuf;
+  }
   // while (*EndBuf != '\0' && !clang::isWhitespace(*EndBuf)) ++EndBuf;
 
-  // 标记化源码文本
   std::string SourceCode(StartBuf, EndBuf - StartBuf);
   return SourceCode;
-  // auto Tokens =
-  //     clang::Lexer::tokenize(SM.getBuffer(FID),
-  //     SM.getLocForStartOfFile(FID));
-
-  // // 在标记中查找宏名称
-  // for (const auto &Token : Tokens) {
-  //   if (Token.is(clang::tok::raw_identifier)) {
-  //     std::string Identifier = Token.getRawIdentifier().str();
-  //     if (Identifier == SourceCode) {
-  //       return Identifier;
-  //     }
-  //   }
-  // }
-
-  return "";
 }
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
@@ -166,7 +160,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     }
     // Output the expanded location
     llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
-                 << getLocationString(SM, CallerLoc) << " "
+                 << getLocationString(SM, CallerLoc) << ":"
                  << getMacroName(SM, CallerLoc) << "`\n";
   }
 #ifdef DEBUG
