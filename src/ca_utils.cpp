@@ -1,3 +1,5 @@
+#include "ca_utils.hpp"
+
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Expr.h>
@@ -8,8 +10,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <string>
-
-#include "ca_utils.hpp"
 
 namespace ca_utils {
 
@@ -106,6 +106,37 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 #endif
 }
 
+std::string getMacroName(const clang::SourceManager &SM, clang::SourceLocation Loc) {
+  // 获取源码文本
+  const char *StartBuf = SM.getCharacterData(Loc);
+  // clang::FileID FID;
+  // unsigned Offset;
+  // std::tie(FID, Offset) = SM.getDecomposedExpansionLoc(Loc);
+  const char *EndBuf = StartBuf;
+  while (*EndBuf != '\0' && *EndBuf != '(') ++EndBuf;
+  // ++EndBuf;
+  // while (*EndBuf != '\0' && !clang::isWhitespace(*EndBuf)) ++EndBuf;
+
+  // 标记化源码文本
+  std::string SourceCode(StartBuf, EndBuf - StartBuf);
+  return SourceCode;
+  // auto Tokens =
+  //     clang::Lexer::tokenize(SM.getBuffer(FID),
+  //     SM.getLocForStartOfFile(FID));
+
+  // // 在标记中查找宏名称
+  // for (const auto &Token : Tokens) {
+  //   if (Token.is(clang::tok::raw_identifier)) {
+  //     std::string Identifier = Token.getRawIdentifier().str();
+  //     if (Identifier == SourceCode) {
+  //       return Identifier;
+  //     }
+  //   }
+  // }
+
+  return "";
+}
+
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   // Special Handle for Caller's Location, since the spelling location is
   // incorrect for caller, so we can only use presumed location.
@@ -135,7 +166,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     }
     // Output the expanded location
     llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
-                 << getLocationString(SM, CallerLoc) << "`\n";
+                 << getLocationString(SM, CallerLoc) << " "
+                 << getMacroName(SM, CallerLoc) << "`\n";
   }
 #ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {

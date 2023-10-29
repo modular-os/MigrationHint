@@ -31,6 +31,8 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
 std::string getMacroDeclString(const clang::MacroDefinition &MD,
                                const clang::SourceManager &SM,
                                const clang::LangOptions &LO);
+std::string getMacroName(const clang::SourceManager &SM,
+                         clang::SourceLocation Loc);
 }  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP
