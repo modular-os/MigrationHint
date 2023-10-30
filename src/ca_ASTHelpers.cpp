@@ -92,9 +92,8 @@ void ExternalCallMatcher::run(
             MacroLocation = tmpStack[tmpStack.size() - 2];
           }
           auto MacroName =
-              "TestingMacro" +
-              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) + "(" +
-              ca_utils::getLocationString(SM, MacroLocation) + ")";
+              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
+              "(Macro)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
 
           // auto Loc = FD->getLocation();
           // Get the spelling location for Loc
@@ -218,7 +217,14 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
             auto CallerLoc = it3->getBeginLoc();
             if (SM.isMacroBodyExpansion(CallerLoc) ||
                 SM.isMacroArgExpansion(CallerLoc)) {
-              llvm::outs() << it2.first << "\n";
+              const auto &MacroNameWithLoc = it2.first;
+              int pos = 0;
+              pos = MacroNameWithLoc.find('`');
+              llvm::outs() << "`" << MacroNameWithLoc.substr(0, pos) << "`\n";
+              llvm::outs() << "   - Location: "
+                           << MacroNameWithLoc.substr(
+                                  pos, MacroNameWithLoc.size() - pos)
+                           << "\n";
             } else {
               auto FD = it3->getDirectCallee();
               ca_utils::printFuncDecl(FD, SM);

@@ -146,6 +146,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   llvm::outs() << "`" << FilePath << ":" << LineNumber << ":" << ColumnNumber
                << "`\n";
 
+#ifdef DEPRECATED
   // Judging whether the caller is expanded from predefined macros.
   while (true) {
     if (SM.isMacroBodyExpansion(CallerLoc)) {
@@ -169,6 +170,7 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     //   << ":"
     //  << getMacroName(SM, CallerLoc) << "`\n";
   }
+#endif
 #ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {
     llvm::outs() << "Is in system header\n";
