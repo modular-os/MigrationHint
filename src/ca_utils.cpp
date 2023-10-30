@@ -127,7 +127,13 @@ std::string getMacroName(const clang::SourceManager &SM,
     ++EndBuf;
   }
 #endif
-  while (*EndBuf != '\0' && *EndBuf != '(') ++EndBuf;
+  while (*EndBuf != '\0') {
+    if (*EndBuf == '('  ) {
+      // || *EndBuf != ')'|| *EndBuf != ','
+      break;
+    }
+    ++EndBuf;
+  }
 
   std::string SourceCode(StartBuf, EndBuf - StartBuf);
   return SourceCode;

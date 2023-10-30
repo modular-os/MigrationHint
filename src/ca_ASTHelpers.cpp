@@ -38,6 +38,8 @@
 #include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <cmath>
+
 #include "ca_ASTHelpers.hpp"
 namespace ca {
 /**********************************************************************
@@ -258,10 +260,16 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
         int callerCnt = 0;
         for (auto &it3 : it2.second) {
           if (!callerCnt) {
-            auto FD = it3->getDirectCallee();
-            FuncNameWithLoc +=
-                ca_utils::getFuncDeclString(FD) + "(" +
-                ca_utils::getLocationString(SM, FD->getLocation()) + ")";
+            auto CallerLoc = it3->getBeginLoc();
+            if (SM.isMacroBodyExpansion(CallerLoc) ||
+                SM.isMacroArgExpansion(CallerLoc)) {
+              FuncNameWithLoc = it2.first;
+            } else {
+              auto FD = it3->getDirectCallee();
+              FuncNameWithLoc +=
+                  ca_utils::getFuncDeclString(FD) + "`" +
+                  ca_utils::getLocationString(SM, FD->getLocation()) + "`";
+            }
           }
           ++callerCnt;
         }
@@ -627,6 +635,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
     0. Handle the source file paths
   */
   std::vector<std::string> SourcePaths;
+  int BasicFunctionThreshold = 0;
   int pos = 0, previousPos = 0;
   while ((pos = sourceFiles.find(",", pos)) != std::string::npos) {
     auto source = sourceFiles.substr(previousPos, pos - previousPos);
@@ -637,6 +646,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   auto source =
       sourceFiles.substr(previousPos, sourceFiles.size() - previousPos);
   SourcePaths.push_back(source);
+  BasicFunctionThreshold = std::ceil(SourcePaths.size() * 0.8);
 
   /*
     1. Basic infrastructures
@@ -687,7 +697,6 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   // Traverse the FilenameToCallExprs
   int cnt = 0;
   for (auto &it : CollectResults) {
-    llvm::outs() << "## Header File: " << it.first << "\n";
     int file_cnt = 0;
     // for (auto &it2 : it.second) {
     //   auto FD = it2.first;
@@ -703,11 +712,30 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
                 return a.second > b.second;
               });
     for (auto &it2 : sortedFiles) {
+      if ((it2.second / 100000) < BasicFunctionThreshold) {
+        continue;
+      }
+      const auto &MacroNameWithLoc = it2.first;
+      int pos = 0;
+      pos = MacroNameWithLoc.find('`');
+      if (file_cnt == 0) {
+        llvm::outs() << "## Header File: " << it.first << "\n";
+      }
       llvm::outs() << ++file_cnt << ". "
-                   << "`" << it2.first << "`: `" << it2.second << "`\n";
+                   << "`" << MacroNameWithLoc.substr(0, pos) << "`\n"
+                   << "   - Location: "
+                   << MacroNameWithLoc.substr(pos,
+                                              MacroNameWithLoc.size() - pos)
+                   << "\n"
+                   << "   - Times: `" << it2.second / 100000 << "`\n"
+                   << "   - Frequency: `" << it2.second % 100000 << "`\n"
+                   << "   - Description: `"
+                   << "<Filled-By-AI>"
+                   << "`\n\n";
     }
-
-    llvm::outs() << "---\n\n";
+    if (file_cnt) {
+      llvm::outs() << "---\n\n";
+    }
   }
 
   return returnStatus;
