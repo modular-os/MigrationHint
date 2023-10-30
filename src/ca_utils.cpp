@@ -111,6 +111,7 @@ std::string getMacroName(const clang::SourceManager &SM,
   // 获取源码文本
   const char *StartBuf = SM.getCharacterData(Loc);
   const char *EndBuf = StartBuf;
+#ifdef DEPRECATED
   int unmatchedBracesNum = 0;
   while (*EndBuf != '\0') {
     if (*EndBuf == ')') {
@@ -125,7 +126,8 @@ std::string getMacroName(const clang::SourceManager &SM,
     }
     ++EndBuf;
   }
-  // while (*EndBuf != '\0' && !clang::isWhitespace(*EndBuf)) ++EndBuf;
+#endif
+  while (*EndBuf != '\0' && *EndBuf != '(') ++EndBuf;
 
   std::string SourceCode(StartBuf, EndBuf - StartBuf);
   return SourceCode;
@@ -158,10 +160,14 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
     } else {
       break;
     }
+    // if(SM.isInMainFile(CallerLoc)){
+    //   break;
+    // }
     // Output the expanded location
     llvm::outs() << "         - Expanded from Macro, Macro's definition: `"
-                 << getLocationString(SM, CallerLoc) << ":"
-                 << getMacroName(SM, CallerLoc) << "`\n";
+                 << getLocationString(SM, CallerLoc) << "\n";
+    //   << ":"
+    //  << getMacroName(SM, CallerLoc) << "`\n";
   }
 #ifdef DEBUG
   if (SM.isInExternCSystemHeader(CallerLoc)) {

@@ -29,10 +29,12 @@
 
 // #include "clang/AST/RecursiveASTVisitor.h"
 // #include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "ca_utils.hpp"
 #include "clang/ASTMatchers/ASTMatchers.h"
 // #include "clang/Lex/MacroArgs.h"
 // #include "ca_utils.hpp"
 // #include "ca_PreprocessorHelpers.hpp"
+#include <clang/Basic/SourceLocation.h>
 #include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -60,39 +62,110 @@ void ExternalCallMatcher::run(
       // output the basic information of the function declaration
       if (!SM.isInMainFile(FD->getLocation()) &&
           SM.isInMainFile(CE->getBeginLoc())) {
-        auto Loc = FD->getLocation();
-        // Get the spelling location for Loc
-        auto SLoc = SM.getSpellingLoc(Loc);
-        std::string FilePath = SM.getFilename(SLoc).str();
-
-        if (FilePath == "") {
-          // Couldn't get the spelling location, try to get the presumed
-          // location
-#if DEBUG
-          llvm::outs << "Couldn't get the spelling location, try to get the "
-                        "presumed "
-                        "location\n";
+        auto CallerLoc = CE->getBeginLoc();
+        if (SM.isMacroBodyExpansion(CallerLoc) ||
+            SM.isMacroArgExpansion(CallerLoc)) {
+          // !!! Handle macro operations
+          // Judging whether the caller is expanded from predefined macros.
+          std::vector<clang::SourceLocation> tmpStack;
+          while (true) {
+            if (SM.isMacroBodyExpansion(CallerLoc)) {
+              auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+              CallerLoc = ExpansionLoc;
+            } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+              llvm::outs() << "Is in macro arg expansion\n";
 #endif
-          auto PLoc = SM.getPresumedLoc(Loc);
-          assert(PLoc.isValid() &&
-                 "Caller's Presumed location in the source file is invalid\n");
-          FilePath = PLoc.getFilename();
-          assert(FilePath != "" &&
-                 "Caller's location in the source file is invalid.");
-        }
+              auto ExpansionLoc =
+                  SM.getImmediateExpansionRange(CallerLoc).getBegin();
+              CallerLoc = ExpansionLoc;
+            } else {
+              break;
+            }
+            tmpStack.push_back(CallerLoc);
+          }
+          assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+          clang::SourceLocation MacroLocation;
+          if (tmpStack.size() == 1) {
+            MacroLocation = FD->getLocation();
+          } else {
+            MacroLocation = tmpStack[tmpStack.size() - 2];
+          }
+          auto MacroName =
+              "TestingMacro" +
+              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) + "(" +
+              ca_utils::getLocationString(SM, MacroLocation) + ")";
 
-        auto FuncDeclStr = ca_utils::getFuncDeclString(FD);
+          // auto Loc = FD->getLocation();
+          // Get the spelling location for Loc
+          auto SLoc = SM.getSpellingLoc(MacroLocation);
+          std::string FilePath = SM.getFilename(SLoc).str();
 
-        if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
-          FilenameToCallExprs[FilePath] =
-              std::map<std::string, std::vector<const clang::CallExpr *>>();
+          if (FilePath == "") {
+            // Couldn't get the spelling location, try to get the presumed
+            // location
+#if DEBUG
+            llvm::outs << "Couldn't get the spelling location, try to get the "
+                          "presumed "
+                          "location\n";
+#endif
+            auto PLoc = SM.getPresumedLoc(MacroLocation);
+            assert(
+                PLoc.isValid() &&
+                "Caller's Presumed location in the source file is invalid\n");
+            FilePath = PLoc.getFilename();
+            assert(FilePath != "" &&
+                   "Caller's location in the source file is invalid.");
+          }
+
+          // auto FuncDeclStr = ca_utils::getFuncDeclString(FD);
+
+          if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
+            FilenameToCallExprs[FilePath] =
+                std::map<std::string, std::vector<const clang::CallExpr *>>();
+          }
+          if (FilenameToCallExprs[FilePath].find(MacroName) ==
+              FilenameToCallExprs[FilePath].end()) {
+            FilenameToCallExprs[FilePath][MacroName] =
+                std::vector<const clang::CallExpr *>();
+          }
+          FilenameToCallExprs[FilePath][MacroName].push_back(CE);
+        } else {
+          auto Loc = FD->getLocation();
+          // Get the spelling location for Loc
+          auto SLoc = SM.getSpellingLoc(Loc);
+          std::string FilePath = SM.getFilename(SLoc).str();
+
+          if (FilePath == "") {
+            // Couldn't get the spelling location, try to get the presumed
+            // location
+#if DEBUG
+            llvm::outs << "Couldn't get the spelling location, try to get the "
+                          "presumed "
+                          "location\n";
+#endif
+            auto PLoc = SM.getPresumedLoc(Loc);
+            assert(
+                PLoc.isValid() &&
+                "Caller's Presumed location in the source file is invalid\n");
+            FilePath = PLoc.getFilename();
+            assert(FilePath != "" &&
+                   "Caller's location in the source file is invalid.");
+          }
+
+          auto FuncDeclStr = ca_utils::getFuncDeclString(FD);
+
+          if (FilenameToCallExprs.find(FilePath) == FilenameToCallExprs.end()) {
+            FilenameToCallExprs[FilePath] =
+                std::map<std::string, std::vector<const clang::CallExpr *>>();
+          }
+          if (FilenameToCallExprs[FilePath].find(FuncDeclStr) ==
+              FilenameToCallExprs[FilePath].end()) {
+            FilenameToCallExprs[FilePath][FuncDeclStr] =
+                std::vector<const clang::CallExpr *>();
+          }
+          FilenameToCallExprs[FilePath][FuncDeclStr].push_back(CE);
         }
-        if (FilenameToCallExprs[FilePath].find(FuncDeclStr) ==
-            FilenameToCallExprs[FilePath].end()) {
-          FilenameToCallExprs[FilePath][FuncDeclStr] =
-              std::vector<const clang::CallExpr *>();
-        }
-        FilenameToCallExprs[FilePath][FuncDeclStr].push_back(CE);
       }
 #ifdef DEBUG
       /// Determine whether this declaration came from an AST file (such as
@@ -142,8 +215,14 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
 
         for (auto &it3 : it2.second) {
           if (!caller_cnt) {
-            auto FD = it3->getDirectCallee();
-            ca_utils::printFuncDecl(FD, SM);
+            auto CallerLoc = it3->getBeginLoc();
+            if (SM.isMacroBodyExpansion(CallerLoc) ||
+                SM.isMacroArgExpansion(CallerLoc)) {
+              llvm::outs() << it2.first << "\n";
+            } else {
+              auto FD = it3->getDirectCallee();
+              ca_utils::printFuncDecl(FD, SM);
+            }
             llvm::outs() << "   - Caller Counts: **" << it2.second.size()
                          << "**, details:\n";
           }
@@ -170,25 +249,25 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
       for (auto &it2 : it.second) {
         auto FD = it2.first;
         std::string FuncNameWithLoc = "";
-        int caller_cnt = 0;
+        int callerCnt = 0;
         for (auto &it3 : it2.second) {
-          if (!caller_cnt) {
+          if (!callerCnt) {
             auto FD = it3->getDirectCallee();
             FuncNameWithLoc +=
                 ca_utils::getFuncDeclString(FD) + "(" +
                 ca_utils::getLocationString(SM, FD->getLocation()) + ")";
           }
-          ++caller_cnt;
+          ++callerCnt;
         }
         if ((*ModuleFunctionCallCnt)[HeaderName].find(FuncNameWithLoc) ==
             (*ModuleFunctionCallCnt)[HeaderName].end()) {
           (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] = 0;
         }
         (*ModuleFunctionCallCnt)[HeaderName][FuncNameWithLoc] +=
-            1 * 100000 + caller_cnt;
+            1 * 100000 + callerCnt;
         /*
-        // New Metrics
-        caller_cnt * 100000 + 1;
+        // Former Metrics
+        callerCnt * 100000 + 1;
         */
       }
     }
@@ -619,7 +698,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
               });
     for (auto &it2 : sortedFiles) {
       llvm::outs() << ++file_cnt << ". "
-                << "`" << it2.first << "`: `" << it2.second << "`\n";
+                   << "`" << it2.first << "`: `" << it2.second << "`\n";
     }
 
     llvm::outs() << "---\n\n";
