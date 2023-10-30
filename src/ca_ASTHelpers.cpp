@@ -328,6 +328,10 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                         "`\n";
     ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
 
+    auto Loc = FD->getLocation();
+    if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
+      llvm::outs() << "- Expanded from macros.\n";
+    }
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
 #ifdef DEBUG
