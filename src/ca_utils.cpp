@@ -232,7 +232,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
 #endif
 
 #ifdef CHN
-      output << "   - 外部类型详细信息: `" << RTD->getQualifiedNameAsString()
+      output << "   - 外部类型名称: `" << RTD->getQualifiedNameAsString()
              << "`\n";
 
       output << "      - 位置: `"

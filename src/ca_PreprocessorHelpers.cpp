@@ -205,7 +205,7 @@ void MacroPPCallbacks::MacroExpands(const clang::Token &MacroNameTok,
     }
     if (MacroDepth == 0) {
 #ifdef CHN
-      llvm::outs() << "## 宏 " << ++MacroCounts << ": \n```\n";
+      llvm::outs() << "```\n\n## 宏 " << ++MacroCounts << ": \n```\n";
 #else
       llvm::outs() << "```\n\n## Macro " << ++MacroCounts << ": \n```\n";
 #endif
