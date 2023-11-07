@@ -93,6 +93,12 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g\
     -fdiagnostics-color=always")
 
+# Settings for using Chinese output
+option(USE_CHINESE "Use Chinese output" OFF)
+if(USE_CHINESE)
+    add_definitions(-DCHN)
+endif()
+
 # LLVM/Clang is normally built without RTTI. Be consistent with that.
 if(NOT LLVM_ENABLE_RTTI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")

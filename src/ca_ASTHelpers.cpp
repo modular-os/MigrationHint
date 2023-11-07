@@ -572,7 +572,11 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
         llvm::outs() << "   - Function " << FD->getNameAsString()
                      << " is declared as inline.\n";
       }
+#ifdef CHN
+      llvm::outs() << "   - 调用位置: ";
+#else
       llvm::outs() << "   - Call Location: ";
+#endif
       ca_utils::printCaller(CE, SM);
       ++externalFunctionCallCnt;
     }

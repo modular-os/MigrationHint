@@ -38,7 +38,7 @@ fi
 
 # Compile
 pushd $BUILD
-    cmake .. -G Ninja
+    cmake .. -G Ninja -D USE_CHINESE=ON
     ninja
     set -x
     # --enable-struct-analysis \
