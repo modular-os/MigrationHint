@@ -94,10 +94,15 @@ void ExternalCallMatcher::run(
           } else {
             MacroLocation = tmpStack[tmpStack.size() - 2];
           }
+#ifdef CHN
+          auto MacroName =
+              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
+              "(宏)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
+#else
           auto MacroName =
               ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
               "(Macro)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
-
+#endif
           // auto Loc = FD->getLocation();
           // Get the spelling location for Loc
           auto SLoc = SM.getSpellingLoc(MacroLocation);
@@ -201,14 +206,23 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
 #endif
   auto &SM = AST_SM;
   if (mode == Print) {
+#ifdef CHN
+    llvm::outs() << "# 外部函数调用报告\n\n";
+#else
     llvm::outs() << "# External Function Call Report\n\n";
+#endif
 
     // Traverse the FilenameToCallExprs
     int cnt = 0;
     for (auto &it : FilenameToCallExprs) {
+#ifdef CHN
+      llvm::outs() << "## 头文件: " << it.first << "\n";
+      llvm::outs() << "- 外部函数调用次数: " << it.second.size() << "\n\n";
+#else
       llvm::outs() << "## Header File: " << it.first << "\n";
       llvm::outs() << "- External Function Count: " << it.second.size()
                    << "\n\n";
+#endif
       int file_cnt = 0;
       for (auto &it2 : it.second) {
         auto FD = it2.first;
@@ -224,16 +238,28 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
               int pos = 0;
               pos = MacroNameWithLoc.find('`');
               llvm::outs() << "`" << MacroNameWithLoc.substr(0, pos) << "`\n";
+#ifdef CHN
+              llvm::outs() << "   - 位置: "
+                           << MacroNameWithLoc.substr(
+                                  pos, MacroNameWithLoc.size() - pos)
+                           << "\n";
+#else
               llvm::outs() << "   - Location: "
                            << MacroNameWithLoc.substr(
                                   pos, MacroNameWithLoc.size() - pos)
                            << "\n";
+#endif
             } else {
               auto FD = it3->getDirectCallee();
               ca_utils::printFuncDecl(FD, SM);
             }
+#ifdef CHN
+            llvm::outs() << "   - 调用次数: **" << it2.second.size()
+                         << "**, 详情:\n";
+#else
             llvm::outs() << "   - Caller Counts: **" << it2.second.size()
                          << "**, details:\n";
+#endif
           }
           llvm::outs() << "      " << ++caller_cnt << ". ";
           ca_utils::printCaller(it3, SM);
@@ -245,8 +271,13 @@ void ExternalCallMatcher::onEndOfTranslationUnit() {
       llvm::outs() << "---\n\n";
     }
 
+#ifdef CHN
+    llvm::outs() << "# 总结\n"
+                 << "- 外部函数调用次数: " << cnt << "\n";
+#else
     llvm::outs() << "# Summary\n"
                  << "- External Function Call Count: " << cnt << "\n";
+#endif
   } else if (mode == Collect) {
     // llvm::outs() << "Hi" << "\n";
     for (auto &it : FilenameToCallExprs) {
@@ -295,8 +326,13 @@ void ExternalDependencyMatcher::onStartOfTranslationUnit() {
 #ifdef DEBUG
   llvm::outs() << "In onStartOfTranslationUnit\n";
 #endif
+#ifdef CHN
+  llvm::outs() << "# 外部依赖报告\n\n";
+  llvm::outs() << "## 全局: \n";
+#else
   llvm::outs() << "# External Dependencies Report\n\n";
   llvm::outs() << "## Global: \n";
+#endif
   externalStructCnt = 0;
   externalVarDeclCnt = 0;
   externalParamVarDeclCnt = 0;
@@ -315,23 +351,40 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                  << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 
+#ifdef CHN
+    llvm::outs() << "\n\n---\n\n\n## 函数: `" << ca_utils::getFuncDeclString(FD)
+                 << "`\n"
+                 << "- 函数位置: `"
+                 << ca_utils::getLocationString(SM, FD->getLocation()) << "`\n";
+#else
     llvm::outs() << "\n\n---\n\n\n## Function: `"
                  << ca_utils::getFuncDeclString(FD) << "`\n"
                  << "- Function Location: `"
                  << ca_utils::getLocationString(SM, FD->getLocation()) << "`\n";
+#endif
     isInFunction = 1;
 #ifdef DEBUG
     llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
 #endif
 
-    // Deal with the external return type
+// Deal with the external return type
+#ifdef CHN
+    llvm::outs() << "- 返回类型: `" + FD->getReturnType().getAsString() + "`\n";
+#else
     llvm::outs() << "- Return Type: `" + FD->getReturnType().getAsString() +
                         "`\n";
+#endif
+
     ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
 
     auto Loc = FD->getLocation();
     if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
+// Judging whether the caller is expanded from predefined macros.
+#ifdef CHN
+      llvm::outs() << "- 该函数是宏展开的一部分。\n";
+#else
       llvm::outs() << "- Expanded from macros.\n";
+#endif
     }
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
@@ -340,20 +393,37 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                    << ca_utils::getLocationString(SM, PVD->getLocation())
                    << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
+#ifdef CHN
+      std::string ExtraInfo =
+          "\n### 函数参数定义: `" + PVD->getNameAsString() + "`\n";
+      ExtraInfo += "   - 参数位置: `" +
+                   ca_utils::getLocationString(SM, PVD->getLocation()) + "`\n";
+      ExtraInfo += "   - 参数类型: `" + PVD->getType().getAsString() + "`\n";
+#else
       std::string ExtraInfo =
           "\n### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
       ExtraInfo += "   - Location: `" +
                    ca_utils::getLocationString(SM, PVD->getLocation()) + "`\n";
       ExtraInfo += "   - Type: `" + PVD->getType().getAsString() + "`\n";
+#endif
       if (const auto ParentFuncDeclContext = PVD->getParentFunctionOrMethod()) {
         // Notice: Method is only used in C++
         if (const auto ParentFD =
                 dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+#ifdef CHN
+          ExtraInfo += "   - 父函数情况: `" +
+                       ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#else
           ExtraInfo += "   - Function: `" +
                        ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#endif
         }
       } else if (const auto TU = PVD->getTranslationUnitDecl()) {
+#ifdef CHN
+        ExtraInfo += "   - 父函数情况: 全局变量, 没有父函数.\n";
+#else
         ExtraInfo += "   - Parent: Global variable, no parent function.\n";
+#endif
       }
 
       // Output the init expr for the VarDecl
@@ -363,11 +433,20 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                                             PVD->getInit()->getSourceRange()),
                                         SM, LO);
         if (InitText.str() != "" && InitText.str() != "NULL") {
+#ifdef CHN
+          ExtraInfo +=
+              "   - 参数初始化: \n   ```c\n" + InitText.str() + "\n   ```\n";
+#else
           ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
                        InitText.str() + "\n   ```\n";
+#endif
 
         } else {
+#ifdef CHN
+          ExtraInfo += "   - 参数初始化: 有初始化, 但是没有找到文本.\n";
+#else
           ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
+#endif
         }
       }
       auto isExternalType = ca_utils::getExternalStructType(
@@ -396,41 +475,71 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
   if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
     // Output the basic info for specific RecordDecl
     std::string BasicInfo = "";
-
+#ifdef CHN
+    BasicInfo = "\n### 结构体定义: `" + RD->getQualifiedNameAsString() + "`\n";
+#else
     BasicInfo = "\n### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
+#endif
 
-    // Output the basic location info for the fieldDecl
+// Output the basic location info for the fieldDecl
+#ifdef CHN
+    BasicInfo += "- 结构体位置: `" +
+                 ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
+#else
     BasicInfo += "- Location: `" +
                  ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
+#endif
 
     if (const auto ParentFuncDeclContext = RD->getParentFunctionOrMethod()) {
       // Notice: Method is only used in C++
       if (const auto ParentFD =
               dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+#ifdef CHN
+        BasicInfo +=
+            "- 父函数情况: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#else
         BasicInfo +=
             "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#endif
       }
     } else if (const auto TU = RD->getTranslationUnitDecl()) {
+#ifdef CHN
+      BasicInfo += "- 父函数情况: 全局变量, 没有父函数.\n";
+#else
       BasicInfo += "- Parent: Global variable, no parent function.\n";
+#endif
       if (isInFunction) {
 #ifdef DEBUG
         llvm::outs() << "-Field changes here. StructDecl 1->0.\n";
 #endif
         isInFunctionOldValue = isInFunction;
         isInFunction = 0;
+#ifdef CHN
+        BasicInfo = "\n\n---\n\n\n## 全局: \n" + BasicInfo;
+#else
         BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
+#endif
       }
     }
     llvm::outs() << BasicInfo;
 
-    // Output the full definition for the fieldDecl
+// Output the full definition for the fieldDecl
+#ifdef CHN
+    llvm::outs() << "- 结构体定义: \n"
+                 << "```c\n";
+#else
     llvm::outs() << "- Full Definition: \n"
                  << "```c\n";
+#endif
     RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
     llvm::outs() << "\n```\n";
 
-    // Traverse its fieldDecl and find external struct member
+// Traverse its fieldDecl and find external struct member
+#ifdef CHN
+    llvm::outs() << "- 结构体成员: \n";
+#else
     llvm::outs() << "- External Struct Members: \n";
+#endif
     for (const auto &FD : RD->fields()) {
 #ifdef DEBUG
       llvm::outs() << "\t" << FD->getType().getAsString() << " "
@@ -438,8 +547,13 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
                    << FDType->isStructureOrClassType() << "\n";
 #endif
       std::string ExtraInfo = "";
+#ifdef CHN
+      ExtraInfo += "\n### 结构体成员: `" + FD->getType().getAsString() + " " +
+                   FD->getNameAsString() + "`\n";
+#else
       ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
                    FD->getNameAsString() + "`\n";
+#endif
       bool IsExternalType = ca_utils::getExternalStructType(
           FD->getType(), llvm::outs(), SM, ExtraInfo);
       if (IsExternalType) {
@@ -479,26 +593,46 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
 
                  << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
+#ifdef CHN
+    std::string ExtraInfo = "\n### 变量定义: `" + VD->getNameAsString() + "`\n";
+    ExtraInfo += "   - 变量位置: `" +
+                 ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
+    ExtraInfo += "   - 变量类型: `" + VD->getType().getAsString() + "`\n";
+#else
     std::string ExtraInfo = "\n### VarDecl: `" + VD->getNameAsString() + "`\n";
     ExtraInfo += "   - Location: `" +
                  ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
     ExtraInfo += "   - Type: `" + VD->getType().getAsString() + "`\n";
+#endif
     if (const auto ParentFuncDeclContext = VD->getParentFunctionOrMethod()) {
       // Notice: Method is only used in C++
       if (const auto ParentFD =
               dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
+#ifdef CHN
+        ExtraInfo += "   - 父函数情况: `" +
+                     ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#else
         ExtraInfo +=
             "   - Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
+#endif
       }
     } else if (const auto TU = VD->getTranslationUnitDecl()) {
+#ifdef CHN
+      ExtraInfo += "   - 父函数情况: 全局变量, 没有父函数.\n";
+#else
       ExtraInfo += "   - Parent: Global variable, no parent function.\n";
+#endif
       if (isInFunction) {
 #ifdef DEBUG
         llvm::outs() << "--Field changes here, VarDecl 1->0.\n";
 #endif
         isInFunctionOldValue = isInFunction;
         isInFunction = 0;
+#ifdef CHN
+        ExtraInfo = "\n\n---\n\n\n## 全局: \n" + ExtraInfo;
+#else
         ExtraInfo = "\n\n---\n\n\n## Global: \n" + ExtraInfo;
+#endif
       }
     }
 
@@ -509,11 +643,20 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
                                           VD->getInit()->getSourceRange()),
                                       SM, LO);
       if (InitText.str() != "" && InitText.str() != "NULL") {
+#ifdef CHN
+        ExtraInfo +=
+            "   - 变量初始化: \n   ```c\n" + InitText.str() + "\n   ```\n";
+#else
         ExtraInfo += "   - VarDecl Has Init: \n   ```c\n" + InitText.str() +
                      "\n   ```\n";
+#endif
 
       } else {
+#ifdef CHN
+        ExtraInfo += "   - 变量初始化: 有初始化, 但是没有找到文本.\n";
+#else
         ExtraInfo += "   - VarDecl Has Init, but no text found.\n";
+#endif
       }
     }
 
@@ -546,11 +689,20 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
                    << "^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
       std::string ExtraInfo = "";
+#ifdef CHN
+      ExtraInfo += "\n### 隐式转换: \n";
+      ExtraInfo +=
+          "   - 位置: " + ca_utils::getLocationString(SM, ICE->getBeginLoc()) +
+          "\n";
+      ExtraInfo +=
+          "   - 转换类型: " + std::string(ICE->getCastKindName()) + "\n";
+#else
       ExtraInfo += "\n### ImplicitCastExpr\n";
       ExtraInfo += "   - Location: " +
                    ca_utils::getLocationString(SM, ICE->getBeginLoc()) + "\n";
       ExtraInfo +=
           "   - CastKind: " + std::string(ICE->getCastKindName()) + "\n";
+#endif
       int isExternal = ca_utils::getExternalStructType(
           ICE->getType(), llvm::outs(), SM, ExtraInfo);
       if (isExternal) {
@@ -566,11 +718,20 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
         SM.isInMainFile(CE->getBeginLoc())) {
+#ifdef CHN
+      llvm::outs() << "\n### 外部函数调用: ";
+#else
       llvm::outs() << "\n### External Function Call: ";
+#endif
       ca_utils::printFuncDecl(FD, SM);
       if (FD->isInlineSpecified()) {
-        llvm::outs() << "   - Function " << FD->getNameAsString()
-                     << " is declared as inline.\n";
+#ifdef CHN
+        llvm::outs() << "   - 函数 `" << FD->getNameAsString()
+                     << "` 被声明为内联函数.\n";
+#else
+        llvm::outs() << "   - Function `" << FD->getNameAsString()
+                     << "` is declared as inline.\n";
+#endif
       }
 #ifdef CHN
       llvm::outs() << "   - 调用位置: ";
@@ -632,6 +793,15 @@ void ExternalDependencyMatcher::onEndOfTranslationUnit() {
 #ifdef DEBUG
   llvm::outs() << "In onEndOfTranslationUnit\n";
 #endif
+
+#ifdef CHN
+  llvm::outs() << "\n\n---\n\n\n# 总结\n"
+               << "- 外部结构体定义: " << externalStructCnt << "\n"
+               << "- 外部变量定义: " << externalVarDeclCnt << "\n"
+               << "- 外部函数参数定义: " << externalParamVarDeclCnt << "\n"
+               << "- 外部隐式转换: " << externalImplicitExprCnt << "\n"
+               << "- 外部函数调用: " << externalFunctionCallCnt << "\n\n";
+#else
   llvm::outs() << "\n\n---\n\n\n# Summary\n"
                << "- External Struct Count: " << externalStructCnt << "\n"
                << "- External VarDecl Count: " << externalVarDeclCnt << "\n"
@@ -641,6 +811,7 @@ void ExternalDependencyMatcher::onEndOfTranslationUnit() {
                << "\n"
                << "- External Function Call Count: " << externalFunctionCallCnt
                << "\n\n";
+#endif
 }
 
 int ModuleAnalysisHelper(std::string sourceFiles) {
@@ -705,7 +876,12 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   /*
     3. Output the results
   */
+
+#ifdef CHN
+  llvm::outs() << "# 外部模块调用报告\n\n";
+#else
   llvm::outs() << "# External Module Call Report\n\n";
+#endif
 
   // Traverse the FilenameToCallExprs
   int cnt = 0;
@@ -732,8 +908,24 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
       int pos = 0;
       pos = MacroNameWithLoc.find('`');
       if (file_cnt == 0) {
+#ifdef CHN
+        llvm::outs() << "## 头文件: " << it.first << "\n";
+#else
         llvm::outs() << "## Header File: " << it.first << "\n";
+#endif
       }
+#ifdef CHN
+      llvm::outs() << ++file_cnt << ". "
+                   << "`" << MacroNameWithLoc.substr(0, pos) << "`\n"
+                   << "   - 位置: "
+                   << MacroNameWithLoc.substr(pos,
+                                              MacroNameWithLoc.size() - pos)
+                   << "\n"
+                   << "   - 调用次数: `" << it2.second / 100000 << "`\n"
+                   << "   - 调用函数: `"
+                   << "<Filled-By-AI>"
+                   << "`\n\n";
+#else
       llvm::outs() << ++file_cnt << ". "
                    << "`" << MacroNameWithLoc.substr(0, pos) << "`\n"
                    << "   - Location: "
@@ -745,6 +937,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
                    << "   - Description: `"
                    << "<Filled-By-AI>"
                    << "`\n\n";
+#endif
     }
     if (file_cnt) {
       llvm::outs() << "---\n\n";
