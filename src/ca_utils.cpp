@@ -89,8 +89,13 @@ std::string getFuncDeclString(const clang::FunctionDecl *FD) {
 void printFuncDecl(const clang::FunctionDecl *FD,
                    const clang::SourceManager &SM) {
   llvm::outs() << "`" << getFuncDeclString(FD) << "`\n";
+#ifdef CHN
+  llvm::outs() << "   - 函数位置: `" << getLocationString(SM, FD->getLocation())
+               << "`\n";
+#else
   llvm::outs() << "   - Location: `" << getLocationString(SM, FD->getLocation())
                << "`\n";
+#endif
   // FD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
 #ifdef DEBUG
   // Print function with parameters to string FuncDeclStr;
@@ -129,7 +134,7 @@ std::string getMacroName(const clang::SourceManager &SM,
   }
 #endif
   while (*EndBuf != '\0') {
-    if (*EndBuf == '('  ) {
+    if (*EndBuf == '(') {
       // || *EndBuf != ')'|| *EndBuf != ','
       break;
     }
@@ -225,6 +230,32 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
       output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
              << "`\n";
 #endif
+
+#ifdef CHN
+      output << "   - 外部类型详细信息: `" << RTD->getQualifiedNameAsString()
+             << "`\n";
+
+      output << "      - 位置: `"
+             << ca_utils::getLocationString(SM, RTD->getLocation()) << "`\n";
+
+      output << "      - 是否为指针: ";
+      if (isPointer) {
+        output << "`是`\n";
+      } else {
+        output << "`否`\n";
+      }
+
+      if (!RTD->field_empty()) {
+        output << "      - 完整定义: \n"
+               << "      ```c\n";
+        RTD->print(output.indent(6),
+                   clang::PrintingPolicy(clang::LangOptions()), 3);
+        output << "\n      ```\n";
+      } else {
+        output << "       - 完整定义: "
+               << "**空结构体!**\n";
+      }
+#else
       output << ExtraInfo << "   - External Type Detailed Info: `"
              << RTD->getQualifiedNameAsString() << "`\n";
 
@@ -248,6 +279,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
         output << "       - Full Definition: "
                << "**Empty Field!**\n";
       }
+#endif
     }
     return !InCurrentFile;
   } else {

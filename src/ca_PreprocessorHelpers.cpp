@@ -173,7 +173,11 @@ void MacroPPCallbacks::InclusionDirective(
   auto &SM = compiler.getSourceManager();
   if (SM.isInMainFile(HashLoc)) {
     if (HeaderCounts == 0) {
+#ifdef CHN
+      llvm::outs() << "# 头文件分析: \n";
+#else
       llvm::outs() << "# Header File: \n";
+#endif
     }
     llvm::outs() << ++HeaderCounts << ". `"
                  << ca_utils::getLocationString(SM, HashLoc) << "`: `"
@@ -193,10 +197,18 @@ void MacroPPCallbacks::MacroExpands(const clang::Token &MacroNameTok,
     int MacroDepth = getMacroExpansionStackDepth(PP.getSpelling(MacroNameTok),
                                                  MacroDefinition, Args, PP);
     if (MacroCounts == 0) {
+#ifdef CHN
+      llvm::outs() << "# 宏展开分析: \n";
+#else
       llvm::outs() << "# Macro Expansion Analysis: \n";
+#endif
     }
     if (MacroDepth == 0) {
+#ifdef CHN
+      llvm::outs() << "## 宏 " << ++MacroCounts << ": \n```\n";
+#else
       llvm::outs() << "```\n\n## Macro " << ++MacroCounts << ": \n```\n";
+#endif
     }
     llvm::outs().indent(MacroDepth * 3)
         << PP.getSpelling(MacroNameTok) << ", "
