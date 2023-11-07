@@ -1,3 +1,4 @@
+// Encode with UTF-8
 // #pragma once
 
 // #ifndef _CA_AST_HELPERS_HPP

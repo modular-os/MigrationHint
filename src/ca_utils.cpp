@@ -1,3 +1,4 @@
+// Encode with UTF-8
 #include "ca_utils.hpp"
 
 #include <clang/AST/AST.h>
