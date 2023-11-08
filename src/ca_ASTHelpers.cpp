@@ -947,6 +947,70 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   return returnStatus;
 }
 
+void generateReport(std::string SourceFilePath) {
+  clang::ast_matchers::MatchFinder Finder;
+  using namespace clang::ast_matchers;
+  std::string ErrMsg;
+  auto CompileDatabase =
+      clang::tooling::CompilationDatabase::autoDetectFromSource(SourceFilePath,
+                                                                ErrMsg);
+  clang::tooling::ClangTool Tool(*CompileDatabase, SourceFilePath);
+  DeclarationMatcher ReportMatcherPattern =
+      anyOf(recordDecl().bind("recDecl"), varDecl().bind("varDecl"),
+            functionDecl().bind("funcDecl"));
+  ca::ReportMatcher Matcher;
+  Finder.addMatcher(ReportMatcherPattern, &Matcher);
+
+  llvm::outs() << "#### 细节分析\n"
+               << "\n---\n\n"
+               << "> **" << ca_utils::getCoreFileNameFromPath(SourceFilePath)
+               << "**\n"
+               << "\n---\n\n";
+
+  Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+}
+
+void ReportMatcher::run(
+    const clang::ast_matchers::MatchFinder::MatchResult &Result) {
+  auto &SM = *Result.SourceManager;
+  auto &LO = Result.Context->getLangOpts();
+  if (auto VD = Result.Nodes.getNodeAs<clang::VarDecl>("varDecl")) {
+    auto Loc = VD->getLocation();
+    if (SM.isInMainFile(Loc) && !SM.isMacroBodyExpansion(Loc) &&
+        !SM.isMacroArgExpansion(Loc)) {
+      if (VD->getParentFunctionOrMethod() == nullptr) {
+        llvm::outs() << "\n```c\n"
+                     << VD->getType().getAsString() << " "
+                     << VD->getNameAsString() << "\n```\n";
+        llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n";
+      }
+    }
+  } else if (auto FD =
+                 Result.Nodes.getNodeAs<clang::FunctionDecl>("funcDecl")) {
+    auto Loc = FD->getLocation();
+    if (SM.isInMainFile(Loc) && !SM.isMacroBodyExpansion(Loc) &&
+        !SM.isMacroArgExpansion(Loc)) {
+      if (FD->getParentFunctionOrMethod() == nullptr) {
+        llvm::outs() << "\n```c\n"
+                     << ca_utils::getFuncDeclString(FD) << "\n```\n";
+        llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n"
+                     << "- **核心逻辑**\n  <filled-by-ai>\n\n"
+                     << "- **外部能力使用**\n  <filled-by-CodeAnalysis>\n\n";
+      }
+    }
+  } else if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>("recDecl")) {
+    auto Loc = RD->getLocation();
+    if (SM.isInMainFile(Loc) && !SM.isMacroBodyExpansion(Loc) &&
+        !SM.isMacroArgExpansion(Loc)) {
+      if (RD->getParentFunctionOrMethod() == nullptr) {
+        llvm::outs() << "\n```c\n";
+        RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
+        llvm::outs() << "\n```\n";
+        llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n";
+      }
+    }
+  }
+}
 }  // namespace ca
 
 // #endif  // !_CA_AST_HELPERS_HPP

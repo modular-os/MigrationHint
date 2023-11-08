@@ -97,6 +97,11 @@ llvm::cl::opt<bool> OptionEnableModuleAnalysis(
                    "using the -s option, and distinct source files should be "
                    "provided as comma-separated intervals."),
     llvm::cl::init(false));
+
+llvm::cl::opt<bool> OptionGenerateReport(
+    "generate-report", llvm::cl::desc("Generate a report for huawei."),
+    llvm::cl::init(false));
+
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
         2. The Compilation Database should be named as compile_commands.json.
@@ -141,6 +146,11 @@ int main(int argc, const char **argv) {
         << "Error! Missing critical option: No source file path found! You can "
            "use option -S to specify the source file path.\n";
     exit(1);
+  }
+
+  if (OptionGenerateReport) {
+    ca::generateReport(OptionSourceFilePath);
+    return 0;
   }
 #ifdef DEPRECATED
   // Deprecated, now we use llvm::cl::opt to parse the options.

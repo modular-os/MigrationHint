@@ -37,6 +37,20 @@
 namespace ca {
 int ModuleAnalysisHelper(std::string sourceFiles);
 
+void generateReport(std::string SourceFilePath);
+
+class ReportMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+//   void onStartOfTranslationUnit() override;
+
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+
+//   void onEndOfTranslationUnit() override;
+
+};
+
 /**********************************************************************
  * 2. Matcher Callbacks
  **********************************************************************/

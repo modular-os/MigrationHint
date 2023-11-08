@@ -29,9 +29,9 @@ std::string getCoreFileNameFromPath(const std::string &path) {
   assert(lastDotPos != std::string::npos &&
          "Error! Incorrect source file format.\n");
   coreFileName = coreFileName.substr(0, lastDotPos);
+#ifdef DEBUG
   llvm::outs() << "Original path is: " << path
                << "; Core File path is: " << coreFileName << "\n";
-#ifdef DEBUG
 #endif
 
   return coreFileName;
