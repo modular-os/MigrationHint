@@ -43,7 +43,9 @@ std::string getLocationString(const clang::SourceManager &SM,
   auto SLoc = SM.getSpellingLoc(Loc);
   std::string FilePath = SM.getFilename(SLoc).str();
   unsigned LineNumber = SM.getSpellingLineNumber(SLoc);
+#ifdef DEPRECATED
   unsigned ColumnNumber = SM.getSpellingColumnNumber(SLoc);
+#endif
 
   if (FilePath == "") {
     // Couldn't get the spelling location, try to get the presumed location
@@ -60,10 +62,8 @@ std::string getLocationString(const clang::SourceManager &SM,
         FilePath != "" &&
         "[getLocationString]: Location string in the source file is invalid.");
     LineNumber = PLoc.getLine();
-    ColumnNumber = PLoc.getColumn();
   }
-  return FilePath + ":" + std::to_string(LineNumber) + ":" +
-         std::to_string(ColumnNumber);
+  return FilePath + ":" + std::to_string(LineNumber);
 }
 
 std::string getFuncDeclString(const clang::FunctionDecl *FD) {
@@ -153,10 +153,8 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   assert(PLoc.isValid() && "Caller's location in the source file is invalid\n");
   std::string FilePath = PLoc.getFilename();
   unsigned LineNumber = PLoc.getLine();
-  unsigned ColumnNumber = PLoc.getColumn();
 
-  llvm::outs() << "`" << FilePath << ":" << LineNumber << ":" << ColumnNumber
-               << "`\n";
+  llvm::outs() << "`" << FilePath << ":" << LineNumber << "`\n";
 
 #ifdef DEPRECATED
   // Judging whether the caller is expanded from predefined macros.
