@@ -991,11 +991,14 @@ void ReportMatcher::run(
     if (SM.isInMainFile(Loc) && !SM.isMacroBodyExpansion(Loc) &&
         !SM.isMacroArgExpansion(Loc)) {
       if (FD->getParentFunctionOrMethod() == nullptr) {
-        llvm::outs() << "\n```c\n"
-                     << ca_utils::getFuncDeclString(FD) << "\n```\n";
-        llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n"
-                     << "- **核心逻辑**\n  <filled-by-ai>\n\n"
-                     << "- **外部能力使用**\n  <filled-by-CodeAnalysis>\n\n";
+        if (!FD->hasBody() ||
+            (FD->hasBody() && FD->doesThisDeclarationHaveABody())) {
+          llvm::outs() << "\n```c\n"
+                       << ca_utils::getFuncDeclString(FD) << "\n```\n";
+          llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n"
+                       << "- **核心逻辑**\n  <filled-by-ai>\n\n"
+                       << "- **外部能力使用**\n  <filled-by-CodeAnalysis>\n\n";
+        }
       }
     }
   } else if (auto RD = Result.Nodes.getNodeAs<clang::RecordDecl>("recDecl")) {
