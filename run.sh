@@ -42,10 +42,10 @@ pushd $BUILD
     ninja
     set -x
     # --generate-report \
+    # --enable-pp-analysis \
+    # --enable-function-analysis-by-headers \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE3} \
     --enable-struct-analysis \
-    --enable-pp-analysis \
-    --enable-function-analysis-by-headers \
     --enable-function-analysis  \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \

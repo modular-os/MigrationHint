@@ -40,6 +40,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <cmath>
+#include <string>
 
 #include "ca_ASTHelpers.hpp"
 namespace ca {
@@ -394,11 +395,13 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                    << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 #ifdef CHN
-      std::string ExtraInfo =
-          "\n### 函数参数定义: `" + PVD->getNameAsString() + "`\n";
-      ExtraInfo += "   - 参数位置: `" +
+      std::string ExtraInfo = "\n   `" + PVD->getType().getAsString() + " " +
+                              PVD->getNameAsString() + "`\n";
+      ExtraInfo += "   - 类型: `外部类型（函数参数）`\n";
+      ExtraInfo += "   - 定义路径: `" +
                    ca_utils::getLocationString(SM, PVD->getLocation()) + "`\n";
-      ExtraInfo += "   - 参数类型: `" + PVD->getType().getAsString() + "`\n";
+      ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
+      ExtraInfo += "   - 外部类型细节：\n";
 #else
       std::string ExtraInfo =
           "\n### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
@@ -411,8 +414,6 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
         if (const auto ParentFD =
                 dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
 #ifdef CHN
-          ExtraInfo += "   - 父函数情况: `" +
-                       ca_utils::getFuncDeclString(ParentFD) + "`\n";
 #else
           ExtraInfo += "   - Function: `" +
                        ca_utils::getFuncDeclString(ParentFD) + "`\n";
@@ -420,7 +421,6 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
         }
       } else if (const auto TU = PVD->getTranslationUnitDecl()) {
 #ifdef CHN
-        ExtraInfo += "   - 父函数情况: 全局变量, 没有父函数.\n";
 #else
         ExtraInfo += "   - Parent: Global variable, no parent function.\n";
 #endif
@@ -434,8 +434,6 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                                         SM, LO);
         if (InitText.str() != "" && InitText.str() != "NULL") {
 #ifdef CHN
-          ExtraInfo +=
-              "   - 参数初始化: \n   ```c\n" + InitText.str() + "\n   ```\n";
 #else
           ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
                        InitText.str() + "\n   ```\n";
@@ -443,7 +441,6 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
 
         } else {
 #ifdef CHN
-          ExtraInfo += "   - 参数初始化: 有初始化, 但是没有找到文本.\n";
 #else
           ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
 #endif
@@ -476,15 +473,12 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
     // Output the basic info for specific RecordDecl
     std::string BasicInfo = "";
 #ifdef CHN
-    BasicInfo = "\n### 结构体定义: `" + RD->getQualifiedNameAsString() + "`\n";
 #else
     BasicInfo = "\n### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
 #endif
 
 // Output the basic location info for the fieldDecl
 #ifdef CHN
-    BasicInfo += "- 结构体位置: `" +
-                 ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
 #else
     BasicInfo += "- Location: `" +
                  ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
@@ -495,8 +489,6 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
       if (const auto ParentFD =
               dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
 #ifdef CHN
-        BasicInfo +=
-            "- 父函数情况: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
 #else
         BasicInfo +=
             "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
@@ -504,7 +496,6 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
       }
     } else if (const auto TU = RD->getTranslationUnitDecl()) {
 #ifdef CHN
-      BasicInfo += "- 父函数情况: 全局变量, 没有父函数.\n";
 #else
       BasicInfo += "- Parent: Global variable, no parent function.\n";
 #endif
@@ -515,7 +506,6 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
         isInFunctionOldValue = isInFunction;
         isInFunction = 0;
 #ifdef CHN
-        BasicInfo = "\n\n---\n\n\n## 全局: \n" + BasicInfo;
 #else
         BasicInfo = "\n\n---\n\n\n## Global: \n" + BasicInfo;
 #endif
@@ -525,18 +515,15 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
 
 // Output the full definition for the fieldDecl
 #ifdef CHN
-    llvm::outs() << "- 结构体定义: \n"
-                 << "```c\n";
 #else
     llvm::outs() << "- Full Definition: \n"
                  << "```c\n";
-#endif
     RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
     llvm::outs() << "\n```\n";
+#endif
 
 // Traverse its fieldDecl and find external struct member
 #ifdef CHN
-    llvm::outs() << "- 结构体成员: \n";
 #else
     llvm::outs() << "- External Struct Members: \n";
 #endif
@@ -548,8 +535,16 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
 #endif
       std::string ExtraInfo = "";
 #ifdef CHN
-      ExtraInfo += "\n### 结构体成员: `" + FD->getType().getAsString() + " " +
+      ExtraInfo += "\n   `" + FD->getType().getAsString() + " " +
                    FD->getNameAsString() + "`\n";
+      ExtraInfo += "   - 类型: `外部类型（结构体声明的外部成员）`\n";
+      ExtraInfo += "   - 定义路径: `" +
+                   ca_utils::getLocationString(SM, FD->getLocation()) + "`\n";
+      ExtraInfo += "   - 父结构体声明: `" + RD->getQualifiedNameAsString() +
+                   "(" + ca_utils::getLocationString(SM, RD->getLocation()) +
+                   ")" + "`\n";
+      ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
+      ExtraInfo += "   - 外部类型细节：\n";
 #else
       ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
                    FD->getNameAsString() + "`\n";
@@ -594,10 +589,14 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
                  << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 #ifdef CHN
-    std::string ExtraInfo = "\n### 变量定义: `" + VD->getNameAsString() + "`\n";
-    ExtraInfo += "   - 变量位置: `" +
+    std::string ExtraInfo = "\n   `" + VD->getType().getAsString() + " " +
+                            VD->getNameAsString() + "`\n";
+    ExtraInfo += "   - 类型: `外部类型（变量声明）`\n";
+    ExtraInfo += "   - 定义路径: `" +
                  ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
-    ExtraInfo += "   - 变量类型: `" + VD->getType().getAsString() + "`\n";
+    ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
+    ExtraInfo += "   - 外部类型细节：\n";
+
 #else
     std::string ExtraInfo = "\n### VarDecl: `" + VD->getNameAsString() + "`\n";
     ExtraInfo += "   - Location: `" +
@@ -609,8 +608,6 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
       if (const auto ParentFD =
               dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
 #ifdef CHN
-        ExtraInfo += "   - 父函数情况: `" +
-                     ca_utils::getFuncDeclString(ParentFD) + "`\n";
 #else
         ExtraInfo +=
             "   - Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
@@ -618,7 +615,6 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
       }
     } else if (const auto TU = VD->getTranslationUnitDecl()) {
 #ifdef CHN
-      ExtraInfo += "   - 父函数情况: 全局变量, 没有父函数.\n";
 #else
       ExtraInfo += "   - Parent: Global variable, no parent function.\n";
 #endif
@@ -644,8 +640,6 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
                                       SM, LO);
       if (InitText.str() != "" && InitText.str() != "NULL") {
 #ifdef CHN
-        ExtraInfo +=
-            "   - 变量初始化: \n   ```c\n" + InitText.str() + "\n   ```\n";
 #else
         ExtraInfo += "   - VarDecl Has Init: \n   ```c\n" + InitText.str() +
                      "\n   ```\n";
@@ -653,7 +647,6 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
 
       } else {
 #ifdef CHN
-        ExtraInfo += "   - 变量初始化: 有初始化, 但是没有找到文本.\n";
 #else
         ExtraInfo += "   - VarDecl Has Init, but no text found.\n";
 #endif
@@ -690,12 +683,14 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
 #endif
       std::string ExtraInfo = "";
 #ifdef CHN
-      ExtraInfo += "\n### 隐式转换: \n";
+
       ExtraInfo +=
-          "   - 位置: " + ca_utils::getLocationString(SM, ICE->getBeginLoc()) +
-          "\n";
-      ExtraInfo +=
-          "   - 转换类型: " + std::string(ICE->getCastKindName()) + "\n";
+          "\n   `Implicit Cast(" + std::string(ICE->getCastKindName()) + ")`\n";
+      ExtraInfo += "   - 类型: `外部类型（隐式转换）`\n";
+      ExtraInfo += "   - 定义路径: `" +
+                   ca_utils::getLocationString(SM, ICE->getBeginLoc()) + "`\n";
+      ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
+      ExtraInfo += "   - 外部类型细节：\n";
 #else
       ExtraInfo += "\n### ImplicitCastExpr\n";
       ExtraInfo += "   - Location: " +
@@ -714,31 +709,37 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
 
 void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
                                                    clang::SourceManager &SM) {
+  // TODO: Fix Macro bugs.
   if (auto FD = CE->getDirectCallee()) {
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
         SM.isInMainFile(CE->getBeginLoc())) {
 #ifdef CHN
-      llvm::outs() << "\n### 外部函数调用: ";
+      llvm::outs() << "\n\n   ";
 #else
       llvm::outs() << "\n### External Function Call: ";
 #endif
       ca_utils::printFuncDecl(FD, SM);
       if (FD->isInlineSpecified()) {
 #ifdef CHN
-        llvm::outs() << "   - 函数 `" << FD->getNameAsString()
-                     << "` 被声明为内联函数.\n";
 #else
         llvm::outs() << "   - Function `" << FD->getNameAsString()
                      << "` is declared as inline.\n";
 #endif
       }
 #ifdef CHN
-      llvm::outs() << "   - 调用位置: ";
+      llvm::outs() << "   - 类型: `函数`\n"
+                   << "   - 定义路径: " +
+                          ca_utils::getLocationString(SM, FD->getLocation()) +
+                          "`\n";
 #else
       llvm::outs() << "   - Call Location: ";
-#endif
       ca_utils::printCaller(CE, SM);
+#endif
+#ifdef CHN
+      llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
+#endif
+
       ++externalFunctionCallCnt;
     }
 #ifdef DEBUG
