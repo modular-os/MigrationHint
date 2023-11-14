@@ -352,17 +352,71 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                  << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
 #endif
 
-#ifdef CHN
-    llvm::outs() << "\n\n---\n\n\n## 函数: `" << ca_utils::getFuncDeclString(FD)
-                 << "`\n"
-                 << "- 函数位置: `"
-                 << ca_utils::getLocationString(SM, FD->getLocation()) << "`\n";
-#else
-    llvm::outs() << "\n\n---\n\n\n## Function: `"
-                 << ca_utils::getFuncDeclString(FD) << "`\n"
-                 << "- Function Location: `"
-                 << ca_utils::getLocationString(SM, FD->getLocation()) << "`\n";
+    auto Loc = FD->getLocation();
+    if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
+      // Judging whether the caller is expanded from predefined macros.
+      auto CallerLoc = Loc;
+      // !!! Handle macro operations
+      // Judging whether the caller is expanded from predefined macros.
+      std::vector<clang::SourceLocation> tmpStack;
+      while (true) {
+        if (SM.isMacroBodyExpansion(CallerLoc)) {
+          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+          CallerLoc = ExpansionLoc;
+        } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+          llvm::outs() << "Is in macro arg expansion\n";
 #endif
+          auto ExpansionLoc =
+              SM.getImmediateExpansionRange(CallerLoc).getBegin();
+          CallerLoc = ExpansionLoc;
+        } else {
+          break;
+        }
+        tmpStack.push_back(CallerLoc);
+      }
+      assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+      clang::SourceLocation MacroLocation;
+      if (tmpStack.size() == 1) {
+        MacroLocation = FD->getLocation();
+      } else {
+        MacroLocation = tmpStack[tmpStack.size() - 1];
+      }
+
+#ifdef CHN
+      llvm::outs() << "\n\n---\n\n\n## 函数(宏): `"
+                   << ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1])
+                   << "`\n"
+                   << "- 函数位置: `"
+                   << ca_utils::getLocationString(SM, MacroLocation) << "`\n";
+#else
+      llvm::outs() << "\n\n---\n\n\n## Function(Macro): `"
+                   << ca_utils::getFuncDeclString(FD) << "`\n"
+                   << "- Function Location: `"
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << "`\n";
+#endif
+#ifdef CHN
+      llvm::outs() << "- 该函数是宏展开的一部分。\n";
+#else
+      llvm::outs() << "- Expanded from macros.\n";
+#endif
+
+    } else {
+#ifdef CHN
+      llvm::outs() << "\n\n---\n\n\n## 函数: `"
+                   << ca_utils::getFuncDeclString(FD) << "`\n"
+                   << "- 函数位置: `"
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << "`\n";
+#else
+      llvm::outs() << "\n\n---\n\n\n## Function: `"
+                   << ca_utils::getFuncDeclString(FD) << "`\n"
+                   << "- Function Location: `"
+                   << ca_utils::getLocationString(SM, FD->getLocation())
+                   << "`\n";
+#endif
+    }
     isInFunction = 1;
 #ifdef DEBUG
     llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
@@ -377,16 +431,6 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
 #endif
 
     ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
-
-    auto Loc = FD->getLocation();
-    if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
-// Judging whether the caller is expanded from predefined macros.
-#ifdef CHN
-      llvm::outs() << "- 该函数是宏展开的一部分。\n";
-#else
-      llvm::outs() << "- Expanded from macros.\n";
-#endif
-    }
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
 #ifdef DEBUG
@@ -714,7 +758,8 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
         SM.isInMainFile(CE->getBeginLoc())) {
-      auto Loc = CE->getBeginLoc();;
+      auto Loc = CE->getBeginLoc();
+      ;
       if (!SM.isMacroBodyExpansion(Loc) && !SM.isMacroArgExpansion(Loc)) {
 #ifdef CHN
         llvm::outs() << "\n\n   `" << ca_utils::getFuncDeclString(FD) << "`\n";
