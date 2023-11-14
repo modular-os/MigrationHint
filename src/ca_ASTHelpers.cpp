@@ -714,32 +714,100 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
         SM.isInMainFile(CE->getBeginLoc())) {
+      auto Loc = CE->getBeginLoc();;
+      if (!SM.isMacroBodyExpansion(Loc) && !SM.isMacroArgExpansion(Loc)) {
 #ifdef CHN
-      llvm::outs() << "\n\n   ";
+        llvm::outs() << "\n\n   `" << ca_utils::getFuncDeclString(FD) << "`\n";
 #else
-      llvm::outs() << "\n### External Function Call: ";
+        llvm::outs() << "\n### External Function Call: ";
+        ca_utils::printFuncDecl(FD, SM);
 #endif
-      ca_utils::printFuncDecl(FD, SM);
-      if (FD->isInlineSpecified()) {
+        if (FD->isInlineSpecified()) {
 #ifdef CHN
 #else
-        llvm::outs() << "   - Function `" << FD->getNameAsString()
-                     << "` is declared as inline.\n";
+          llvm::outs() << "   - Function `" << FD->getNameAsString()
+                       << "` is declared as inline.\n";
 #endif
-      }
+        }
 #ifdef CHN
-      llvm::outs() << "   - 类型: `函数`\n"
-                   << "   - 定义路径: " +
-                          ca_utils::getLocationString(SM, FD->getLocation()) +
-                          "`\n";
+        llvm::outs() << "   - 类型: `函数`\n"
+                     << "   - 定义路径: " +
+                            ca_utils::getLocationString(SM, FD->getLocation()) +
+                            "`\n";
 #else
-      llvm::outs() << "   - Call Location: ";
-      ca_utils::printCaller(CE, SM);
+        llvm::outs() << "   - Call Location: ";
+        ca_utils::printCaller(CE, SM);
 #endif
 #ifdef CHN
-      llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
+        llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
 #endif
 
+      } else {
+        // !!! Handle macro operations
+#ifdef CHN
+        llvm::outs() << "\n\n   ";
+#else
+        llvm::outs() << "\n### External Function Call(Macro): ";
+#endif
+        // ca_utils::printFuncDecl(FD, SM);
+        auto CallerLoc = CE->getBeginLoc();
+        // Judging whether the caller is expanded from predefined macros.
+        std::vector<clang::SourceLocation> tmpStack;
+        while (true) {
+          if (SM.isMacroBodyExpansion(CallerLoc)) {
+            auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+            CallerLoc = ExpansionLoc;
+          } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+            llvm::outs() << "Is in macro arg expansion\n";
+#endif
+            auto ExpansionLoc =
+                SM.getImmediateExpansionRange(CallerLoc).getBegin();
+            CallerLoc = ExpansionLoc;
+          } else {
+            break;
+          }
+          tmpStack.push_back(CallerLoc);
+        }
+        assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+        if (tmpStack.size() == 0) {
+          llvm::outs() << "(Error!)\n### External Function Call: ";
+          ca_utils::printFuncDecl(FD, SM);
+          llvm::outs() << "   - Call Location: ";
+          ca_utils::printCaller(CE, SM);
+          return;
+        }
+        clang::SourceLocation MacroLocation;
+        if (tmpStack.size() == 1) {
+          MacroLocation = FD->getLocation();
+        } else {
+          MacroLocation = tmpStack[tmpStack.size() - 2];
+        }
+        auto MacroName =
+            ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]);
+        llvm::outs() << "`" << MacroName << "`\n";
+
+        if (FD->isInlineSpecified()) {
+#ifdef CHN
+#else
+          llvm::outs() << "   - Function `" << MacroName
+                       << "` is declared as inline.\n";
+#endif
+        }
+
+#ifdef CHN
+        llvm::outs() << "   - 类型: `宏`\n"
+                     << "   - 定义路径: " +
+                            ca_utils::getLocationString(SM, MacroLocation) +
+                            "`\n";
+#else
+        llvm::outs() << "   - Call Location: ";
+        ca_utils::printCaller(CE, SM);
+#endif
+#ifdef CHN
+        llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
+#endif
+      }
       ++externalFunctionCallCnt;
     }
 #ifdef DEBUG

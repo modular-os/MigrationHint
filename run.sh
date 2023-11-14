@@ -43,8 +43,8 @@ pushd $BUILD
     set -x
     # --enable-pp-analysis \
     # --enable-function-analysis-by-headers \
+    # --generate-report \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE3} \
-    --generate-report \
     --enable-struct-analysis \
     --enable-function-analysis  \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
