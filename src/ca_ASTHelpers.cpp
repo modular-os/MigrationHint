@@ -989,13 +989,60 @@ void ReportMatcher::run(
   } else if (auto FD =
                  Result.Nodes.getNodeAs<clang::FunctionDecl>("funcDecl")) {
     auto Loc = FD->getLocation();
-    if (SM.isInMainFile(Loc) && !SM.isMacroBodyExpansion(Loc) &&
-        !SM.isMacroArgExpansion(Loc)) {
+    if (SM.isInMainFile(Loc)) {
       if (FD->getParentFunctionOrMethod() == nullptr) {
-        if (!FD->hasBody() ||
-            (FD->hasBody() && FD->doesThisDeclarationHaveABody())) {
-          llvm::outs() << "\n```c\n"
-                       << ca_utils::getFuncDeclString(FD) << "\n```\n";
+        if (!SM.isMacroBodyExpansion(Loc) && !SM.isMacroArgExpansion(Loc)) {
+          if (!FD->hasBody() ||
+              (FD->hasBody() && FD->doesThisDeclarationHaveABody())) {
+            llvm::outs() << "\n```c\n"
+                         << ca_utils::getFuncDeclString(FD) << "\n```\n";
+            llvm::outs()
+                << "- **功能描述**\n  <filled-by-ai>\n\n"
+                << "- **核心逻辑**\n  <filled-by-ai>\n\n"
+                << "- **外部能力使用**\n  <filled-by-CodeAnalysis>\n\n";
+          }
+        } else {
+          // Handle the macro expansion
+          // llvm::outs() << "\n```MACRO\n"
+          //              << ca_utils::getFuncDeclString(FD) << "\n```\n";
+
+          auto CallerLoc = Loc;
+          // !!! Handle macro operations
+          // Judging whether the caller is expanded from predefined macros.
+          std::vector<clang::SourceLocation> tmpStack;
+          while (true) {
+            if (SM.isMacroBodyExpansion(CallerLoc)) {
+              auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+              CallerLoc = ExpansionLoc;
+            } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+              llvm::outs() << "Is in macro arg expansion\n";
+#endif
+              auto ExpansionLoc =
+                  SM.getImmediateExpansionRange(CallerLoc).getBegin();
+              CallerLoc = ExpansionLoc;
+            } else {
+              break;
+            }
+            tmpStack.push_back(CallerLoc);
+          }
+          assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+          clang::SourceLocation MacroLocation;
+          if (tmpStack.size() == 1) {
+            MacroLocation = FD->getLocation();
+          } else {
+            MacroLocation = tmpStack[tmpStack.size() - 2];
+          }
+#ifdef CHN
+          auto MacroName =
+              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
+              "(宏)";
+#else
+          auto MacroName =
+              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
+              "(Macro)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
+#endif
+          llvm::outs() << "\n```c\n" << MacroName << "\n```\n";
           llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n"
                        << "- **核心逻辑**\n  <filled-by-ai>\n\n"
                        << "- **外部能力使用**\n  <filled-by-CodeAnalysis>\n\n";
