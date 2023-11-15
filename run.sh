@@ -41,10 +41,10 @@ pushd $BUILD
     cmake .. -G Ninja -D USE_CHINESE=ON
     ninja
     set -x
-    # --enable-pp-analysis \
     # --enable-function-analysis-by-headers \
-    # --generate-report \
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE3} \
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE5} \
+    --generate-report \
+    --enable-pp-analysis \
     --enable-struct-analysis \
     --enable-function-analysis  \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
