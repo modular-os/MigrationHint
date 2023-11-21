@@ -776,7 +776,7 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
         }
 #ifdef CHN
         llvm::outs() << "   - 类型: `函数`\n"
-                     << "   - 定义路径: " +
+                     << "   - 定义路径: `" +
                             ca_utils::getLocationString(SM, FD->getLocation()) +
                             "`\n";
 #else
@@ -889,7 +889,9 @@ void ExternalDependencyMatcher::run(
     handleExternalTypeFD(RD, SM, isInFunctionOldValue);
   } else if (auto VD =
                  Result.Nodes.getNodeAs<clang::VarDecl>("externalTypeVD")) {
-    handleExternalTypeVD(VD, SM, LO, isInFunctionOldValue);
+    if (VD->getKind() != clang::Decl::ParmVar) {
+      handleExternalTypeVD(VD, SM, LO, isInFunctionOldValue);
+    }
   } else if (auto ICE = Result.Nodes.getNodeAs<clang::ImplicitCastExpr>(
                  "externalImplicitCE")) {
     handleExternalImplicitCE(ICE, SM);
