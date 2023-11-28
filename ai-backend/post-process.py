@@ -18,8 +18,6 @@ pattern_basic_ability = re.compile(r'\s\s\s`(.*?)`\n\s+- 类型: `(.*?)`\n\s+- �
 
 pattern_basic_ability = re.compile(r'\s\s\s`(.*?)`\n\s+- 类型: `(.*?)`\n\s+- 定义路径: `(.*?)`\n\s+- 简介：`<Filled-By-AI>`\n(?:\s+- 外部类型细节：\n\s+- 外部类型名称: `(.*?)`\n\s+- 位置: `(.*?)`\n\s+- 是否为指针: `(.*?)`\n)?')
 
-# pattern_
-
 def count_subentries(file_path):
     subentry_counts = {}
     in_function_entry = False
@@ -32,7 +30,7 @@ def count_subentries(file_path):
             entry_name = match[0]
             entry_type = match[1]
             entry_path = match[2]
-            print(match)
+            # print(match)
 
             if re.search(r'外部类型.*?（函数参数|变量声明）', entry_type):
                 entry_type = "外部类型"
@@ -96,12 +94,13 @@ def rewrite_file(count_map, file_path, post_processed_file):
 
             if subentry in count_map and count_map[subentry] > 5:
                 original_text = ""
-                new_text = f"   `{entry_name}`\n   - 是否为基础能力: `是`\n"
+                new_text = f"   `{match[0]}`\n   - 是否为基础能力: `是`\n"
                 if match[4] == "":
-                    original_text = f"   `{entry_name}`\n   - 类型: `{entry_type}`\n   - 定义路径: `{entry_path}`\n   - 简介：`<Filled-By-AI>`\n"
+                    original_text = f"   `{match[0]}`\n   - 类型: `{match[1]}`\n   - 定义路径: `{match[2]}`\n   - 简介：`<Filled-By-AI>`\n"
                 else:
-                    original_text = f"   `{entry_name}`\n   - 类型: `{entry_type}`\n   - 定义路径: `{entry_path}`\n   - 简介：`<Filled-By-AI>`\n   - 外部类型细节：\n      - 外部类型名称: `{match[3]}`         - 位置: `{match[4]}`\n         - 是否为指针: `{match[5]}`\n"
+                    original_text = f"   `{match[0]}`\n   - 类型: `{match[1]}`\n   - 定义路径: `{match[2]}`\n   - 简介：`<Filled-By-AI>`\n   - 外部类型细节：\n      - 外部类型名称: `{match[3]}`\n         - 位置: `{match[4]}`\n         - 是否为指针: `{match[5]}`\n"
                 # write to post_processed_file: replace original_text with new_text
+                # print(original_text)
                 file_content = file_content.replace(original_text, new_text)
                 
         # Write to post_processed_file
