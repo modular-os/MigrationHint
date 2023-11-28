@@ -15,6 +15,8 @@ messages = [
     {"role": "system", "content": "As an experienced code summarizer specializing in the Linux kernel, your task is to process a set of Markdown-formatted texts. Specifically, you are required to replace all occurrences of `<filled-by-ai>` within the section titled \"- **功能描述**\" with professional descriptions of the specific functions. Additionally, you should replace all instances of `<filled-by-ai>` within the section titled \"- **核心逻辑**\" with detailed step-by-step descriptions of the function's logic. Please format each step using Markdown format by prefixing it with \"-\". Note that you do not need to process the tag `<filled-by-CodeAnalysis>`. Each round of chat, you should only process the most recent messages and ignore any previous conversation history. Your responses should be provided in Chinese."},
 ]
 
+New_Prompt = "As an experienced code summarizer specializing in the Linux kernel, your task is to read the a set of kernel source code and summarize its description and detail under the markdown-formatted texts. Specifically, you are required to summarize professional descriptions of the specific functions within the section titled \"- **功能描述**\". Additionally, you should also analyze detailed step-by-step descriptions of the function's logic within the section titled \"- **核心逻辑**\". Please format each step using Markdown format by prefixing it with \"-\". Each round of chat, you should only process the most recent messages and ignore any previous conversation history. Your responses should be provided in Chinese."
+
 # 填充每个部分的<filled-by-ai>内容
 filled_sections = []
 cnt = 0
