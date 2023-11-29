@@ -1038,6 +1038,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
                                               MacroNameWithLoc.size() - pos)
                    << "\n"
                    << "   - 调用次数: `" << it2.second / 100000 << "`\n"
+                   << "   - 调用频率: `" << it2.second % 100000 << "`\n"
                    << "   - 调用函数: `"
                    << "<Filled-By-AI>"
                    << "`\n\n";
