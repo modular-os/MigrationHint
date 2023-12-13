@@ -26,6 +26,9 @@ TARGET_SOURCE2=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb.c
 TARGET_SOURCE3=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/ksm.c
 TARGET_SOURCE4=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/huge_memory.c
 TARGET_SOURCE5=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/khugepaged.c
+TARGET_SOURCE6=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb_cgroup.c
+TARGET_SOURCE7=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb_vmemmap.c
+TARGET_SOURCE8=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/linux/ksm.h
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Make a build dir if there isn't one
@@ -42,8 +45,9 @@ pushd $BUILD
     ninja
     set -x
     # --enable-function-analysis-by-headers \
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE5} \
-    --generate-report \
+    # --generate-report \
+    # --enable-module-analysis \
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
     --enable-pp-analysis \
     --enable-struct-analysis \
     --enable-function-analysis  \
