@@ -222,7 +222,9 @@ int main(int argc, const char **argv) {
     }
     if (OptionEnableStructAnalysis) {
       Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
+#ifdef DEPRECATED
       Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
+#endif
     }
     if (OptionEnableFunctionAnalysis) {
       Finder.addMatcher(ExternalCallMatcherPattern, &exDependencyMatcher);
