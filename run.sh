@@ -47,10 +47,10 @@ pushd $BUILD
     # --enable-function-analysis-by-headers \
     # --generate-report \
     # --enable-module-analysis \
+    # --enable-pp-analysis \
+    # --enable-function-analysis  \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-    --enable-pp-analysis \
     --enable-struct-analysis \
-    --enable-function-analysis  \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     # --enable-module-analysis \
@@ -63,9 +63,20 @@ popd
 # Generate ast for target file
 # C_INCLUDE_PATH=${TARGET_PROJ_PATH} \
 # CPLUS_INCLUDE_PATH=${TARGET_PROJ_PATH} \
-# clang -cc1 -ast-dump \
+# clang -cc1 -ast-dump -fsyntax-only \
 #     ${TARGET_SOURCE_COMMANDS} \
 #     ${TARGET_SOURCE} 2>&1 | tee log/zswap_ast.txt
+
+# clang -cc1 -ast-dump -fsyntax-only \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/generated  \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/uapi \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/generated/uapi \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/uapi \
+#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/generated/uapi \
+#     /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c \
+#     2>&1 | tee log/zswap_ast.txt
 
 # View CFG
 # clang -cc1 -analyze -analyzer-checker=debug.ViewCFG ${TARGET_SOURCE} 2>&1 | tee log/zswap_cfg.txt

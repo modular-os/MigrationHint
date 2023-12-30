@@ -35,6 +35,8 @@
 // #include "clang/Lex/MacroArgs.h"
 // #include "ca_utils.hpp"
 // #include "ca_PreprocessorHelpers.hpp"
+#include <clang/AST/Expr.h>
+#include <clang/AST/Stmt.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/Support/raw_ostream.h>
@@ -898,6 +900,30 @@ void ExternalDependencyMatcher::run(
   } else if (auto CE =
                  Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
     handleExternalCall(CE, SM);
+  } else if (auto ILS = Result.Nodes.getNodeAs<clang::IntegerLiteral>(
+                 "integerLiteral")) {
+    auto Loc = ILS->getBeginLoc();
+    if (SM.isInMainFile(Loc)) {
+      if (SM.isMacroBodyExpansion(Loc)) {
+        auto IntLoc = ca_utils::getLocationString(SM, Loc);
+        llvm::outs() << IntLoc << "\n";
+        ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
+      }
+    }
+    // Do nothing
+  } else if (auto RS =
+                 Result.Nodes.getNodeAs<clang::ReturnStmt>("returnStmt")) {
+    auto Loc = RS->getReturnLoc();
+    if (SM.isInMainFile(Loc)) {
+      // auto IntLoc = ca_utils::getLocationString(SM, Loc);
+      llvm::outs() << ca_utils::getLocationString(SM, Loc) << "\n";
+      if (RS->getRetValue() != nullptr) {
+        // print the return expr type like IntegerLiteral
+        auto RetValue = RS->getRetValue();
+        RetValue->getExprStmt()->dump(llvm::outs(), *Result.Context);
+      }
+    }
+    // Do nothing
   } else {
 #ifdef DEBUG
     llvm::outs() << "No call or fieldDecl expression found\n";

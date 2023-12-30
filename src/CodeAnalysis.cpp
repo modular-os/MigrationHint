@@ -53,6 +53,12 @@ StatementMatcher ExternalCallMatcherPattern =
 DeclarationMatcher ExternalStructMatcherPattern = anyOf(
     recordDecl().bind("externalTypeFD"), varDecl().bind("externalTypeVD"));
 
+StatementMatcher ExternalMacroIntegersMatcherPattern =
+    integerLiteral().bind("integerLiteral");
+
+StatementMatcher ReturnMatcherPattern = returnStmt().bind("returnStmt");
+    
+
 // Add matchers to expressions
 StatementMatcher ExternalExprsMatcherPatter =
     implicitCastExpr().bind("externalImplicitCE");
@@ -63,7 +69,7 @@ StatementMatcher ExternalExprsMatcherPatter =
 varDecl(hasType(recordDecl())).bind("externalTypeVD"),
 varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
 parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
-#endif
+#endif  
 
 /**********************************************************************
  * 1. Command Line Options
@@ -214,6 +220,10 @@ int main(int argc, const char **argv) {
                                         ca::ExternalCallMatcher::Print);
   ca::ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
+
+  Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &exDependencyMatcher);
+  status = Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  return 0;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
