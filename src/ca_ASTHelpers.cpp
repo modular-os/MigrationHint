@@ -906,8 +906,8 @@ void ExternalDependencyMatcher::run(
     if (SM.isInMainFile(Loc)) {
       if (SM.isMacroBodyExpansion(Loc)) {
         auto IntLoc = ca_utils::getLocationString(SM, Loc);
-        llvm::outs() << IntLoc << "\n";
-        ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
+        // llvm::outs() << IntLoc << "\n";
+        // ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
       }
     }
     // Do nothing
@@ -920,7 +920,7 @@ void ExternalDependencyMatcher::run(
       if (RS->getRetValue() != nullptr) {
         // print the return expr type like IntegerLiteral
         auto RetValue = RS->getRetValue();
-        RetValue->getExprStmt()->dump(llvm::outs(), *Result.Context);
+        // RetValue->getExprStmt()->dump(llvm::outs(), *Result.Context);
       }
     }
     // Do nothing
