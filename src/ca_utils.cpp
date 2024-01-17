@@ -114,35 +114,47 @@ void printFuncDecl(const clang::FunctionDecl *FD,
 
 std::string getMacroName(const clang::SourceManager &SM,
                          clang::SourceLocation Loc) {
+  // TODO: Change to new way of searching for macro name[Everywhere]
   // 获取源码文本
-  const char *StartBuf = SM.getCharacterData(Loc);
-  const char *EndBuf = StartBuf;
-#ifdef DEPRECATED
-  int unmatchedBracesNum = 0;
-  while (*EndBuf != '\0') {
-    if (*EndBuf == ')') {
-      --unmatchedBracesNum;
-      if (unmatchedBracesNum <= 0) {
-        ++EndBuf;
-        break;
-      }
-    }
-    if (*EndBuf == '(') {
-      ++unmatchedBracesNum;
-    }
-    ++EndBuf;
-  }
-#endif
-  while (*EndBuf != '\0') {
-    if (*EndBuf == '(') {
-      // || *EndBuf != ')'|| *EndBuf != ','
+  const char *bufIdx = SM.getCharacterData(Loc);
+  const char *lastSpace = bufIdx;
+  bool isMacro = false;
+  while (*bufIdx != '\0') {
+    if (*bufIdx == '#' && *(bufIdx + 1) == 'd' && *(bufIdx + 2) == 'e' &&
+        *(bufIdx + 3) == 'f' && *(bufIdx + 4) == 'i' && *(bufIdx + 5) == 'n' &&
+        *(bufIdx + 6) == 'e') {
+      isMacro = true;
       break;
     }
-    ++EndBuf;
+    if (*bufIdx == ' ') {
+      lastSpace = bufIdx;
+    }
+    --bufIdx;
   }
 
-  std::string SourceCode(StartBuf, EndBuf - StartBuf);
-  return SourceCode;
+  if (!isMacro) {
+    return "No Macro";
+  }
+
+  std::string MacroName;
+  int bracesNum = 0;
+  ++lastSpace;
+  while (*lastSpace != '\0') {
+    if (*lastSpace == ' ' || *lastSpace == '\n' || *lastSpace == '\t' ||
+        *lastSpace == '\r') {
+      if (bracesNum == 0) {
+        break;
+      }
+    } else if (*lastSpace == '(') {
+      ++bracesNum;
+    } else if (*lastSpace == ')') {
+      --bracesNum;
+    }
+
+    MacroName += *lastSpace;
+    ++lastSpace;
+  }
+  return MacroName;
 }
 
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
