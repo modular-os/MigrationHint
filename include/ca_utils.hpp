@@ -34,6 +34,8 @@ std::string getMacroDeclString(const clang::MacroDefinition &MD,
                                const clang::LangOptions &LO);
 std::string getMacroName(const clang::SourceManager &SM,
                          clang::SourceLocation Loc);
+
+bool isMacroInteger(const std::string &MacroText);
 }  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP

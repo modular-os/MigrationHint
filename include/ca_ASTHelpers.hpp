@@ -22,8 +22,9 @@
 // #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include <iostream>
+// #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -39,16 +40,14 @@ int ModuleAnalysisHelper(std::string sourceFiles);
 
 void generateReport(std::string SourceFilePath);
 
-class ReportMatcher
-    : public clang::ast_matchers::MatchFinder::MatchCallback {
+class ReportMatcher : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
-//   void onStartOfTranslationUnit() override;
+  //   void onStartOfTranslationUnit() override;
 
   virtual void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
 
-//   void onEndOfTranslationUnit() override;
-
+  //   void onEndOfTranslationUnit() override;
 };
 
 /**********************************************************************
@@ -64,9 +63,9 @@ class ExternalCallMatcher
           *_ModuleFunctionCallCnt = nullptr)
       : ModuleFunctionCallCnt(_ModuleFunctionCallCnt), AST_SM(SM), mode(_mode) {
     if (mode == Collect && ModuleFunctionCallCnt == nullptr) {
-      assert( false && 
-          "Error! You should specify ModuleFunctionCallCnt to store results "
-          "while collecting.\n");
+      assert(false &&
+             "Error! You should specify ModuleFunctionCallCnt to store results "
+             "while collecting.\n");
     }
   }
 
@@ -114,6 +113,8 @@ class ExternalDependencyMatcher
   void onEndOfTranslationUnit() override;
 
  private:
+  /*Macro deduplication*/
+  std::set<std::string> MacroDeduplication;
   /*Field control flags*/
   int isInFunction;
 
