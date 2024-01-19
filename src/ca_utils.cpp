@@ -116,8 +116,6 @@ std::string getMacroName(const clang::SourceManager &SM,
                          clang::SourceLocation Loc) {
   // TODO: Change to new way of searching for macro name[Everywhere]
   // 获取源码文本
-  llvm::outs() << "Macro Path is: " << ca_utils::getLocationString(SM, Loc)
-               << "\n";
   const char *bufIdx = SM.getCharacterData(Loc);
   const char *lastSpace = bufIdx;
   bool isMacro = false;
