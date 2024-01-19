@@ -98,13 +98,12 @@ void ExternalCallMatcher::run(
             MacroLocation = tmpStack[tmpStack.size() - 2];
           }
 #ifdef CHN
-          auto MacroName =
-              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
-              "(宏)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
+          auto MacroName = ca_utils::getMacroName(SM, MacroLocation) + "(宏)`" +
+                           ca_utils::getLocationString(SM, MacroLocation) + "`";
 #else
-          auto MacroName =
-              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
-              "(Macro)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
+          auto MacroName = ca_utils::getMacroName(SM, MacroLocation) +
+                           "(Macro)`" +
+                           ca_utils::getLocationString(SM, MacroLocation) + "`";
 #endif
           // auto Loc = FD->getLocation();
           // Get the spelling location for Loc
@@ -336,6 +335,8 @@ void ExternalDependencyMatcher::onStartOfTranslationUnit() {
   llvm::outs() << "# External Dependencies Report\n\n";
   llvm::outs() << "## Global: \n";
 #endif
+  // Clear the MacroDeduplicationSet
+  MacroDeduplication.clear();
   externalStructCnt = 0;
   externalVarDeclCnt = 0;
   externalParamVarDeclCnt = 0;
@@ -387,8 +388,7 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
 
 #ifdef CHN
       llvm::outs() << "\n\n---\n\n\n## 函数(宏): `"
-                   << ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1])
-                   << "`\n"
+                   << ca_utils::getMacroName(SM, MacroLocation) << "`\n"
                    << "- 函数位置: `"
                    << ca_utils::getLocationString(SM, MacroLocation) << "`\n";
 #else
@@ -830,8 +830,7 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
         } else {
           MacroLocation = tmpStack[tmpStack.size() - 2];
         }
-        auto MacroName =
-            ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]);
+        auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
         llvm::outs() << "`" << MacroName << "`\n";
 
         if (FD->isInlineSpecified()) {
@@ -903,11 +902,48 @@ void ExternalDependencyMatcher::run(
   } else if (auto ILS = Result.Nodes.getNodeAs<clang::IntegerLiteral>(
                  "integerLiteral")) {
     auto Loc = ILS->getBeginLoc();
-    if (SM.isInMainFile(Loc)) {
-      if (SM.isMacroBodyExpansion(Loc)) {
-        auto IntLoc = ca_utils::getLocationString(SM, Loc);
-        // llvm::outs() << IntLoc << "\n";
-        // ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
+    if (SM.isInMainFile(Loc) && SM.isMacroBodyExpansion(Loc)) {
+      // !!! Handle macro operations
+      // Judging whether the caller is expanded from predefined macros.
+
+      std::vector<clang::SourceLocation> tmpStack;
+      while (true) {
+        if (SM.isMacroBodyExpansion(Loc)) {
+          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(Loc);
+          Loc = ExpansionLoc;
+        } else if (SM.isMacroArgExpansion(Loc)) {
+#ifdef DEBUG
+          llvm::outs() << "Is in macro arg expansion\n";
+#endif
+          auto ExpansionLoc = SM.getImmediateExpansionRange(Loc).getBegin();
+          Loc = ExpansionLoc;
+        } else {
+          break;
+        }
+        tmpStack.push_back(Loc);
+      }
+      assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+      // TODO: Begin testing
+      clang::SourceLocation MacroLocation;
+
+      if (tmpStack.size() == 1) {
+        MacroLocation = ILS->getBeginLoc();
+      } else {
+        MacroLocation = tmpStack[tmpStack.size() - 2];
+      }
+      auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
+      auto MacroDedupName =
+          MacroName + "@" + ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+      if (ca_utils::isMacroInteger(MacroName) &&
+          MacroDeduplication.find(MacroDedupName) == MacroDeduplication.end()) {
+        llvm::outs() << MacroName << " " << tmpStack.size() << " "
+                     << ca_utils::isMacroInteger(MacroName) << " "
+                     << ca_utils::getLocationString(
+                            SM, tmpStack[tmpStack.size() - 1])
+                     << "\n";
+        MacroDeduplication.insert(MacroDedupName);
+        ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
+        llvm::outs() << "\n";
       }
     }
     // Do nothing
@@ -918,9 +954,11 @@ void ExternalDependencyMatcher::run(
       // auto IntLoc = ca_utils::getLocationString(SM, Loc);
       llvm::outs() << ca_utils::getLocationString(SM, Loc) << "\n";
       if (RS->getRetValue() != nullptr) {
+        RS->dump(llvm::outs(), *Result.Context);
         // print the return expr type like IntegerLiteral
         auto RetValue = RS->getRetValue();
         // RetValue->getExprStmt()->dump(llvm::outs(), *Result.Context);
+        llvm::outs() << "\n";
       }
     }
     // Do nothing
@@ -1176,13 +1214,11 @@ void ReportMatcher::run(
             MacroLocation = tmpStack[tmpStack.size() - 2];
           }
 #ifdef CHN
-          auto MacroName =
-              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
-              "(宏)";
+          auto MacroName = ca_utils::getMacroName(SM, MacroLocation) + "(宏)";
 #else
-          auto MacroName =
-              ca_utils::getMacroName(SM, tmpStack[tmpStack.size() - 1]) +
-              "(Macro)`" + ca_utils::getLocationString(SM, MacroLocation) + "`";
+          auto MacroName = ca_utils::getMacroName(SM, MacroLocation) +
+                           "(Macro)`" +
+                           ca_utils::getLocationString(SM, MacroLocation) + "`";
 #endif
           llvm::outs() << "\n```c\n" << MacroName << "\n```\n";
           llvm::outs() << "- **功能描述**\n  <filled-by-ai>\n\n"

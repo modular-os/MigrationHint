@@ -222,6 +222,7 @@ int main(int argc, const char **argv) {
   clang::ast_matchers::MatchFinder Finder;
 
   Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &exDependencyMatcher);
+  // Finder.addMatcher(ReturnMatcherPattern, &exDependencyMatcher);
   status = Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   return 0;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||

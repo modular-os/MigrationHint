@@ -333,4 +333,22 @@ std::string getMacroDeclString(const clang::MacroDefinition &MD,
       clang::Lexer::getSourceText(MacroRange, SM, LO).str();
   return FullMacroText;
 }
+
+bool isMacroInteger(const std::string &MacroText) {
+  // TODO: Merge with getMacroName, cost too much time.
+  if(MacroText.empty()){
+    return false;
+  } else if (MacroText.size() == 1) {
+    return true ;
+  }
+
+  if (MacroText[0] == '_' && MacroText[1] == '_') {
+    return false;
+  }
+
+  if (MacroText.find("(") != std::string::npos) {
+    return false;
+  }
+  return true;
+}
 }  // namespace ca_utils
