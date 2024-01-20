@@ -96,6 +96,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g\
 # Settings for using Chinese output
 option(USE_CHINESE "Use Chinese output" OFF)
 if(USE_CHINESE)
+    message(STATUS "Using Chinese output")
     add_definitions(-DCHN)
 endif()
 
