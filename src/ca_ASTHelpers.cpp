@@ -966,21 +966,9 @@ void ExternalDependencyMatcher::run(
   } else if (auto IntL = Result.Nodes.getNodeAs<clang::IntegerLiteral>(
                  "integerLiteral")) {
     handleExternalMacroInt(IntL, SM, LO, isInFunctionOldValue);
-  } else if (auto RS =
-                 Result.Nodes.getNodeAs<clang::ReturnStmt>("returnStmt")) {
-    auto Loc = RS->getReturnLoc();
-    if (SM.isInMainFile(Loc)) {
-      // auto IntLoc = ca_utils::getLocationString(SM, Loc);
-      llvm::outs() << ca_utils::getLocationString(SM, Loc) << "\n";
-      if (RS->getRetValue() != nullptr) {
-        RS->dump(llvm::outs(), *Result.Context);
-        // print the return expr type like IntegerLiteral
-        auto RetValue = RS->getRetValue();
-        // RetValue->getExprStmt()->dump(llvm::outs(), *Result.Context);
-        llvm::outs() << "\n";
-      }
-    }
-    // Do nothing
+  } else if (auto TU = Result.Nodes.getNodeAs<clang::TranslationUnitDecl>(
+                 "translationUnit")) {
+    TU->dump(llvm::outs());
   } else {
 #ifdef DEBUG
     llvm::outs() << "No call or fieldDecl expression found\n";

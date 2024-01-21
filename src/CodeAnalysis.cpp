@@ -57,7 +57,10 @@ StatementMatcher ExternalMacroIntegersMatcherPattern =
     integerLiteral().bind("integerLiteral");
 
 StatementMatcher ReturnMatcherPattern = returnStmt().bind("returnStmt");
-    
+
+// TranslationUnitDecl is the root of AST, for outputting the whole ast tree.
+DeclarationMatcher TranslationUnitDecl =
+    translationUnitDecl().bind("translationUnit");
 
 // Add matchers to expressions
 StatementMatcher ExternalExprsMatcherPatter =
@@ -69,7 +72,7 @@ StatementMatcher ExternalExprsMatcherPatter =
 varDecl(hasType(recordDecl())).bind("externalTypeVD"),
 varDecl(hasType(isAnyPointer())).bind("externalTypeVD"),
 parmVarDecl(hasType(recordDecl())).bind("externalTypePVD"));
-#endif  
+#endif
 
 /**********************************************************************
  * 1. Command Line Options
@@ -221,10 +224,10 @@ int main(int argc, const char **argv) {
   ca::ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
 
-  // Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &exDependencyMatcher);
-  // // Finder.addMatcher(ReturnMatcherPattern, &exDependencyMatcher);
-  // status = Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
-  // return 0;
+  Finder.addMatcher(TranslationUnitDecl, &exDependencyMatcher);
+  // Finder.addMatcher(ReturnMatcherPattern, &exDependencyMatcher);
+  status = Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  return 0;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
@@ -233,7 +236,8 @@ int main(int argc, const char **argv) {
     }
     if (OptionEnableStructAnalysis) {
       Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
-      Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &exDependencyMatcher);
+      Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
+                        &exDependencyMatcher);
 #ifdef DEPRECATED
       Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
 #endif
