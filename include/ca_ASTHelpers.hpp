@@ -102,6 +102,11 @@ class ExternalDependencyMatcher
                             const clang::LangOptions &LO,
                             int &isInFunctionOldValue);
 
+  void handleExternalMacroInt(const clang::IntegerLiteral *IntL,
+                              clang::SourceManager &SM,
+                              const clang::LangOptions &LO,
+                            int &isInFunctionOldValue);
+
   void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
                                 clang::SourceManager &SM);
 

@@ -35,8 +35,10 @@
 // #include "clang/Lex/MacroArgs.h"
 // #include "ca_utils.hpp"
 // #include "ca_PreprocessorHelpers.hpp"
+#include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/Stmt.h>
+#include <clang/Basic/LLVM.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/Support/raw_ostream.h>
@@ -714,6 +716,68 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
   }
 }
 
+void ExternalDependencyMatcher::handleExternalMacroInt(
+    const clang::IntegerLiteral *IntL, clang::SourceManager &SM,
+    const clang::LangOptions &LO, int &isInFunctionOldValue) {
+  auto Loc = IntL->getBeginLoc();
+  if (SM.isInMainFile(Loc) && SM.isMacroBodyExpansion(Loc)) {
+    // !!! Handle macro operations
+    // Judging whether the caller is expanded from predefined macros.
+
+    std::vector<clang::SourceLocation> tmpStack;
+    while (true) {
+      if (SM.isMacroBodyExpansion(Loc)) {
+        auto ExpansionLoc = SM.getImmediateMacroCallerLoc(Loc);
+        Loc = ExpansionLoc;
+      } else if (SM.isMacroArgExpansion(Loc)) {
+        auto ExpansionLoc = SM.getImmediateExpansionRange(Loc).getBegin();
+        Loc = ExpansionLoc;
+      } else {
+        break;
+      }
+      tmpStack.push_back(Loc);
+    }
+    assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+    // TODO: Begin testing
+    clang::SourceLocation MacroLocation;
+
+    if (tmpStack.size() == 1) {
+      MacroLocation = IntL->getBeginLoc();
+    } else {
+      MacroLocation = tmpStack[tmpStack.size() - 2];
+    }
+    auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
+    auto MacroDedupName =
+        MacroName + "@" +
+        ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+
+    // Output the basic info for specific RecordDecl
+    std::string BasicInfo = "";
+#ifdef CHN
+#else
+    BasicInfo = "\n### External Macro Integer: `" + MacroName + "`\n";
+#endif
+
+// Output the basic location info for the fieldDecl
+#ifdef CHN
+#else
+    BasicInfo +=
+        "- Call Location: `" +
+        ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]) + "`\n";
+    BasicInfo += "- Defined Location: `" +
+                 ca_utils::getLocationString(SM, MacroLocation) + "`\n";
+#endif
+
+    // TODO: find the parents for integerLiteral
+    if (ca_utils::isMacroInteger(MacroName) &&
+        MacroDeduplication.find(MacroDedupName) == MacroDeduplication.end()) {
+      llvm::outs() << BasicInfo;
+      llvm::outs() << "\n\n---\n\n\n";
+      MacroDeduplication.insert(MacroDedupName);
+    }
+  }
+}
+
 void ExternalDependencyMatcher::handleExternalImplicitCE(
     const clang::ImplicitCastExpr *ICE, clang::SourceManager &SM) {
   if (SM.isInMainFile(ICE->getBeginLoc()) &&
@@ -899,54 +963,9 @@ void ExternalDependencyMatcher::run(
   } else if (auto CE =
                  Result.Nodes.getNodeAs<clang::CallExpr>("externalCall")) {
     handleExternalCall(CE, SM);
-  } else if (auto ILS = Result.Nodes.getNodeAs<clang::IntegerLiteral>(
+  } else if (auto IntL = Result.Nodes.getNodeAs<clang::IntegerLiteral>(
                  "integerLiteral")) {
-    auto Loc = ILS->getBeginLoc();
-    if (SM.isInMainFile(Loc) && SM.isMacroBodyExpansion(Loc)) {
-      // !!! Handle macro operations
-      // Judging whether the caller is expanded from predefined macros.
-
-      std::vector<clang::SourceLocation> tmpStack;
-      while (true) {
-        if (SM.isMacroBodyExpansion(Loc)) {
-          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(Loc);
-          Loc = ExpansionLoc;
-        } else if (SM.isMacroArgExpansion(Loc)) {
-#ifdef DEBUG
-          llvm::outs() << "Is in macro arg expansion\n";
-#endif
-          auto ExpansionLoc = SM.getImmediateExpansionRange(Loc).getBegin();
-          Loc = ExpansionLoc;
-        } else {
-          break;
-        }
-        tmpStack.push_back(Loc);
-      }
-      assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-      // TODO: Begin testing
-      clang::SourceLocation MacroLocation;
-
-      if (tmpStack.size() == 1) {
-        MacroLocation = ILS->getBeginLoc();
-      } else {
-        MacroLocation = tmpStack[tmpStack.size() - 2];
-      }
-      auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
-      auto MacroDedupName =
-          MacroName + "@" + ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
-      if (ca_utils::isMacroInteger(MacroName) &&
-          MacroDeduplication.find(MacroDedupName) == MacroDeduplication.end()) {
-        llvm::outs() << MacroName << " " << tmpStack.size() << " "
-                     << ca_utils::isMacroInteger(MacroName) << " "
-                     << ca_utils::getLocationString(
-                            SM, tmpStack[tmpStack.size() - 1])
-                     << "\n";
-        MacroDeduplication.insert(MacroDedupName);
-        ILS->getExprStmt()->dump(llvm::outs(), *Result.Context);
-        llvm::outs() << "\n";
-      }
-    }
-    // Do nothing
+    handleExternalMacroInt(IntL, SM, LO, isInFunctionOldValue);
   } else if (auto RS =
                  Result.Nodes.getNodeAs<clang::ReturnStmt>("returnStmt")) {
     auto Loc = RS->getReturnLoc();
