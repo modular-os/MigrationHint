@@ -224,10 +224,6 @@ int main(int argc, const char **argv) {
   ca::ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
 
-  Finder.addMatcher(TranslationUnitDecl, &exDependencyMatcher);
-  // Finder.addMatcher(ReturnMatcherPattern, &exDependencyMatcher);
-  status = Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
-  return 0;
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
