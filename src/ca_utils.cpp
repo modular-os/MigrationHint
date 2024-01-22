@@ -293,6 +293,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
     }
     return !InCurrentFile;
   } else {
+    return false;
     // TODO：Add support for other types
     // bool isBasicType = Type->isFundamentalType() || Type->isEnumeralType();
     llvm::outs() << "[Testing]";
@@ -302,7 +303,6 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
     } else {
       llvm::outs() << "Not fundamental\n";
     }
-    return false;
   }
 
   return false;
