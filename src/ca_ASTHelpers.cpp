@@ -496,7 +496,7 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
       }
       auto isExternalType = ca_utils::getExternalStructType(
           PVD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (isExternalType) {
+      if (isExternalType != nullptr) {
         ++externalParamVarDeclCnt;
       }
     }
@@ -597,9 +597,9 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
       ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
                    FD->getNameAsString() + "`\n";
 #endif
-      bool IsExternalType = ca_utils::getExternalStructType(
+      auto IsExternalType = ca_utils::getExternalStructType(
           FD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (IsExternalType) {
+      if (IsExternalType != nullptr) {
         ++externalStructCnt;
       } else {
 // Recover the field control flag if the Decl is not external(so it
@@ -703,7 +703,7 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
 
     auto isExternalType = ca_utils::getExternalStructType(
         VD->getType(), llvm::outs(), SM, ExtraInfo);
-    if (isExternalType) {
+    if (isExternalType != nullptr) {
       ++externalVarDeclCnt;
     } else {
 #ifdef DEBUG
@@ -808,9 +808,9 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
       ExtraInfo +=
           "   - CastKind: " + std::string(ICE->getCastKindName()) + "\n";
 #endif
-      int isExternal = ca_utils::getExternalStructType(
+      auto isExternal = ca_utils::getExternalStructType(
           ICE->getType(), llvm::outs(), SM, ExtraInfo);
-      if (isExternal) {
+      if (isExternal != nullptr) {
         ++externalImplicitExprCnt;
       }
     }
