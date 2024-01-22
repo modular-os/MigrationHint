@@ -215,10 +215,11 @@ void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
 #endif
 }
 
-bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
-                           clang::SourceManager &SM,
-                           const std::string &ExtraInfo,
-                           const int OutputIndent) {
+clang::RecordDecl *getExternalStructType(clang::QualType Type,
+                                         llvm::raw_ostream &output,
+                                         clang::SourceManager &SM,
+                                         const std::string &ExtraInfo,
+                                         const int OutputIndent) {
 #ifdef DEBUG
   auto varType = Type;
 #endif
@@ -256,17 +257,6 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
       } else {
         output << "`否`\n";
       }
-
-      // if (!RTD->field_empty()) {
-      //   output << "      - 完整定义: \n"
-      //          << "      ```c\n";
-      //   RTD->print(output.indent(6),
-      //              clang::PrintingPolicy(clang::LangOptions()), 3);
-      //   output << "\n      ```\n";
-      // } else {
-      //   output << "       - 完整定义: "
-      //          << "**空结构体!**\n";
-      // }
 #else
       output << ExtraInfo << "   - External Type Detailed Info: `"
              << RTD->getQualifiedNameAsString() << "`\n";
@@ -292,10 +282,10 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
                << "**Empty Field!**\n";
       }
 #endif
+      return RTD;
     }
-    return !InCurrentFile;
   } else {
-    return false;
+    return nullptr;
     // TODO：Add support for other types
     // search for typedef
     if (Type->isTypedefNameType()) {
@@ -330,8 +320,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
 
     return false;
   }
-
-  return false;
+  return nullptr;
 }
 
 std::string getMacroDeclString(const clang::MacroDefinition &MD,
