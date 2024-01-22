@@ -46,12 +46,12 @@ pushd $BUILD
     set -x
     # --enable-function-analysis-by-headers \
     # --generate-report \
-    # --enable-pp-analysis \
     # --enable-module-analysis \
+    # --enable-migrate-code-gen \
     # --enable-struct-analysis \
     # --enable-function-analysis  \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-    --enable-migrate-code-gen \
+    --enable-pp-analysis \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     # --enable-module-analysis \

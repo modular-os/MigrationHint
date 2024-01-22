@@ -129,7 +129,7 @@ void MigrateCodeGenerator::handleExternalTypeFD(const clang::RecordDecl *RD,
   if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
     for (const auto &FD : RD->fields()) {
       auto StructRTD =
-          ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, "");
+          ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, "", -1);
       if (StructRTD != nullptr) {
         // llvm::outs() << "[Debug2]: ";
         StructRTD->print(StructDeclStream);
@@ -209,11 +209,13 @@ void MigrateCodeGenerator::handleExternalMacroInt(
     std::size_t colonPos = LocString_.find(':');
     auto LocString = LocString_.substr(0, colonPos);
 
-    if (ExternalDepToSignature[MacroInt].find(LocString) ==
-        ExternalDepToSignature[MacroInt].end()) {
-      ExternalDepToSignature[MacroInt][LocString] = {};
+    if (ca_utils::isMacroInteger(MacroName)) {
+      if (ExternalDepToSignature[MacroInt].find(LocString) ==
+          ExternalDepToSignature[MacroInt].end()) {
+        ExternalDepToSignature[MacroInt][LocString] = {};
+      }
+      ExternalDepToSignature[MacroInt][LocString].insert(MacroName);
     }
-    ExternalDepToSignature[MacroInt][LocString].insert(MacroName);
   }
 }
 
@@ -376,7 +378,7 @@ void MigrateCodeGenerator::onEndOfTranslationUnit() {
     for (auto &it2 : it.second) {
       llvm::outs() << "/// " << it2.first << "\n";
       for (auto &it3 : it2.second) {
-        llvm::outs() << it3 << "\n\n";
+        llvm::outs() << it3 << ";\n\n";
       }
     }
   }
