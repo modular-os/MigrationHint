@@ -110,6 +110,9 @@ llvm::cl::opt<bool> OptionEnableModuleAnalysis(
 llvm::cl::opt<bool> OptionGenerateReport(
     "generate-report", llvm::cl::desc("Generate a report for huawei."),
     llvm::cl::init(false));
+llvm::cl::opt<bool> OptionGenerateMigrateCode(
+    "enable-migrate-code-gen",
+    llvm::cl::desc("Generate the code for migration."), llvm::cl::init(false));
 
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
@@ -219,13 +222,14 @@ int main(int argc, const char **argv) {
             .get());
   }
 
-  ca::ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager(),
-                                        ca::ExternalCallMatcher::Print);
-  ca::ExternalDependencyMatcher exDependencyMatcher;
   clang::ast_matchers::MatchFinder Finder;
 
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
+    ca::ExternalCallMatcher exCallMatcher(ASTs[0]->getSourceManager(),
+                                          ca::ExternalCallMatcher::Print);
+    ca::ExternalDependencyMatcher exDependencyMatcher;
+
     if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis) {
       Finder.addMatcher(BasicExternalFuncDeclMatcherPattern,
                         &exDependencyMatcher);
@@ -244,6 +248,19 @@ int main(int argc, const char **argv) {
     if (OptionEnableFunctionAnalysisByHeaders) {
       Finder.addMatcher(ExternalCallMatcherPattern, &exCallMatcher);
     }
+    status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
+
+  if (OptionGenerateMigrateCode) {
+    ca::MigrateCodeGenerator migrateCodeGenerator;
+
+    Finder.addMatcher(BasicExternalFuncDeclMatcherPattern,
+                      &migrateCodeGenerator);
+    Finder.addMatcher(ExternalStructMatcherPattern, &migrateCodeGenerator);
+    Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
+                      &migrateCodeGenerator);
+    Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
+    
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
 

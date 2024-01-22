@@ -41,16 +41,17 @@ fi
 
 # Compile
 pushd $BUILD
-    cmake .. -G Ninja -D USE_CHINESE=ON
+    cmake .. -G Ninja
     ninja
     set -x
     # --enable-function-analysis-by-headers \
     # --generate-report \
-    # --enable-module-analysis \
     # --enable-pp-analysis \
+    # --enable-module-analysis \
+    # --enable-struct-analysis \
     # --enable-function-analysis  \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-    --enable-struct-analysis \
+    --enable-migrate-code-gen \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     # --enable-module-analysis \
