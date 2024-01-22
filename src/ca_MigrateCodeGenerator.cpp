@@ -55,13 +55,6 @@ void MigrateCodeGenerator::onStartOfTranslationUnit() {
 #ifdef DEBUG
   llvm::outs() << "In onStartOfTranslationUnit\n";
 #endif
-#ifdef CHN
-  llvm::outs() << "# 外部依赖报告\n\n";
-  llvm::outs() << "## 全局: \n";
-#else
-  llvm::outs() << "# External Dependencies Report\n\n";
-  llvm::outs() << "## Global: \n";
-#endif
   // Clear the MacroDeduplicationSet
   MacroDeduplication.clear();
 
@@ -99,8 +92,8 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
       if (ExternalDepToSignature[Struct].find(LocString) ==
           ExternalDepToSignature[Struct].end()) {
         ExternalDepToSignature[Struct][LocString] = {};
-        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
+      ExternalDepToSignature[Struct][LocString].insert(StructDecl);
     }
 
     // Traverse the FuncDecl's ParamVarDecls
@@ -121,8 +114,8 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
         if (ExternalDepToSignature[Struct].find(LocString) ==
             ExternalDepToSignature[Struct].end()) {
           ExternalDepToSignature[Struct][LocString] = {};
-          ExternalDepToSignature[Struct][LocString].insert(StructDecl);
         }
+        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
     }
   }
@@ -151,8 +144,8 @@ void MigrateCodeGenerator::handleExternalTypeFD(const clang::RecordDecl *RD,
         if (ExternalDepToSignature[Struct].find(LocString) ==
             ExternalDepToSignature[Struct].end()) {
           ExternalDepToSignature[Struct][LocString] = {};
-          ExternalDepToSignature[Struct][LocString].insert(StructDecl);
         }
+        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
     }
   }
@@ -209,8 +202,8 @@ void MigrateCodeGenerator::handleExternalMacroInt(
     }
     auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
     // auto MacroDedupName =
-        // MacroName + "@" +
-        // ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+    // MacroName + "@" +
+    // ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
 
     auto LocString_ = ca_utils::getLocationString(SM, MacroLocation);
     std::size_t colonPos = LocString_.find(':');
@@ -219,8 +212,8 @@ void MigrateCodeGenerator::handleExternalMacroInt(
     if (ExternalDepToSignature[MacroInt].find(LocString) ==
         ExternalDepToSignature[MacroInt].end()) {
       ExternalDepToSignature[MacroInt][LocString] = {};
-      ExternalDepToSignature[MacroInt][LocString].insert(MacroName);
     }
+    ExternalDepToSignature[MacroInt][LocString].insert(MacroName);
   }
 }
 
@@ -315,12 +308,11 @@ void MigrateCodeGenerator::handleExternalCall(const clang::CallExpr *CE,
         std::size_t colonPos = LocString_.find(':');
         LocString = LocString_.substr(0, colonPos);
       }
-    }
-    if (ExternalDepToSignature[Function].find(LocString) ==
-        ExternalDepToSignature[Function].end()) {
-      ExternalDepToSignature[Function][LocString] = {};
-      ExternalDepToSignature[Function][LocString].insert(
-          FunctionDeclString);
+      if (ExternalDepToSignature[Function].find(LocString) ==
+          ExternalDepToSignature[Function].end()) {
+        ExternalDepToSignature[Function][LocString] = {};
+      }
+      ExternalDepToSignature[Function][LocString].insert(FunctionDeclString);
     }
   }
 }
@@ -362,8 +354,32 @@ void MigrateCodeGenerator::run(
 
 void MigrateCodeGenerator::onEndOfTranslationUnit() {
   // Traverse the ExternalDepToSignature
-   
-
+  for (auto &it : ExternalDepToSignature) {
+    switch (it.first) {
+      case Function: {
+        llvm::outs() << "/// External Function\n";
+        break;
+      }
+      case Struct: {
+        llvm::outs() << "/// External Struct\n";
+        break;
+      }
+      case MacroInt: {
+        llvm::outs() << "/// External MacroInt\n";
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    // Traverse the ExternalDepToSignature[it.first]
+    for (auto &it2 : it.second) {
+      llvm::outs() << "/// " << it2.first << "\n";
+      for (auto &it3 : it2.second) {
+        llvm::outs() << it3 << "\n\n";
+      }
+    }
+  }
 }
 }  // namespace ca
 
