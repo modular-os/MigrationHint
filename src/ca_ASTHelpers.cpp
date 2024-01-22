@@ -115,7 +115,7 @@ void ExternalCallMatcher::run(
           if (FilePath == "") {
             // Couldn't get the spelling location, try to get the presumed
             // location
-#if DEBUG
+#ifdef DEBUG
             llvm::outs << "Couldn't get the spelling location, try to get the "
                           "presumed "
                           "location\n";
@@ -150,7 +150,7 @@ void ExternalCallMatcher::run(
           if (FilePath == "") {
             // Couldn't get the spelling location, try to get the presumed
             // location
-#if DEBUG
+#ifdef DEBUG
             llvm::outs << "Couldn't get the spelling location, try to get the "
                           "presumed "
                           "location\n";
