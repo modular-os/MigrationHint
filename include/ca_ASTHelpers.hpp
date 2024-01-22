@@ -105,7 +105,7 @@ class ExternalDependencyMatcher
   void handleExternalMacroInt(const clang::IntegerLiteral *IntL,
                               clang::SourceManager &SM,
                               const clang::LangOptions &LO,
-                            int &isInFunctionOldValue);
+                              int &isInFunctionOldValue);
 
   void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
                                 clang::SourceManager &SM);
@@ -129,6 +129,47 @@ class ExternalDependencyMatcher
   int externalParamVarDeclCnt;
   int externalImplicitExprCnt;
   int externalFunctionCallCnt;
+};
+
+class MigrateCodeGenerator
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  enum ExternalType { Function, Struct, MacroInt };
+  void onStartOfTranslationUnit() override;
+
+  void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
+                               clang::SourceManager &SM,
+                               const clang::LangOptions &LO);
+
+  void handleExternalTypeFD(const clang::RecordDecl *RD,
+                            clang::SourceManager &SM,
+                            int &isInFunctionOldValue);
+
+  void handleExternalTypeVD(const clang::VarDecl *VD, clang::SourceManager &SM,
+                            const clang::LangOptions &LO,
+                            int &isInFunctionOldValue);
+
+  void handleExternalMacroInt(const clang::IntegerLiteral *IntL,
+                              clang::SourceManager &SM,
+                              const clang::LangOptions &LO,
+                              int &isInFunctionOldValue);
+
+  void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
+                                clang::SourceManager &SM);
+
+  void handleExternalCall(const clang::CallExpr *CE, clang::SourceManager &SM);
+
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+
+  void onEndOfTranslationUnit() override;
+
+ private:
+  /*Macro deduplication*/
+  std::set<std::string> MacroDeduplication;
+  /*Map-Map-Set: ExternalType->Header(string)->`signature`*/
+  std::map<ExternalType, std::map<std::string, std::set<std::string>>>
+      ExternalTypeToHeaderToSignature;
 };
 
 }  // namespace ca
