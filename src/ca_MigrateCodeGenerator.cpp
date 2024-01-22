@@ -64,264 +64,104 @@ void MigrateCodeGenerator::onStartOfTranslationUnit() {
 #endif
   // Clear the MacroDeduplicationSet
   MacroDeduplication.clear();
+
+  // Clear the ExternalDepToSignature
+  for (auto &it : ExternalDepToSignature) {
+    it.second.clear();
+  }
+  ExternalDepToSignature.clear();
+
+  // Initialize the ExternalDepToSignature
+  ExternalDepToSignature[Function] = {};
+  ExternalDepToSignature[Struct] = {};
+  ExternalDepToSignature[MacroInt] = {};
 }
 
 void MigrateCodeGenerator::handleExternalTypeFuncD(
     const clang::FunctionDecl *FD, clang::SourceManager &SM,
     const clang::LangOptions &LO) {
+  std::string StructDecl;
+  llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (SM.isInMainFile(FD->getLocation())) {
-#ifdef DEBUG
-    llvm::outs() << "FunctionDecl("
-                 << ca_utils::getLocationString(SM, FD->getLocation())
-                 << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
+    clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
+    RetRTD = ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(),
+                                             SM, "", -1);
+    if (RetRTD != nullptr) {
+      // llvm::outs() << "[Debug1]: ";
+      RetRTD->print(StructDeclStream);
+      StructDeclStream.flush();
 
-    auto Loc = FD->getLocation();
-    if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
-      // Judging whether the caller is expanded from predefined macros.
-      auto CallerLoc = Loc;
-      // !!! Handle macro operations
-      // Judging whether the caller is expanded from predefined macros.
-      std::vector<clang::SourceLocation> tmpStack;
-      while (true) {
-        if (SM.isMacroBodyExpansion(CallerLoc)) {
-          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-          CallerLoc = ExpansionLoc;
-        } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-          llvm::outs() << "Is in macro arg expansion\n";
-#endif
-          auto ExpansionLoc =
-              SM.getImmediateExpansionRange(CallerLoc).getBegin();
-          CallerLoc = ExpansionLoc;
-        } else {
-          break;
-        }
-        tmpStack.push_back(CallerLoc);
+      auto LocString_ = ca_utils::getLocationString(SM, RetRTD->getLocation());
+      std::size_t colonPos = LocString_.find(':');
+      auto LocString = LocString_.substr(0, colonPos);
+
+      // Insert into the ExternalDepToSignature
+      if (ExternalDepToSignature[Struct].find(LocString) ==
+          ExternalDepToSignature[Struct].end()) {
+        ExternalDepToSignature[Struct][LocString] = {};
+        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
-      assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-      clang::SourceLocation MacroLocation;
-      if (tmpStack.size() == 1) {
-        MacroLocation = FD->getLocation();
-      } else {
-        MacroLocation = tmpStack[tmpStack.size() - 1];
-      }
-
-#ifdef CHN
-      llvm::outs() << "\n\n---\n\n\n## 函数(宏): `"
-                   << ca_utils::getMacroName(SM, MacroLocation) << "`\n"
-                   << "- 函数位置: `"
-                   << ca_utils::getLocationString(SM, MacroLocation) << "`\n";
-#else
-      llvm::outs() << "\n\n---\n\n\n## Function(Macro): `"
-                   << ca_utils::getFuncDeclString(FD) << "`\n"
-                   << "- Function Location: `"
-                   << ca_utils::getLocationString(SM, FD->getLocation())
-                   << "`\n";
-#endif
-#ifdef CHN
-      llvm::outs() << "- 该函数是宏展开的一部分。\n";
-#else
-      llvm::outs() << "- Expanded from macros.\n";
-#endif
-
-    } else {
-#ifdef CHN
-      llvm::outs() << "\n\n---\n\n\n## 函数: `"
-                   << ca_utils::getFuncDeclString(FD) << "`\n"
-                   << "- 函数位置: `"
-                   << ca_utils::getLocationString(SM, FD->getLocation())
-                   << "`\n";
-#else
-      llvm::outs() << "\n\n---\n\n\n## Function: `"
-                   << ca_utils::getFuncDeclString(FD) << "`\n"
-                   << "- Function Location: `"
-                   << ca_utils::getLocationString(SM, FD->getLocation())
-                   << "`\n";
-#endif
     }
-#ifdef DEBUG
-    llvm::outs() << "Field changes here. FuncDecl 0->1.\n";
-#endif
 
-// Deal with the external return type
-#ifdef CHN
-    llvm::outs() << "- 返回类型: `" + FD->getReturnType().getAsString() + "`\n";
-#else
-    llvm::outs() << "- Return Type: `" + FD->getReturnType().getAsString() +
-                        "`\n";
-#endif
-
-    ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
-#ifdef DEBUG
-      llvm::outs() << "ParamVarDecl("
-                   << ca_utils::getLocationString(SM, PVD->getLocation())
-                   << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
-#ifdef CHN
-      std::string ExtraInfo = "\n   `" + PVD->getType().getAsString() + " " +
-                              PVD->getNameAsString() + "`\n";
-      ExtraInfo += "   - 类型: `外部类型（函数参数）`\n";
-      ExtraInfo += "   - 定义路径: `" +
-                   ca_utils::getLocationString(SM, PVD->getLocation()) + "`\n";
-      ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
-      ExtraInfo += "   - 外部类型细节：\n";
-#else
-      std::string ExtraInfo =
-          "\n### ParamVarDecl: `" + PVD->getNameAsString() + "`\n";
-      ExtraInfo += "   - Location: `" +
-                   ca_utils::getLocationString(SM, PVD->getLocation()) + "`\n";
-      ExtraInfo += "   - Type: `" + PVD->getType().getAsString() + "`\n";
-#endif
-      if (const auto ParentFuncDeclContext = PVD->getParentFunctionOrMethod()) {
-        // Notice: Method is only used in C++
-        if (const auto ParentFD =
-                dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
-#ifdef CHN
-#else
-          ExtraInfo += "   - Function: `" +
-                       ca_utils::getFuncDeclString(ParentFD) + "`\n";
-#endif
-        }
-      } else if (const auto TU = PVD->getTranslationUnitDecl()) {
-#ifdef CHN
-#else
-        ExtraInfo += "   - Parent: Global variable, no parent function.\n";
-#endif
-      }
+      ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
+                                                 SM, "", -1);
+      if (ParamRTD != nullptr) {
+        // llvm::outs() << "[Debug2]: ";
+        ParamRTD->print(StructDeclStream);
+        StructDeclStream.flush();
 
-      // Output the init expr for the VarDecl
-      if (PVD->hasInit()) {
-        auto InitText =
-            clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(
-                                            PVD->getInit()->getSourceRange()),
-                                        SM, LO);
-        if (InitText.str() != "" && InitText.str() != "NULL") {
-#ifdef CHN
-#else
-          ExtraInfo += "   - ParamVarDecl Has Init: \n   ```c\n" +
-                       InitText.str() + "\n   ```\n";
-#endif
+        auto LocString_ =
+            ca_utils::getLocationString(SM, ParamRTD->getLocation());
+        std::size_t colonPos = LocString_.find(':');
+        auto LocString = LocString_.substr(0, colonPos);
 
-        } else {
-#ifdef CHN
-#else
-          ExtraInfo += "   - ParamVarDecl Has Init, but no text found.\n";
-#endif
+        // Insert into the ExternalDepToSignature
+        if (ExternalDepToSignature[Struct].find(LocString) ==
+            ExternalDepToSignature[Struct].end()) {
+          ExternalDepToSignature[Struct][LocString] = {};
+          ExternalDepToSignature[Struct][LocString].insert(StructDecl);
         }
-      }
-      auto isExternalType = ca_utils::getExternalStructType(
-          PVD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (isExternalType != nullptr) {
       }
     }
   }
 }
 
-void MigrateCodeGenerator::handleExternalTypeFD(
-    const clang::RecordDecl *RD, clang::SourceManager &SM,
-    int &isInFunctionOldValue) {
-#ifdef DEBUG
-  llvm::outs() << "ExternalStructMatcher\n";
-  llvm::outs() << FD->getQualifiedNameAsString() << "\n";
-  llvm::outs() << FD->getType().getAsString() << " " << FD->getNameAsString()
-               << "\n";
-  auto RD = FD->getParent();
-  llvm::outs() << "\t" << RD->getQualifiedNameAsString() << "\n";
-#endif
-  // Dealing with the relationships between RecordDecl and fieldDecl
-  // output the basic information of the RecordDecl
-
+void MigrateCodeGenerator::handleExternalTypeFD(const clang::RecordDecl *RD,
+                                                clang::SourceManager &SM,
+                                                int &isInFunctionOldValue) {
+  std::string StructDecl;
+  llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
-    // Output the basic info for specific RecordDecl
-    std::string BasicInfo = "";
-#ifdef CHN
-#else
-    BasicInfo = "\n### StructDecl: `" + RD->getQualifiedNameAsString() + "`\n";
-#endif
-
-// Output the basic location info for the fieldDecl
-#ifdef CHN
-#else
-    BasicInfo += "- Location: `" +
-                 ca_utils::getLocationString(SM, RD->getLocation()) + "`\n";
-#endif
-
-    if (const auto ParentFuncDeclContext = RD->getParentFunctionOrMethod()) {
-      // Notice: Method is only used in C++
-      if (const auto ParentFD =
-              dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
-#ifdef CHN
-#else
-        BasicInfo +=
-            "- Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
-#endif
-      }
-    } else if (const auto TU = RD->getTranslationUnitDecl()) {
-#ifdef CHN
-#else
-      BasicInfo += "- Parent: Global variable, no parent function.\n";
-#endif
-
-    }
-    llvm::outs() << BasicInfo;
-
-// Output the full definition for the fieldDecl
-#ifdef CHN
-#else
-    llvm::outs() << "- Full Definition: \n"
-                 << "```c\n";
-    RD->print(llvm::outs(), clang::PrintingPolicy(clang::LangOptions()));
-    llvm::outs() << "\n```\n";
-#endif
-
-// Traverse its fieldDecl and find external struct member
-#ifdef CHN
-#else
-    llvm::outs() << "- External Struct Members: \n";
-#endif
     for (const auto &FD : RD->fields()) {
-#ifdef DEBUG
-      llvm::outs() << "\t" << FD->getType().getAsString() << " "
-                   << FD->getNameAsString() << " "
-                   << FDType->isStructureOrClassType() << "\n";
-#endif
-      std::string ExtraInfo = "";
-#ifdef CHN
-      ExtraInfo += "\n   `" + FD->getType().getAsString() + " " +
-                   FD->getNameAsString() + "`\n";
-      ExtraInfo += "   - 类型: `外部类型（结构体声明的外部成员）`\n";
-      ExtraInfo += "   - 定义路径: `" +
-                   ca_utils::getLocationString(SM, FD->getLocation()) + "`\n";
-      ExtraInfo += "   - 父结构体声明: `" + RD->getQualifiedNameAsString() +
-                   "(" + ca_utils::getLocationString(SM, RD->getLocation()) +
-                   ")" + "`\n";
-      ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
-      ExtraInfo += "   - 外部类型细节：\n";
-#else
-      ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
-                   FD->getNameAsString() + "`\n";
-#endif
-      auto IsExternalType = ca_utils::getExternalStructType(
-          FD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (IsExternalType != nullptr) {
-      } else {
-// Recover the field control flag if the Decl is not external(so it
-// is passed).
-#ifdef DEBUG
-        llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
-#endif
+      auto StructRTD =
+          ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, "");
+      if (StructRTD != nullptr) {
+        // llvm::outs() << "[Debug2]: ";
+        StructRTD->print(StructDeclStream);
+        StructDeclStream.flush();
+
+        auto LocString_ =
+            ca_utils::getLocationString(SM, StructRTD->getLocation());
+        std::size_t colonPos = LocString_.find(':');
+        auto LocString = LocString_.substr(0, colonPos);
+
+        // Insert into the ExternalDepToSignature
+        if (ExternalDepToSignature[Struct].find(LocString) ==
+            ExternalDepToSignature[Struct].end()) {
+          ExternalDepToSignature[Struct][LocString] = {};
+          ExternalDepToSignature[Struct][LocString].insert(StructDecl);
+        }
       }
     }
-    llvm::outs() << "\n\n---\n\n\n";
   }
 }
 
-void MigrateCodeGenerator::handleExternalTypeVD(
-    const clang::VarDecl *VD, clang::SourceManager &SM,
-    const clang::LangOptions &LO, int &isInFunctionOldValue) {
+void MigrateCodeGenerator::handleExternalTypeVD(const clang::VarDecl *VD,
+                                                clang::SourceManager &SM,
+                                                const clang::LangOptions &LO,
+                                                int &isInFunctionOldValue) {
 #ifdef DEPRECATED
   /*
   Deprecated, now we print the info of ParamVarDecl in FuncDecl/
@@ -334,77 +174,7 @@ void MigrateCodeGenerator::handleExternalTypeVD(
 
   } else
 #endif
-      if (SM.isInMainFile(VD->getLocation())) {
-#ifdef DEBUG
-    llvm::outs() << "VarDecl("
-                 << ca_utils::getLocationString(SM, VD->getLocation())
-
-                 << "): ^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-#endif
-#ifdef CHN
-    std::string ExtraInfo = "\n   `" + VD->getType().getAsString() + " " +
-                            VD->getNameAsString() + "`\n";
-    ExtraInfo += "   - 类型: `外部类型（变量声明）`\n";
-    ExtraInfo += "   - 定义路径: `" +
-                 ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
-    ExtraInfo += "   - 简介：`<Filled-By-AI>`\n";
-    ExtraInfo += "   - 外部类型细节：\n";
-
-#else
-    std::string ExtraInfo = "\n### VarDecl: `" + VD->getNameAsString() + "`\n";
-    ExtraInfo += "   - Location: `" +
-                 ca_utils::getLocationString(SM, VD->getLocation()) + "`\n";
-    ExtraInfo += "   - Type: `" + VD->getType().getAsString() + "`\n";
-#endif
-    if (const auto ParentFuncDeclContext = VD->getParentFunctionOrMethod()) {
-      // Notice: Method is only used in C++
-      if (const auto ParentFD =
-              dyn_cast<clang::FunctionDecl>(ParentFuncDeclContext)) {
-#ifdef CHN
-#else
-        ExtraInfo +=
-            "   - Parent: `" + ca_utils::getFuncDeclString(ParentFD) + "`\n";
-#endif
-      }
-    } else if (const auto TU = VD->getTranslationUnitDecl()) {
-#ifdef CHN
-#else
-      ExtraInfo += "   - Parent: Global variable, no parent function.\n";
-#endif
-    }
-
-    // Output the init expr for the VarDecl
-    if (VD->hasInit()) {
-      auto InitText =
-          clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(
-                                          VD->getInit()->getSourceRange()),
-                                      SM, LO);
-      if (InitText.str() != "" && InitText.str() != "NULL") {
-#ifdef CHN
-#else
-        ExtraInfo += "   - VarDecl Has Init: \n   ```c\n" + InitText.str() +
-                     "\n   ```\n";
-#endif
-
-      } else {
-#ifdef CHN
-#else
-        ExtraInfo += "   - VarDecl Has Init, but no text found.\n";
-#endif
-      }
-    }
-
-    auto isExternalType = ca_utils::getExternalStructType(
-        VD->getType(), llvm::outs(), SM, ExtraInfo);
-    if (isExternalType != nullptr) {
-    } else {
-#ifdef DEBUG
-      llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
-#endif
-      // Recover the field control flag if the Decl is not external(so it
-      // is passed)
-    }
-  }
+    assert("Run into the deprecated handle for variable decl!");
 }
 
 void MigrateCodeGenerator::handleExternalMacroInt(
@@ -438,39 +208,25 @@ void MigrateCodeGenerator::handleExternalMacroInt(
       MacroLocation = tmpStack[tmpStack.size() - 2];
     }
     auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
-    auto MacroDedupName =
-        MacroName + "@" +
-        ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+    // auto MacroDedupName =
+        // MacroName + "@" +
+        // ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
 
-    // Output the basic info for specific RecordDecl
-    std::string BasicInfo = "";
-#ifdef CHN
-#else
-    BasicInfo = "\n### External Macro Integer: `" + MacroName + "`\n";
-#endif
+    auto LocString_ = ca_utils::getLocationString(SM, MacroLocation);
+    std::size_t colonPos = LocString_.find(':');
+    auto LocString = LocString_.substr(0, colonPos);
 
-// Output the basic location info for the fieldDecl
-#ifdef CHN
-#else
-    BasicInfo +=
-        "- Call Location: `" +
-        ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]) + "`\n";
-    BasicInfo += "- Defined Location: `" +
-                 ca_utils::getLocationString(SM, MacroLocation) + "`\n";
-#endif
-
-    // TODO: find the parents for integerLiteral
-    if (ca_utils::isMacroInteger(MacroName) &&
-        MacroDeduplication.find(MacroDedupName) == MacroDeduplication.end()) {
-      llvm::outs() << BasicInfo;
-      llvm::outs() << "\n\n---\n\n\n";
-      MacroDeduplication.insert(MacroDedupName);
+    if (ExternalDepToSignature[MacroInt].find(LocString) ==
+        ExternalDepToSignature[MacroInt].end()) {
+      ExternalDepToSignature[MacroInt][LocString] = {};
+      ExternalDepToSignature[MacroInt][LocString].insert(MacroName);
     }
   }
 }
 
 void MigrateCodeGenerator::handleExternalImplicitCE(
     const clang::ImplicitCastExpr *ICE, clang::SourceManager &SM) {
+#ifdef DEPRECATED
   if (SM.isInMainFile(ICE->getBeginLoc()) &&
       SM.isInMainFile(ICE->getEndLoc())) {
     if (ICE->getCastKind() == clang::CK_LValueToRValue ||
@@ -505,52 +261,30 @@ void MigrateCodeGenerator::handleExternalImplicitCE(
       }
     }
   }
+#endif
+  assert("Run into the deprecated handle for implicit cast!");
 }
 
 void MigrateCodeGenerator::handleExternalCall(const clang::CallExpr *CE,
-                                                   clang::SourceManager &SM) {
+                                              clang::SourceManager &SM) {
   // TODO: Fix Macro bugs.
+  std::string FunctionDeclString = "";
+  std::string LocString_ = "", LocString = "";
   if (auto FD = CE->getDirectCallee()) {
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
         SM.isInMainFile(CE->getBeginLoc())) {
       auto Loc = CE->getBeginLoc();
-      ;
+      std::string LocString_ = "", LocString = "";
       if (!SM.isMacroBodyExpansion(Loc) && !SM.isMacroArgExpansion(Loc)) {
-#ifdef CHN
-        llvm::outs() << "\n\n   `" << ca_utils::getFuncDeclString(FD) << "`\n";
-#else
-        llvm::outs() << "\n### External Function Call: ";
-        ca_utils::printFuncDecl(FD, SM);
-#endif
-        if (FD->isInlineSpecified()) {
-#ifdef CHN
-#else
-          llvm::outs() << "   - Function `" << FD->getNameAsString()
-                       << "` is declared as inline.\n";
-#endif
-        }
-#ifdef CHN
-        llvm::outs() << "   - 类型: `函数`\n"
-                     << "   - 定义路径: `" +
-                            ca_utils::getLocationString(SM, FD->getLocation()) +
-                            "`\n";
-#else
-        llvm::outs() << "   - Call Location: ";
-        ca_utils::printCaller(CE, SM);
-#endif
-#ifdef CHN
-        llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
-#endif
+        FunctionDeclString = ca_utils::getFuncDeclString(FD);
+        LocString_ = ca_utils::getLocationString(SM, FD->getLocation());
+        std::size_t colonPos = LocString_.find(':');
+        LocString = LocString_.substr(0, colonPos);
+        //
 
       } else {
         // !!! Handle macro operations
-#ifdef CHN
-        llvm::outs() << "\n\n   ";
-#else
-        llvm::outs() << "\n### External Function Call(Macro): ";
-#endif
-        // ca_utils::printFuncDecl(FD, SM);
         auto CallerLoc = CE->getBeginLoc();
         // Judging whether the caller is expanded from predefined macros.
         std::vector<clang::SourceLocation> tmpStack;
@@ -559,9 +293,6 @@ void MigrateCodeGenerator::handleExternalCall(const clang::CallExpr *CE,
             auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
             CallerLoc = ExpansionLoc;
           } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-            llvm::outs() << "Is in macro arg expansion\n";
-#endif
             auto ExpansionLoc =
                 SM.getImmediateExpansionRange(CallerLoc).getBegin();
             CallerLoc = ExpansionLoc;
@@ -571,13 +302,6 @@ void MigrateCodeGenerator::handleExternalCall(const clang::CallExpr *CE,
           tmpStack.push_back(CallerLoc);
         }
         assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-        if (tmpStack.size() == 0) {
-          llvm::outs() << "(Error!)\n### External Function Call: ";
-          ca_utils::printFuncDecl(FD, SM);
-          llvm::outs() << "   - Call Location: ";
-          ca_utils::printCaller(CE, SM);
-          return;
-        }
         clang::SourceLocation MacroLocation;
         if (tmpStack.size() == 1) {
           MacroLocation = FD->getLocation();
@@ -585,48 +309,19 @@ void MigrateCodeGenerator::handleExternalCall(const clang::CallExpr *CE,
           MacroLocation = tmpStack[tmpStack.size() - 2];
         }
         auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
-        llvm::outs() << "`" << MacroName << "`\n";
 
-        if (FD->isInlineSpecified()) {
-#ifdef CHN
-#else
-          llvm::outs() << "   - Function `" << MacroName
-                       << "` is declared as inline.\n";
-#endif
-        }
-
-#ifdef CHN
-        llvm::outs() << "   - 类型: `宏`\n"
-                     << "   - 定义路径: " +
-                            ca_utils::getLocationString(SM, MacroLocation) +
-                            "`\n";
-#else
-        llvm::outs() << "   - Call Location: ";
-        ca_utils::printCaller(CE, SM);
-#endif
-#ifdef CHN
-        llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
-#endif
+        FunctionDeclString = MacroName;
+        LocString_ = ca_utils::getLocationString(SM, MacroLocation);
+        std::size_t colonPos = LocString_.find(':');
+        LocString = LocString_.substr(0, colonPos);
       }
     }
-#ifdef DEBUG
-    /// Determine whether this declaration came from an AST file (such as
-    /// a precompiled header or module) rather than having been parsed.
-    llvm::outs() << "----------------------------------------\n";
-    if (!FD->isFromASTFile()) {
-      llvm::outs() << "Found external function call: "
-                   << FD->getQualifiedNameAsString() << "\n";
+    if (ExternalDepToSignature[Function].find(LocString) ==
+        ExternalDepToSignature[Function].end()) {
+      ExternalDepToSignature[Function][LocString] = {};
+      ExternalDepToSignature[Function][LocString].insert(
+          FunctionDeclString);
     }
-
-    if (FD->isExternC()) {
-      llvm::outs() << "Found external C function call: "
-                   << FD->getQualifiedNameAsString() << "\n";
-    }
-#endif
-  } else {
-#ifdef DEBUG
-    llvm::outs() << "No function declaration found for call\n";
-#endif
   }
 }
 
@@ -666,6 +361,8 @@ void MigrateCodeGenerator::run(
 }
 
 void MigrateCodeGenerator::onEndOfTranslationUnit() {
+  // Traverse the ExternalDepToSignature
+   
 
 }
 }  // namespace ca

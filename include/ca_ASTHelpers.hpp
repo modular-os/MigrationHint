@@ -169,7 +169,7 @@ class MigrateCodeGenerator
   std::set<std::string> MacroDeduplication;
   /*Map-Map-Set: ExternalType->Header(string)->`signature`*/
   std::map<ExternalType, std::map<std::string, std::set<std::string>>>
-      ExternalTypeToHeaderToSignature;
+      ExternalDepToSignature;
 };
 
 }  // namespace ca

@@ -243,7 +243,9 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
       output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
              << "`\n";
 #endif
-
+      if(OutputIndent == -1){
+        return RTD;
+      }
 #ifdef CHN
       output << ExtraInfo << "      - 外部类型名称: `"
              << RTD->getQualifiedNameAsString() << "`\n";
