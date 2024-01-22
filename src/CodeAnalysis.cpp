@@ -256,10 +256,10 @@ int main(int argc, const char **argv) {
 
     Finder.addMatcher(BasicExternalFuncDeclMatcherPattern,
                       &migrateCodeGenerator);
-    Finder.addMatcher(ExternalStructMatcherPattern, &migrateCodeGenerator);
-    Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
-                      &migrateCodeGenerator);
-    Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
+    // Finder.addMatcher(ExternalStructMatcherPattern, &migrateCodeGenerator);
+    // Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
+    //                   &migrateCodeGenerator);
+    // Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
     
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
