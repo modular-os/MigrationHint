@@ -295,6 +295,7 @@ bool getExternalStructType(clang::QualType Type, llvm::raw_ostream &output,
     }
     return !InCurrentFile;
   } else {
+    return false;
     // TODO：Add support for other types
     // search for typedef
     if (Type->isTypedefNameType()) {
