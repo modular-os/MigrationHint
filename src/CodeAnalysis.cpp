@@ -58,6 +58,10 @@ StatementMatcher ExternalMacroIntegersMatcherPattern =
 
 StatementMatcher ReturnMatcherPattern = returnStmt().bind("returnStmt");
 
+// Match `-DeclRefExpr 0x55bbdb94dcc0 <col:33> 'int' EnumConstant 0x55bbdafa35f0
+// 'CPUHP_MM_ZSWP_POOL_PREPARE' 'int'
+StatementMatcher ExternalEnumMatcherPattern = declRefExpr().bind("declRefExpr");
+
 // TranslationUnitDecl is the root of AST, for outputting the whole ast tree.
 DeclarationMatcher TranslationUnitDecl =
     translationUnitDecl().bind("translationUnit");
@@ -238,6 +242,8 @@ int main(int argc, const char **argv) {
       Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
       Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
                         &exDependencyMatcher);
+      Finder.addMatcher(ExternalEnumMatcherPattern, &exDependencyMatcher);
+
 #ifdef DEPRECATED
       Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
 #endif
@@ -260,7 +266,7 @@ int main(int argc, const char **argv) {
     Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
                       &migrateCodeGenerator);
     Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
-    
+
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
 

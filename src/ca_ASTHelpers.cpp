@@ -819,7 +819,6 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
 
 void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
                                                    clang::SourceManager &SM) {
-  // TODO: Fix Macro bugs.
   if (auto FD = CE->getDirectCallee()) {
     // output the basic information of the function declaration
     if (!SM.isInMainFile(FD->getLocation()) &&
@@ -969,6 +968,21 @@ void ExternalDependencyMatcher::run(
   } else if (auto TU = Result.Nodes.getNodeAs<clang::TranslationUnitDecl>(
                  "translationUnit")) {
     TU->dump(llvm::outs());
+  } else if (auto DRE =
+                 Result.Nodes.getNodeAs<clang::DeclRefExpr>("declRefExpr")) {
+    auto Loc = DRE->getBeginLoc();
+    // TODO: Update all the is InMainFile to isInMainFileOrExpansion
+    if (SM.isWrittenInMainFile(Loc)) {
+      if (auto EDL = dyn_cast<clang::EnumConstantDecl>(DRE->getDecl())) {
+        if (!SM.isInMainFile(EDL->getLocation())) {
+          llvm::outs() << "\n";
+          DRE->dump(llvm::outs(), *Result.Context);
+          llvm::outs() << "EnumDecl: " << EDL->getQualifiedNameAsString()
+                       << "\n";
+          EDL->dump(llvm::outs());
+        }
+      }
+    }
   } else {
 #ifdef DEBUG
     llvm::outs() << "No call or fieldDecl expression found\n";
@@ -1029,7 +1043,7 @@ int ModuleAnalysisHelper(std::string sourceFiles) {
   using namespace clang::ast_matchers;
   StatementMatcher ExternalCallMatcherPattern = callExpr().bind("externalCall");
   /*
-  TODO: Weird bugs to include path of ast matcher
+  TODO[Finished]: Weird bugs to include path of ast matcher
       StatementMatcher ExternalCallMatcherPattern =
       callExpr(callee(FunctionDecl())).bind("externalCall");
   */
