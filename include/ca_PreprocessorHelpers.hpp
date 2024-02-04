@@ -55,7 +55,7 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                                   const clang::Preprocessor &PP);
 
   bool matchMacroFromExpansion(const std::string &MacroName,
-                              const std::string &MacroExpansion);
+                               const std::string &MacroExpansion);
 
  public:
   void InclusionDirective(clang::SourceLocation HashLoc,
