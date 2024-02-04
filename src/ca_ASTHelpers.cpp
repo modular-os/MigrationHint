@@ -968,6 +968,52 @@ void ExternalDependencyMatcher::run(
   } else if (auto TU = Result.Nodes.getNodeAs<clang::TranslationUnitDecl>(
                  "translationUnit")) {
     TU->dump(llvm::outs());
+  } else if (auto StringL = Result.Nodes.getNodeAs<clang::StringLiteral>(
+                 "stringLiteral")) {
+    // TODO: Solve the weird bugs of Internal Macro "ZSWAP_PARAM_UNSET"
+    auto Loc = StringL->getBeginLoc();
+    if (SM.isInMainFile(Loc)) {
+      if (SM.isMacroBodyExpansion(Loc) || SM.isMacroArgExpansion(Loc)) {
+        // Judging whether the caller is expanded from predefined macros.
+        auto CallerLoc = Loc;
+        // !!! Handle macro operations
+        // Judging whether the caller is expanded from predefined macros.
+        std::vector<clang::SourceLocation> tmpStack;
+        while (true) {
+          if (SM.isMacroBodyExpansion(CallerLoc)) {
+            auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+            CallerLoc = ExpansionLoc;
+          } else if (SM.isMacroArgExpansion(CallerLoc)) {
+#ifdef DEBUG
+            llvm::outs() << "Is in macro arg expansion\n";
+#endif
+            auto ExpansionLoc =
+                SM.getImmediateExpansionRange(CallerLoc).getBegin();
+            CallerLoc = ExpansionLoc;
+          } else {
+            break;
+          }
+          tmpStack.push_back(CallerLoc);
+        }
+        assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+        clang::SourceLocation MacroLocation;
+        if (tmpStack.size() == 1) {
+          MacroLocation = StringL->getBeginLoc();
+        } else {
+          MacroLocation = tmpStack[tmpStack.size() - 1];
+        }
+        auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
+        if (!SM.isWrittenInMainFile(MacroLocation) &&
+            ca_utils::isMacroInteger(MacroName)) {
+          llvm::outs() << "\n";
+          StringL->dump(llvm::outs(), *Result.Context);
+          llvm::outs() << "Macro Location: "
+                       << ca_utils::getLocationString(SM, MacroLocation)
+                       << "\n";
+          llvm::outs() << "Macro Name: " << MacroName << "\n";
+        }
+      }
+    }
   } else if (auto DRE =
                  Result.Nodes.getNodeAs<clang::DeclRefExpr>("declRefExpr")) {
     auto Loc = DRE->getBeginLoc();
