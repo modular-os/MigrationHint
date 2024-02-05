@@ -14,6 +14,8 @@ llvm::json::Object ExternalCallAbility::buildJSON(
     const clang::SourceManager &SM) {
   llvm::json::Object AbilityJSON;
   llvm::json::Array CallLocsJSON;
+  AbilityJSON["Category"] = "Function";
+
   for (auto &Loc : CallLocs) {
     CallLocsJSON.push_back(getLocationValue(SM, Loc));
   }
@@ -30,6 +32,7 @@ llvm::json::Object ExternalTypeAbility::buildJSON(
     const clang::SourceManager &SM) {
   llvm::json::Object AbilityJSON;
   llvm::json::Array CallLocsJSON;
+  AbilityJSON["Category"] = "Type";
 
   for (auto &Loc : CallLocs) {
     CallLocsJSON.push_back(getLocationValue(SM, Loc));
@@ -72,6 +75,7 @@ llvm::json::Object ExternalMacroAbility::buildJSON(
     const clang::SourceManager &SM) {
   llvm::json::Object AbilityJSON;
   llvm::json::Array CallLocsJSON;
+  AbilityJSON["Category"] = "Macro";
 
   for (auto &Loc : CallLocs) {
     CallLocsJSON.push_back(getLocationValue(SM, Loc));
