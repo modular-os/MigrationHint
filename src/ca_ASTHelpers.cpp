@@ -75,30 +75,31 @@ void ExternalCallMatcher::run(
             SM.isMacroArgExpansion(CallerLoc)) {
           // !!! Handle macro operations
           // Judging whether the caller is expanded from predefined macros.
-          std::vector<clang::SourceLocation> tmpStack;
-          while (true) {
-            if (SM.isMacroBodyExpansion(CallerLoc)) {
-              auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-              CallerLoc = ExpansionLoc;
-            } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-              llvm::outs() << "Is in macro arg expansion\n";
-#endif
-              auto ExpansionLoc =
-                  SM.getImmediateExpansionRange(CallerLoc).getBegin();
-              CallerLoc = ExpansionLoc;
-            } else {
-              break;
-            }
-            tmpStack.push_back(CallerLoc);
-          }
-          assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-          clang::SourceLocation MacroLocation;
-          if (tmpStack.size() == 1) {
-            MacroLocation = FD->getLocation();
-          } else {
-            MacroLocation = tmpStack[tmpStack.size() - 2];
-          }
+//           std::vector<clang::SourceLocation> tmpStack;
+//           while (true) {
+//             if (SM.isMacroBodyExpansion(CallerLoc)) {
+//               auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+//               CallerLoc = ExpansionLoc;
+//             } else if (SM.isMacroArgExpansion(CallerLoc)) {
+// #ifdef DEBUG
+//               llvm::outs() << "Is in macro arg expansion\n";
+// #endif
+//               auto ExpansionLoc =
+//                   SM.getImmediateExpansionRange(CallerLoc).getBegin();
+//               CallerLoc = ExpansionLoc;
+//             } else {
+//               break;
+//             }
+//             tmpStack.push_back(CallerLoc);
+//           }
+//           assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+//           clang::SourceLocation MacroLocation;
+//           if (tmpStack.size() == 1) {
+//             MacroLocation = FD->getLocation();
+//           } else {
+//             MacroLocation = tmpStack[tmpStack.size() - 2];
+//           }
+            auto MacroLocation = ca_utils::getMacroLoc(SM, CallerLoc);
 #ifdef CHN
           auto MacroName = ca_utils::getMacroName(SM, MacroLocation) + "(宏)`" +
                            ca_utils::getLocationString(SM, MacroLocation) + "`";
@@ -363,39 +364,41 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
       auto CallerLoc = Loc;
       // !!! Handle macro operations
       // Judging whether the caller is expanded from predefined macros.
-      std::vector<clang::SourceLocation> tmpStack;
-      while (true) {
-        if (SM.isMacroBodyExpansion(CallerLoc)) {
-          auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-          CallerLoc = ExpansionLoc;
-        } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-          llvm::outs() << "Is in macro arg expansion\n";
-#endif
-          auto ExpansionLoc =
-              SM.getImmediateExpansionRange(CallerLoc).getBegin();
-          CallerLoc = ExpansionLoc;
-        } else {
-          break;
-        }
-        tmpStack.push_back(CallerLoc);
-      }
-      assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-      clang::SourceLocation MacroLocation;
-      if (tmpStack.size() == 1) {
-        MacroLocation = FD->getLocation();
-      } else {
-        MacroLocation = tmpStack[tmpStack.size() - 1];
-      }
+//       std::vector<clang::SourceLocation> tmpStack;
+//       while (true) {
+//         if (SM.isMacroBodyExpansion(CallerLoc)) {
+//           auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+//           CallerLoc = ExpansionLoc;
+//         } else if (SM.isMacroArgExpansion(CallerLoc)) {
+// #ifdef DEBUG
+//           llvm::outs() << "Is in macro arg expansion\n";
+// #endif
+//           auto ExpansionLoc =
+//               SM.getImmediateExpansionRange(CallerLoc).getBegin();
+//           CallerLoc = ExpansionLoc;
+//         } else {
+//           break;
+//         }
+//         tmpStack.push_back(CallerLoc);
+//       }
+//       assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+//       clang::SourceLocation MacroLocation;
+//       if (tmpStack.size() == 1) {
+//         MacroLocation = FD->getLocation();
+//       } else {
+//         MacroLocation = tmpStack[tmpStack.size() - 1];
+//       }
+
+      auto MacroLocation = ca_utils::getMacroLoc(SM, CallerLoc);
 
 #ifdef CHN
       llvm::outs() << "\n\n---\n\n\n## 函数(宏): `"
                    << ca_utils::getMacroName(SM, MacroLocation) << "`\n"
                    << "- 函数位置: `"
-                   << ca_utils::getLocationString(SM, MacroLocation) << "`\n";
+                   << ca_utils::getLocationString(SM, FD->getLocation()) << "`\n";
 #else
       llvm::outs() << "\n\n---\n\n\n## Function(Macro): `"
-                   << ca_utils::getFuncDeclString(FD) << "`\n"
+                   << ca_utils::getMacroName(SM, MacroLocation) << "`\n"
                    << "- Function Location: `"
                    << ca_utils::getLocationString(SM, FD->getLocation())
                    << "`\n";
@@ -725,27 +728,21 @@ void ExternalDependencyMatcher::handleExternalMacroInt(
     // Judging whether the caller is expanded from predefined macros.
 
     std::vector<clang::SourceLocation> tmpStack;
+    tmpStack.push_back(Loc);
     while (true) {
       if (SM.isMacroBodyExpansion(Loc)) {
-        auto ExpansionLoc = SM.getImmediateMacroCallerLoc(Loc);
-        Loc = ExpansionLoc;
+        Loc = SM.getImmediateMacroCallerLoc(Loc);
       } else if (SM.isMacroArgExpansion(Loc)) {
-        auto ExpansionLoc = SM.getImmediateExpansionRange(Loc).getBegin();
-        Loc = ExpansionLoc;
+        Loc = SM.getImmediateExpansionRange(Loc).getBegin();
       } else {
         break;
       }
       tmpStack.push_back(Loc);
     }
-    assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-    // TODO: Begin testing
+    assert(tmpStack.size() > 1 && "Macro expansion stack is empty.\n");
     clang::SourceLocation MacroLocation;
+    MacroLocation = tmpStack[tmpStack.size() - 2];
 
-    if (tmpStack.size() == 1) {
-      MacroLocation = IntL->getBeginLoc();
-    } else {
-      MacroLocation = tmpStack[tmpStack.size() - 2];
-    }
     auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
     auto MacroDedupName =
         MacroName + "@" +
@@ -862,37 +859,38 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
         // ca_utils::printFuncDecl(FD, SM);
         auto CallerLoc = CE->getBeginLoc();
         // Judging whether the caller is expanded from predefined macros.
-        std::vector<clang::SourceLocation> tmpStack;
-        while (true) {
-          if (SM.isMacroBodyExpansion(CallerLoc)) {
-            auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-            CallerLoc = ExpansionLoc;
-          } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-            llvm::outs() << "Is in macro arg expansion\n";
-#endif
-            auto ExpansionLoc =
-                SM.getImmediateExpansionRange(CallerLoc).getBegin();
-            CallerLoc = ExpansionLoc;
-          } else {
-            break;
-          }
-          tmpStack.push_back(CallerLoc);
-        }
-        assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-        if (tmpStack.size() == 0) {
-          llvm::outs() << "(Error!)\n### External Function Call: ";
-          ca_utils::printFuncDecl(FD, SM);
-          llvm::outs() << "   - Call Location: ";
-          ca_utils::printCaller(CE, SM);
-          return;
-        }
-        clang::SourceLocation MacroLocation;
-        if (tmpStack.size() == 1) {
-          MacroLocation = FD->getLocation();
-        } else {
-          MacroLocation = tmpStack[tmpStack.size() - 2];
-        }
+//         std::vector<clang::SourceLocation> tmpStack;
+//         while (true) {
+//           if (SM.isMacroBodyExpansion(CallerLoc)) {
+//             auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+//             CallerLoc = ExpansionLoc;
+//           } else if (SM.isMacroArgExpansion(CallerLoc)) {
+// #ifdef DEBUG
+//             llvm::outs() << "Is in macro arg expansion\n";
+// #endif
+//             auto ExpansionLoc =
+//                 SM.getImmediateExpansionRange(CallerLoc).getBegin();
+//             CallerLoc = ExpansionLoc;
+//           } else {
+//             break;
+//           }
+//           tmpStack.push_back(CallerLoc);
+//         }
+//         assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+//         if (tmpStack.size() == 0) {
+//           llvm::outs() << "(Error!)\n### External Function Call: ";
+//           ca_utils::printFuncDecl(FD, SM);
+//           llvm::outs() << "   - Call Location: ";
+//           ca_utils::printCaller(CE, SM);
+//           return;
+//         }
+//         clang::SourceLocation MacroLocation;
+//         if (tmpStack.size() == 1) {
+//           MacroLocation = FD->getLocation();
+//         } else {
+//           MacroLocation = tmpStack[tmpStack.size() - 2];
+//         }
+        auto MacroLocation = ca_utils::getMacroLoc(SM, CallerLoc);
         auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
         llvm::outs() << "`" << MacroName << "`\n";
 
@@ -978,30 +976,32 @@ void ExternalDependencyMatcher::run(
         auto CallerLoc = Loc;
         // !!! Handle macro operations
         // Judging whether the caller is expanded from predefined macros.
-        std::vector<clang::SourceLocation> tmpStack;
-        while (true) {
-          if (SM.isMacroBodyExpansion(CallerLoc)) {
-            auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-            CallerLoc = ExpansionLoc;
-          } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-            llvm::outs() << "Is in macro arg expansion\n";
-#endif
-            auto ExpansionLoc =
-                SM.getImmediateExpansionRange(CallerLoc).getBegin();
-            CallerLoc = ExpansionLoc;
-          } else {
-            break;
-          }
-          tmpStack.push_back(CallerLoc);
-        }
-        assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-        clang::SourceLocation MacroLocation;
-        if (tmpStack.size() == 1) {
-          MacroLocation = StringL->getBeginLoc();
-        } else {
-          MacroLocation = tmpStack[tmpStack.size() - 1];
-        }
+//         std::vector<clang::SourceLocation> tmpStack;
+//         while (true) {
+//           if (SM.isMacroBodyExpansion(CallerLoc)) {
+//             auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+//             CallerLoc = ExpansionLoc;
+//           } else if (SM.isMacroArgExpansion(CallerLoc)) {
+// #ifdef DEBUG
+//             llvm::outs() << "Is in macro arg expansion\n";
+// #endif
+//             auto ExpansionLoc =
+//                 SM.getImmediateExpansionRange(CallerLoc).getBegin();
+//             CallerLoc = ExpansionLoc;
+//           } else {
+//             break;
+//           }
+//           tmpStack.push_back(CallerLoc);
+//         }
+//         assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+//         clang::SourceLocation MacroLocation;
+//         if (tmpStack.size() == 1) {
+//           MacroLocation = StringL->getBeginLoc();
+//         } else {
+//           MacroLocation = tmpStack[tmpStack.size() - 1];
+//         }
+
+        auto MacroLocation = ca_utils::getMacroLoc(SM, CallerLoc);
         auto MacroName = ca_utils::getMacroName(SM, MacroLocation);
         if (!SM.isWrittenInMainFile(MacroLocation) &&
             ca_utils::isMacroInteger(MacroName)) {
@@ -1253,33 +1253,34 @@ void ReportMatcher::run(
           // llvm::outs() << "\n```MACRO\n"
           //              << ca_utils::getFuncDeclString(FD) << "\n```\n";
 
-          auto CallerLoc = Loc;
+          // auto CallerLoc = Loc;
           // !!! Handle macro operations
           // Judging whether the caller is expanded from predefined macros.
-          std::vector<clang::SourceLocation> tmpStack;
-          while (true) {
-            if (SM.isMacroBodyExpansion(CallerLoc)) {
-              auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
-              CallerLoc = ExpansionLoc;
-            } else if (SM.isMacroArgExpansion(CallerLoc)) {
-#ifdef DEBUG
-              llvm::outs() << "Is in macro arg expansion\n";
-#endif
-              auto ExpansionLoc =
-                  SM.getImmediateExpansionRange(CallerLoc).getBegin();
-              CallerLoc = ExpansionLoc;
-            } else {
-              break;
-            }
-            tmpStack.push_back(CallerLoc);
-          }
-          assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
-          clang::SourceLocation MacroLocation;
-          if (tmpStack.size() == 1) {
-            MacroLocation = FD->getLocation();
-          } else {
-            MacroLocation = tmpStack[tmpStack.size() - 2];
-          }
+//           std::vector<clang::SourceLocation> tmpStack;
+//           while (true) {
+//             if (SM.isMacroBodyExpansion(CallerLoc)) {
+//               auto ExpansionLoc = SM.getImmediateMacroCallerLoc(CallerLoc);
+//               CallerLoc = ExpansionLoc;
+//             } else if (SM.isMacroArgExpansion(CallerLoc)) {
+// #ifdef DEBUG
+//               llvm::outs() << "Is in macro arg expansion\n";
+// #endif
+//               auto ExpansionLoc =
+//                   SM.getImmediateExpansionRange(CallerLoc).getBegin();
+//               CallerLoc = ExpansionLoc;
+//             } else {
+//               break;
+//             }
+//             tmpStack.push_back(CallerLoc);
+//           }
+//           assert(tmpStack.size() != 0 && "Macro expansion stack is empty.\n");
+//           clang::SourceLocation MacroLocation;
+//           if (tmpStack.size() == 1) {
+//             MacroLocation = FD->getLocation();
+//           } else {
+//             MacroLocation = tmpStack[tmpStack.size() - 2];
+//           }
+          auto MacroLocation = ca_utils::getMacroLoc(SM, Loc);
 #ifdef CHN
           auto MacroName = ca_utils::getMacroName(SM, MacroLocation) + "(宏)";
 #else
