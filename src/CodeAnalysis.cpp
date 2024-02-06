@@ -58,9 +58,10 @@ StatementMatcher ExternalMacroIntegersMatcherPattern =
 
 StatementMatcher ReturnMatcherPattern = returnStmt().bind("returnStmt");
 
-// Match `-DeclRefExpr 0x55bbdb94dcc0 <col:33> 'int' EnumConstant 0x55bbdafa35f0
-// 'CPUHP_MM_ZSWP_POOL_PREPARE' 'int'
 StatementMatcher ExternalEnumMatcherPattern = declRefExpr().bind("declRefExpr");
+
+StatementMatcher ExternalMacroStringMatcherPattern =
+    stringLiteral().bind("stringLiteral");
 
 // TranslationUnitDecl is the root of AST, for outputting the whole ast tree.
 DeclarationMatcher TranslationUnitDecl =
@@ -227,6 +228,14 @@ int main(int argc, const char **argv) {
   }
 
   clang::ast_matchers::MatchFinder Finder;
+
+#ifdef DEBUG
+  // Temporary debug code
+  ca::ExternalDependencyMatcher exDependencyMatcher;
+  Finder.addMatcher(ExternalMacroStringMatcherPattern, &exDependencyMatcher);
+  Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  return 0;
+#endif
 
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
