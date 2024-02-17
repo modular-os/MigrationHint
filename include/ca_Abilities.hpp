@@ -76,7 +76,7 @@ class ExternalMacroAbility : public Ability {
 
 /* utility functions */
 
-llvm::json::Value getLocationValue(const clang::SourceManager &SM,
+llvm::json::Object getLocationValue(const clang::SourceManager &SM,
                                    clang::SourceLocation Loc);
 
 }  // namespace ca

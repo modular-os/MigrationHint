@@ -89,7 +89,7 @@ llvm::json::Object ExternalMacroAbility::buildJSON(
 }
 
 /* Utility functions */
-llvm::json::Value getLocationValue(const clang::SourceManager &SM,
+llvm::json::Object getLocationValue(const clang::SourceManager &SM,
                                    clang::SourceLocation Loc) {
   // Get the spelling location for Loc
   auto SLoc = SM.getSpellingLoc(Loc);
