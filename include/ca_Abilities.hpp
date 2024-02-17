@@ -32,11 +32,11 @@ class Ability {
 
 class ExternalCallAbility : public Ability {
  private:
-  clang::FunctionDecl *CurrFunc;
+  const clang::FunctionDecl *CurrFunc;
 
  public:
   ExternalCallAbility(clang::SourceLocation InitLoc, std::string _signature,
-                      clang::FunctionDecl *FD)
+                      const clang::FunctionDecl *FD)
       : Ability(InitLoc, _signature), CurrFunc(FD) {}
 
   llvm::json::Object buildJSON(const clang::SourceManager &SM) override;

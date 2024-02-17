@@ -20,6 +20,7 @@
 // #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 // #include <llvm/Support/CommandLine.h>
+    #include <llvm/Support/JSON.h>
 #include <llvm/Support/raw_ostream.h>
 
 // #include <iostream>
@@ -29,6 +30,7 @@
 #include <vector>
 
 #include "ca_ASTHelpers.hpp"
+#include "ca_Abilities.hpp"
 #include "ca_PreprocessorHelpers.hpp"
 #include "ca_utils.hpp"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -170,6 +172,50 @@ class MigrateCodeGenerator
   /*Map-Map-Set: ExternalType->Header(string)->`signature`*/
   std::map<ExternalType, std::map<std::string, std::set<std::string>>>
       ExternalDepToSignature;
+};
+
+class ExternalDependencyJSONBackend
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  ExternalDependencyJSONBackend(clang::SourceManager &SM) : AST_SM(SM) {}
+  
+  void onStartOfTranslationUnit() override;
+
+  void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
+                               clang::SourceManager &SM,
+                               const clang::LangOptions &LO);
+
+  void handleExternalTypeFD(const clang::RecordDecl *RD,
+                            clang::SourceManager &SM,
+                            int &isInFunctionOldValue);
+
+  void handleExternalTypeVD(const clang::VarDecl *VD, clang::SourceManager &SM,
+                            const clang::LangOptions &LO,
+                            int &isInFunctionOldValue);
+
+  void handleExternalMacroInt(const clang::IntegerLiteral *IntL,
+                              clang::SourceManager &SM,
+                              const clang::LangOptions &LO,
+                              int &isInFunctionOldValue);
+
+  void handleExternalImplicitCE(const clang::ImplicitCastExpr *ICE,
+                                clang::SourceManager &SM);
+
+  void handleExternalCall(const clang::CallExpr *CE, clang::SourceManager &SM);
+
+  virtual void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+
+  void onEndOfTranslationUnit() override;
+
+ private:
+  /*Macro deduplication*/
+  std::set<std::string> MacroDeduplication;
+  /*Signature to Ability*/
+  /*JSON Root*/
+  std::map<std::string, ca::Ability *> SigToAbility;
+  llvm::json::Array JSONRoot;
+  clang::SourceManager &AST_SM;
 };
 
 }  // namespace ca

@@ -118,6 +118,9 @@ llvm::cl::opt<bool> OptionGenerateReport(
 llvm::cl::opt<bool> OptionGenerateMigrateCode(
     "enable-migrate-code-gen",
     llvm::cl::desc("Generate the code for migration."), llvm::cl::init(false));
+llvm::cl::opt<bool> OptionGenerateJSON(
+    "enable-json-gen", llvm::cl::desc("Generate the json info."),
+    llvm::cl::init(false));
 
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
@@ -275,6 +278,17 @@ int main(int argc, const char **argv) {
     Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
                       &migrateCodeGenerator);
     Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
+
+    status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
+
+  if (OptionGenerateJSON) {
+    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager());
+
+    Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalStructMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalCallMatcherPattern, &jsonBackend);
 
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
