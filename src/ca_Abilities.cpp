@@ -24,7 +24,7 @@ llvm::json::Object ExternalCallAbility::buildJSON(
   AbilityJSON["FunctionName"] = CurrFunc->getNameAsString();
   AbilityJSON["ReturnType"] = CurrFunc->getReturnType().getAsString();
   AbilityJSON["DefinedLoc"] = getLocationValue(SM, CurrFunc->getLocation());
-  AbilityJSON.try_emplace("CallLocs", CallLocsJSON);
+  AbilityJSON["CallLocs"] = llvm::json::Value(std::move(CallLocsJSON));
   return AbilityJSON;
 }
 
@@ -67,7 +67,7 @@ llvm::json::Object ExternalTypeAbility::buildJSON(
 
   AbilityJSON["Signature"] = signature;
   AbilityJSON["TypeName"] = CurrType.getAsString();
-  AbilityJSON.try_emplace("CallLocs", CallLocsJSON);
+  AbilityJSON["CallLocs"] = llvm::json::Value(std::move(CallLocsJSON));
   return AbilityJSON;
 }
 
@@ -84,7 +84,7 @@ llvm::json::Object ExternalMacroAbility::buildJSON(
   AbilityJSON["Signature"] = signature;
   AbilityJSON["MacroLoc"] = getLocationValue(SM, MacroLoc);
   AbilityJSON["IsMacroFunction"] = isMacroFunction;
-  AbilityJSON.try_emplace("CallLocs", CallLocsJSON);
+  AbilityJSON["CallLocs"] = llvm::json::Value(std::move(CallLocsJSON));
   return AbilityJSON;
 }
 

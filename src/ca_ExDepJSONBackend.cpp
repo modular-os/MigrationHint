@@ -246,11 +246,11 @@ void ExternalDependencyJSONBackend::handleExternalMacroInt(
         MacroDeduplication.insert(MacroDedupName);
         auto mapIterator = SigToAbility.find(MacroName);
         if (mapIterator != SigToAbility.end()) {
-          mapIterator->second->addCallLoc(IntL->getBeginLoc());
+          mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
         } else {
           auto AbilityPTR = new ca::ExternalMacroAbility(
-              IntL->getBeginLoc(), MacroName, MacroLocation, false);
-          SigToAbility[MacroDedupName] = static_cast<ca::Ability *>(AbilityPTR);
+              tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, false);
+          SigToAbility[MacroName] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
     }
@@ -355,11 +355,11 @@ void ExternalDependencyJSONBackend::handleExternalCall(
 
           auto mapIterator = SigToAbility.find(MacroName);
           if (mapIterator != SigToAbility.end()) {
-            mapIterator->second->addCallLoc(CE->getBeginLoc());
+            mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
           } else {
             auto AbilityPTR = new ca::ExternalMacroAbility(
-                CE->getBeginLoc(), MacroName, MacroLocation, true);
-            SigToAbility[MacroDedupName] =
+                tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, true);
+            SigToAbility[MacroName] =
                 static_cast<ca::Ability *>(AbilityPTR);
           }
         }
