@@ -109,9 +109,15 @@ void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
   }
 
   // Use Formatv to print the JSONRoot
+  llvm::outs() << "[\n";
   for (auto &it : JSONRoot) {
-    llvm::outs() << llvm::formatv("{0:2}", it) << "\n";
+    llvm::outs() << llvm::formatv("{0:2}", it);
+    if (it != JSONRoot.back()) {
+      llvm::outs() << ",";
+    }
+    llvm::outs() << "\n";
   }
+  llvm::outs() << "]\n";
 }
 
 void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
