@@ -287,7 +287,7 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
       return RTD;
     }
   } else {
-    return nullptr;
+    // return nullptr;
     // TODO：Add support for other types
     // search for typedef
     if (Type->isTypedefNameType()) {
@@ -308,7 +308,7 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
         depth++;
       }
 
-      output << ExtraInfo << "      - 外部类型名称: `" << Type.getAsString()
+      output << ExtraInfo << "      - ddd外部类型名称: `" << Type.getAsString()
              << "`\n";
       output << "         - 位置: `"
              << getLocationString(SM, TTD->getLocation()) << "`\n";
@@ -319,8 +319,6 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
         output << "`否`\n";
       }
     }
-
-    return false;
   }
   return nullptr;
 }
@@ -368,4 +366,4 @@ bool isMacroInteger(const std::string &MacroText) {
   }
   return true;
 }
-} // namespace ca_utils
+}  // namespace ca_utils

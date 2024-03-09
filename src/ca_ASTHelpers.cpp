@@ -40,6 +40,7 @@
 #include <clang/AST/Stmt.h>
 #include <clang/AST/Type.h>
 #include <clang/Basic/LLVM.h>
+#include <clang/Basic/LLVM.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/Support/Casting.h>
@@ -856,6 +857,8 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
 #endif
         // Recursively visiting every argument in the function
         for (auto args : CE->arguments()) {
+          // TODO: Solve some boundary problems: 
+          // like function pointers in struct initialization
 
           if (const clang::DeclRefExpr *DeclRef =
                   dyn_cast<clang::DeclRefExpr>(args->IgnoreImplicit())) {
@@ -878,7 +881,7 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
               llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
             }
           }
-        }
+        }yongl
 
       } else {
         // !!! Handle macro operations
@@ -995,8 +998,7 @@ void ExternalDependencyMatcher::run(
     handleExternalMacroInt(IntL, SM, LO, isInFunctionOldValue);
   } else if (auto TU = Result.Nodes.getNodeAs<clang::TranslationUnitDecl>(
                  "translationUnit")) {
-    // llvm::outs() << "testing\n";
-    // TU->dump(llvm::outs());
+    TU->dump(llvm::outs());
   } else {
 #ifdef DEBUG
     llvm::outs() << "No call or fieldDecl expression found\n";
