@@ -3,6 +3,7 @@
 
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/Type.h>
 #include <clang/Basic/LangOptions.h>
@@ -10,6 +11,7 @@
 #include <clang/Lex/Preprocessor.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <ostream>
 #include <string>
 
 namespace ca_utils {
@@ -103,7 +105,7 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::raw_string_ostream FuncDeclStream(FuncDeclStrBuffer);
   clang::LangOptions LangOpts;
   clang::PrintingPolicy PrintPolicy(LangOpts);
-  PrintPolicy.TerseOutput = true;  // 设置为只打印函数签名
+  PrintPolicy.TerseOutput = true; // 设置为只打印函数签名
   FD->print(FuncDeclStream, PrintPolicy);
   FuncDeclStr = FuncDeclStream.str();
   llvm::outs() << "---Found external function call: " << FuncDeclStr << "\n";
@@ -285,15 +287,37 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
       return RTD;
     }
   } else {
-    return nullptr;
+    // return nullptr;
     // TODO：Add support for other types
-    // bool isBasicType = Type->isFundamentalType() || Type->isEnumeralType();
-    llvm::outs() << "[Testing]";
-    llvm::outs() << Type.getAsString() << "\n";
-    if (Type->isFundamentalType()) {
-      llvm::outs() << "Is fundamental type\n";
-    } else {
-      llvm::outs() << "Not fundamental\n";
+    // search for typedef
+    if (Type->isTypedefNameType()) {
+      const clang::TypedefType *TT = Type->getAs<clang::TypedefType>();
+      const clang::TypedefNameDecl *TTD = TT->getDecl();
+      int depth = 0;
+      while (Type->isTypedefNameType()) { // Constantly resolving Typedefs
+        if (depth == 5)                   // Limit nesting depth to 5
+          break;
+        // output << "is Typedef\n";
+        TT = Type->getAs<clang::TypedefType>();
+        TTD = TT->getDecl();
+        Type = TTD->getTypeSourceInfo()->getTypeLoc().getType();
+        // if (Type->isBuiltinType())
+        //   output << "is builtin type\n";
+        // output << Type.getAsString() << "\n"
+        //        << getLocationString(SM, TTD->getLocation()) << "\n";
+        depth++;
+      }
+
+      output << ExtraInfo << "      - ddd外部类型名称: `" << Type.getAsString()
+             << "`\n";
+      output << "         - 位置: `"
+             << getLocationString(SM, TTD->getLocation()) << "`\n";
+      output << "         - 是否为指针: ";
+      if (isPointer) {
+        output << "`是`\n";
+      } else {
+        output << "`否`\n";
+      }
     }
   }
   return nullptr;
