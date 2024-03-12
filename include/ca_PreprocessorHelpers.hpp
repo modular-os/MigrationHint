@@ -1,6 +1,7 @@
 // Encode with UTF-8
 #pragma once
 
+#include <clang/Tooling/Tooling.h>
 #include <string>
 #ifndef _CA_PREPROCESSOR_HELPERS_HPP
 #define _CA_PREPROCESSOR_HELPERS_HPP
@@ -41,8 +42,15 @@ namespace ca {
  **********************************************************************/
 class MacroPPCallbacks : public clang::PPCallbacks {
  public:
-  explicit inline MacroPPCallbacks(const clang::CompilerInstance &compiler)
-      : compiler(compiler), MacroCounts(0), HeaderCounts(0) {
+  explicit inline MacroPPCallbacks(
+      std::map<std::string, std::string> &_NameToExpansion,
+      const clang::CompilerInstance &compiler)
+      : NameToExpansion(_NameToExpansion),
+        CurrentMacroName(""),
+        CurrentMacroExpansion(""),
+        compiler(compiler),
+        MacroCounts(0),
+        HeaderCounts(0) {
     name = compiler.getSourceManager()
                .getFileEntryForID(compiler.getSourceManager().getMainFileID())
                ->getName();
@@ -58,6 +66,11 @@ class MacroPPCallbacks : public clang::PPCallbacks {
                                const std::string &MacroExpansion);
 
  public:
+  // Provide key-value pairs of macro name and its expansion
+  std::map<std::string, std::string> &NameToExpansion;
+  std::string CurrentMacroName;
+  std::string CurrentMacroExpansion;
+
   void InclusionDirective(clang::SourceLocation HashLoc,
                           const clang::Token &IncludeTok,
                           clang::StringRef FileName, bool IsAngled,
@@ -87,9 +100,38 @@ class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
   virtual bool BeginSourceFileAction(CompilerInstance &CI) { return true; }
   virtual void EndSourceFileAction() {}
 #endif
+ public:
+  std::map<std::string, std::string> &NameToExpansion;
+  //  Constructor
+  MacroPPOnlyAction(std::map<std::string, std::string> &_NameToExpansion)
+      : NameToExpansion(_NameToExpansion) {
+    NameToExpansion.clear();
+  }
+  // MacroPPOnlyAction() { NameToExpansion.clear(); }
 
  protected:
   void ExecuteAction() override;
 };
+
+// MyFrontendActionFactory
+template <typename T>
+std::unique_ptr<clang::tooling::FrontendActionFactory>
+newFrontendActionFactory(std::map<std::string, std::string> &_NameToExpansion) {
+  class TZSimpleFrontendActionFactory : public clang::tooling::FrontendActionFactory {
+   public:
+    explicit TZSimpleFrontendActionFactory(std::map<std::string, std::string> &NameToExpansion)
+        : NameToExpansion(NameToExpansion) {}
+
+    std::unique_ptr<clang::FrontendAction> create() override {
+      return std::make_unique<T>(NameToExpansion);
+    }
+
+   private:
+    std::map<std::string, std::string> &NameToExpansion;
+  };
+
+  return std::unique_ptr<clang::tooling::FrontendActionFactory>(
+      new TZSimpleFrontendActionFactory(_NameToExpansion));
+}
 }  // namespace ca
 #endif  // !_CA_PREPROCESSOR_HELPERS_HPP

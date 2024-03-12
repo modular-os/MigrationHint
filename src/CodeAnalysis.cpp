@@ -225,9 +225,19 @@ int main(int argc, const char **argv) {
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
   if (OptionEnablePPAnalysis) {
+    std::map<std::string, std::string> NameToExpansion;
+
+    // ca::MacroPPOnlyAction MacroActions;
     status *= Tool.run(
-        clang::tooling::newFrontendActionFactory<ca::MacroPPOnlyAction>()
+        ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
             .get());
+
+        
+
+    // Print the map NameToExpansion from MacroPPCallbacks in Tool
+    for(auto &it : NameToExpansion) {
+      llvm::outs() << it.first << " : " << it.second << "\n";
+    }
   }
 
   clang::ast_matchers::MatchFinder Finder;

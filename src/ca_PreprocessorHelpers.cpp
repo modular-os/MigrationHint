@@ -26,6 +26,7 @@
 // #include <iostream>
 // #include <map>
 // #include <string>
+#include <clang/Tooling/Tooling.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <vector>
@@ -209,10 +210,28 @@ void MacroPPCallbacks::MacroExpands(const clang::Token &MacroNameTok,
 #else
       llvm::outs() << "```\n\n## Macro " << ++MacroCounts << ": \n```\n";
 #endif
+      if (CurrentMacroName != "") {
+        NameToExpansion[CurrentMacroName] = CurrentMacroExpansion;
+      }
+      CurrentMacroName = PP.getSpelling(MacroNameTok);
+      CurrentMacroExpansion = "";
     }
     llvm::outs().indent(MacroDepth * 3)
         << PP.getSpelling(MacroNameTok) << ", "
         << ca_utils::getLocationString(SM, Range.getBegin()) << "\n";
+
+    // Save the correspond contents into CurrentMacroExpansion
+    // 1. empty spaces with MacroDepth * 3
+    CurrentMacroExpansion += std::string(MacroDepth * 3, ' ');
+    CurrentMacroExpansion += PP.getSpelling(MacroNameTok);
+    if (MacroDepth != 0) {
+      CurrentMacroExpansion += ", ";
+      CurrentMacroExpansion +=
+          ca_utils::getLocationString(SM, Range.getBegin()) + "\n";
+    } else {
+      CurrentMacroExpansion += "\n";
+    }
+
 #ifdef DEBUG
     llvm::outs() << "---\n" << MacroDefinition << "===\n";
 #endif
@@ -221,9 +240,9 @@ void MacroPPCallbacks::MacroExpands(const clang::Token &MacroNameTok,
 
 void MacroPPOnlyAction::ExecuteAction() {
   getCompilerInstance().getPreprocessor().addPPCallbacks(
-      std::make_unique<MacroPPCallbacks>(getCompilerInstance()));
+      std::make_unique<MacroPPCallbacks>(NameToExpansion,
+                                         getCompilerInstance()));
 
   clang::PreprocessOnlyAction::ExecuteAction();
 }
-
 }  // namespace ca
