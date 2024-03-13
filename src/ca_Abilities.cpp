@@ -85,6 +85,7 @@ llvm::json::Object ExternalMacroAbility::buildJSON(
   AbilityJSON["MacroLoc"] = getLocationValue(SM, MacroLoc);
   AbilityJSON["IsMacroFunction"] = isMacroFunction;
   AbilityJSON["CallLocs"] = llvm::json::Value(std::move(CallLocsJSON));
+  AbilityJSON["ExpansionTree"] = MacroExpansionTree;
   return AbilityJSON;
 }
 

@@ -246,6 +246,8 @@ void ExternalDependencyJSONBackend::handleExternalMacroInt(
     auto MacroDedupName =
         MacroName + "@" +
         ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+    std::string MacroIdentifier = ca_utils::getMacroIdentifier(MacroName);
+    std::string ExpansionTree = "No Expansion Tree Found.";
 
     if (ca_utils::isMacroInteger(MacroName)) {
       if (MacroDeduplication.find(MacroDedupName) == MacroDeduplication.end()) {
@@ -254,8 +256,12 @@ void ExternalDependencyJSONBackend::handleExternalMacroInt(
         if (mapIterator != SigToAbility.end()) {
           mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
         } else {
+          if (MacroNameToExpansion.find(MacroIdentifier) != MacroNameToExpansion.end()) {
+            ExpansionTree = MacroNameToExpansion[MacroIdentifier];
+          }
           auto AbilityPTR = new ca::ExternalMacroAbility(
-              tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, false);
+              tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, false,
+              ExpansionTree);
           SigToAbility[MacroName] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
@@ -355,6 +361,9 @@ void ExternalDependencyJSONBackend::handleExternalCall(
         auto MacroDedupName =
             MacroName + "@" +
             ca_utils::getLocationString(SM, tmpStack[tmpStack.size() - 1]);
+        std::string ExpansionTree = "No Expansion Tree Found.";
+        std::string MacroIdentifier = ca_utils::getMacroIdentifier(MacroName);
+
         if (MacroDeduplication.find(MacroDedupName) ==
             MacroDeduplication.end()) {
           MacroDeduplication.insert(MacroDedupName);
@@ -363,10 +372,13 @@ void ExternalDependencyJSONBackend::handleExternalCall(
           if (mapIterator != SigToAbility.end()) {
             mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
           } else {
+            if (MacroNameToExpansion.find(MacroIdentifier) != MacroNameToExpansion.end()) {
+              ExpansionTree = MacroNameToExpansion[MacroIdentifier];
+            }
             auto AbilityPTR = new ca::ExternalMacroAbility(
-                tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, true);
-            SigToAbility[MacroName] =
-                static_cast<ca::Ability *>(AbilityPTR);
+                tmpStack[tmpStack.size() - 1], MacroName, MacroLocation, true,
+                ExpansionTree);
+            SigToAbility[MacroName] = static_cast<ca::Ability *>(AbilityPTR);
           }
         }
       }

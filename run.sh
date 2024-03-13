@@ -50,8 +50,8 @@ pushd $BUILD
     # --enable-migrate-code-gen \
     # --enable-function-analysis  \
     # --enable-struct-analysis \
-    # --enable-json-gen \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
+    --enable-json-gen \
     --enable-pp-analysis \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \

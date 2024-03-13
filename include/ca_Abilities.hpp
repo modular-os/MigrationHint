@@ -63,13 +63,16 @@ class ExternalMacroAbility : public Ability {
     object-like: #define FOO 1.
   */
   bool isMacroFunction;
+  std::string MacroExpansionTree;
 
  public:
   ExternalMacroAbility(clang::SourceLocation InitLoc, std::string _signature,
-                       clang::SourceLocation _MacroLoc, bool _isMacroFunction)
+                       clang::SourceLocation _MacroLoc, bool _isMacroFunction,
+                       std::string _MacroExpansionTree)
       : Ability(InitLoc, _signature),
         MacroLoc(_MacroLoc),
-        isMacroFunction(_isMacroFunction) {}
+        isMacroFunction(_isMacroFunction),
+        MacroExpansionTree(_MacroExpansionTree) {}
 
   llvm::json::Object buildJSON(const clang::SourceManager &SM) override;
 };
@@ -77,7 +80,7 @@ class ExternalMacroAbility : public Ability {
 /* utility functions */
 
 llvm::json::Object getLocationValue(const clang::SourceManager &SM,
-                                   clang::SourceLocation Loc);
+                                    clang::SourceLocation Loc);
 
 }  // namespace ca
 

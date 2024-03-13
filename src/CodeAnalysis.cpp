@@ -231,13 +231,6 @@ int main(int argc, const char **argv) {
     status *= Tool.run(
         ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
             .get());
-
-        
-
-    // Print the map NameToExpansion from MacroPPCallbacks in Tool
-    for(auto &it : NameToExpansion) {
-      llvm::outs() << it.first << " : " << it.second << "\n";
-    }
   }
 
   clang::ast_matchers::MatchFinder Finder;
@@ -293,7 +286,13 @@ int main(int argc, const char **argv) {
   }
 
   if (OptionGenerateJSON) {
-    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager());
+    std::map<std::string, std::string> NameToExpansion;
+    status *= Tool.run(
+        ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
+            .get());
+
+    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(),
+                                                  NameToExpansion);
 
     Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &jsonBackend);
     Finder.addMatcher(ExternalStructMatcherPattern, &jsonBackend);

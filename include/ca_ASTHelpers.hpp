@@ -20,7 +20,7 @@
 // #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 // #include <llvm/Support/CommandLine.h>
-    #include <llvm/Support/JSON.h>
+#include <llvm/Support/JSON.h>
 #include <llvm/Support/raw_ostream.h>
 
 // #include <iostream>
@@ -177,8 +177,11 @@ class MigrateCodeGenerator
 class ExternalDependencyJSONBackend
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
-  ExternalDependencyJSONBackend(clang::SourceManager &SM) : AST_SM(SM) {}
-  
+  ExternalDependencyJSONBackend(
+      clang::SourceManager &SM,
+      std::map<std::string, std::string> &_MacroToExpansion)
+      : AST_SM(SM), MacroNameToExpansion(_MacroToExpansion) {}
+
   void onStartOfTranslationUnit() override;
 
   void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
@@ -216,6 +219,9 @@ class ExternalDependencyJSONBackend
   std::map<std::string, ca::Ability *> SigToAbility;
   llvm::json::Array JSONRoot;
   clang::SourceManager &AST_SM;
+
+  /*Macro Name to Expansion*/
+  std::map<std::string, std::string> &MacroNameToExpansion;
 };
 
 }  // namespace ca

@@ -10,6 +10,7 @@
 #include <clang/Lex/Preprocessor.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <cctype>
 #include <string>
 
 namespace ca_utils {
@@ -363,4 +364,20 @@ bool isMacroInteger(const std::string &MacroText) {
   }
   return true;
 }
+
+std::string getMacroIdentifier(const std::string &MacroText) {
+  // e.g. A -> A, A( -> A, A(1 -> A, A(1) -> A
+  // e.g. __A -> __A, __A( -> __A, __A(1 -> __A, __A(1) -> __A
+  // Traverse the macro text
+  std::string Identifier;
+  for (auto &it : MacroText) {
+    if (std::isalnum(it) || it == '_') {
+    Identifier += it;
+    } else {
+      break;
+    }
+  }
+  return Identifier;
+}
+
 }  // namespace ca_utils
