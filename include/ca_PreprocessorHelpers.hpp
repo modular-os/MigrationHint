@@ -107,7 +107,6 @@ class MacroPPOnlyAction : public clang::PreprocessOnlyAction {
       : NameToExpansion(_NameToExpansion) {
     NameToExpansion.clear();
   }
-  // MacroPPOnlyAction() { NameToExpansion.clear(); }
 
  protected:
   void ExecuteAction() override;
