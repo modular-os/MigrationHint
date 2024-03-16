@@ -58,6 +58,11 @@ StatementMatcher ExternalMacroIntegersMatcherPattern =
 
 StatementMatcher ReturnMatcherPattern = returnStmt().bind("returnStmt");
 
+StatementMatcher ExternalEnumMatcherPattern = declRefExpr().bind("declRefExpr");
+
+StatementMatcher ExternalMacroStringMatcherPattern =
+    stringLiteral().bind("stringLiteral");
+
 // TranslationUnitDecl is the root of AST, for outputting the whole ast tree.
 DeclarationMatcher TranslationUnitDecl =
     translationUnitDecl().bind("translationUnit");
@@ -113,6 +118,9 @@ llvm::cl::opt<bool> OptionGenerateReport(
 llvm::cl::opt<bool> OptionGenerateMigrateCode(
     "enable-migrate-code-gen",
     llvm::cl::desc("Generate the code for migration."), llvm::cl::init(false));
+llvm::cl::opt<bool> OptionGenerateJSON(
+    "enable-json-gen", llvm::cl::desc("Generate the json info."),
+    llvm::cl::init(false));
 
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
@@ -217,12 +225,23 @@ int main(int argc, const char **argv) {
   // Prepare the basic infrastructure
   Tool.buildASTs(ASTs);
   if (OptionEnablePPAnalysis) {
+    std::map<std::string, std::string> NameToExpansion;
+
+    // ca::MacroPPOnlyAction MacroActions;
     status *= Tool.run(
-        clang::tooling::newFrontendActionFactory<ca::MacroPPOnlyAction>()
+        ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
             .get());
   }
 
   clang::ast_matchers::MatchFinder Finder;
+
+#ifdef DEBUG
+  // Temporary debug code
+  ca::ExternalDependencyMatcher exDependencyMatcher;
+  Finder.addMatcher(ExternalMacroStringMatcherPattern, &exDependencyMatcher);
+  Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  return 0;
+#endif
 
   if (OptionEnableFunctionAnalysis || OptionEnableStructAnalysis ||
       OptionEnableFunctionAnalysisByHeaders) {
@@ -238,6 +257,8 @@ int main(int argc, const char **argv) {
       Finder.addMatcher(ExternalStructMatcherPattern, &exDependencyMatcher);
       Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
                         &exDependencyMatcher);
+      Finder.addMatcher(ExternalEnumMatcherPattern, &exDependencyMatcher);
+
 #ifdef DEPRECATED
       Finder.addMatcher(ExternalExprsMatcherPatter, &exDependencyMatcher);
 #endif
@@ -260,7 +281,24 @@ int main(int argc, const char **argv) {
     Finder.addMatcher(ExternalMacroIntegersMatcherPattern,
                       &migrateCodeGenerator);
     Finder.addMatcher(ExternalCallMatcherPattern, &migrateCodeGenerator);
-    
+
+    status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
+
+  if (OptionGenerateJSON) {
+    std::map<std::string, std::string> NameToExpansion;
+    status *= Tool.run(
+        ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
+            .get());
+
+    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(),
+                                                  NameToExpansion);
+
+    Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalStructMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalMacroIntegersMatcherPattern, &jsonBackend);
+    Finder.addMatcher(ExternalCallMatcherPattern, &jsonBackend);
+
     status *= Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
   }
 

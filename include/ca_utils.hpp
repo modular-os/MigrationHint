@@ -30,15 +30,21 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
                                          clang::SourceManager &SM,
                                          const std::string &ExtraInfo,
                                          const int OutputIndent = 3);
-
+// Macro Utilities for Preprocessor
 std::string getMacroDeclString(const clang::MacroDefinition &MD,
                                const clang::SourceManager &SM,
                                const clang::LangOptions &LO);
-                               
+
+// Macro Utilities for AST Stage
 std::string getMacroName(const clang::SourceManager &SM,
                          clang::SourceLocation Loc);
 
+clang::SourceLocation getMacroLoc(const clang::SourceManager &SM,
+                                      const clang::SourceLocation OriginalLoc);
+
 bool isMacroInteger(const std::string &MacroText);
+
+std::string getMacroIdentifier(const std::string &MacroText);
 }  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP

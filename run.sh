@@ -48,9 +48,16 @@ pushd $BUILD
     # --generate-report \
     # --enable-module-analysis \
     # --enable-migrate-code-gen \
+<<<<<<< HEAD
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
     --enable-struct-analysis \
     --enable-function-analysis  \
+=======
+    # --enable-function-analysis  \
+    # --enable-struct-analysis \
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
+    --enable-json-gen \
+>>>>>>> f9a455952d43009e297802f062e700ef226f742d
     --enable-pp-analysis \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \

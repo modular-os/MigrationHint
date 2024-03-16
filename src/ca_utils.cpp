@@ -11,7 +11,11 @@
 #include <clang/Lex/Preprocessor.h>
 #include <llvm/Support/raw_ostream.h>
 
+<<<<<<< HEAD
 #include <ostream>
+=======
+#include <cctype>
+>>>>>>> f9a455952d43009e297802f062e700ef226f742d
 #include <string>
 
 namespace ca_utils {
@@ -159,6 +163,27 @@ std::string getMacroName(const clang::SourceManager &SM,
   return MacroName;
 }
 
+clang::SourceLocation getMacroLoc(const clang::SourceManager &SM,
+                                  const clang::SourceLocation OriginalLoc) {
+  auto CurrentLoc = OriginalLoc;
+
+  std::vector<clang::SourceLocation> tmpStack;
+  tmpStack.push_back(CurrentLoc);
+  while (true) {
+    if (SM.isMacroBodyExpansion(CurrentLoc)) {
+      CurrentLoc = SM.getImmediateMacroCallerLoc(CurrentLoc);
+    } else if (SM.isMacroArgExpansion(CurrentLoc)) {
+      CurrentLoc = SM.getImmediateExpansionRange(CurrentLoc).getBegin();
+    } else {
+      break;
+    }
+    tmpStack.push_back(CurrentLoc);
+  }
+  assert(tmpStack.size() > 1 && "Macro expansion stack is empty.\n");
+
+  return tmpStack[tmpStack.size() - 2];
+}
+
 void printCaller(const clang::CallExpr *CE, const clang::SourceManager &SM) {
   // Special Handle for Caller's Location, since the spelling location is
   // incorrect for caller, so we can only use presumed location.
@@ -243,7 +268,7 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
       output << "   - Member: `" << varType.getAsString() << " " << ExtraInfo
              << "`\n";
 #endif
-      if(OutputIndent == -1){
+      if (OutputIndent == -1) {
         return RTD;
       }
 #ifdef CHN
@@ -366,4 +391,20 @@ bool isMacroInteger(const std::string &MacroText) {
   }
   return true;
 }
+
+std::string getMacroIdentifier(const std::string &MacroText) {
+  // e.g. A -> A, A( -> A, A(1 -> A, A(1) -> A
+  // e.g. __A -> __A, __A( -> __A, __A(1 -> __A, __A(1) -> __A
+  // Traverse the macro text
+  std::string Identifier;
+  for (auto &it : MacroText) {
+    if (std::isalnum(it) || it == '_') {
+    Identifier += it;
+    } else {
+      break;
+    }
+  }
+  return Identifier;
+}
+
 }  // namespace ca_utils

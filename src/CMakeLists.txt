@@ -26,6 +26,8 @@ set(CodeAnalysis_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/ca_PreprocessorHelpers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ca_ASTHelpers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ca_MigrateCodeGenerator.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ca_ExDepJSONBackend.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ca_Abilities.cpp"
 )
 
 # CONFIGURE THE TOOLS
