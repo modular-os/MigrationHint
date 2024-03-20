@@ -17,7 +17,7 @@ project(CodeAnalysis)
 # to a Clang installation directory. CA means_ the special prefix for
 # CodeAnalysis. Set this to a valid Clang installation directory. This is most 
 # likely where LLVM is installed on your system.
-set(CA_Clang_INSTALL_DIR /home/tz/applications/llvm/llvm16_install)
+set(CA_Clang_INSTALL_DIR /home/nakanomiku/CODES/modular_os/llvm-project-llvmorg-16.0.6/build/llvm16_install)
 if(NOT EXISTS "${CA_Clang_INSTALL_DIR}")
   set(CA_Clang_INSTALL_DIR /usr/lib/llvm-16)
 endif()

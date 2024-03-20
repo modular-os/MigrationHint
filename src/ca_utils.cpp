@@ -11,11 +11,7 @@
 #include <clang/Lex/Preprocessor.h>
 #include <llvm/Support/raw_ostream.h>
 
-<<<<<<< HEAD
-#include <ostream>
-=======
 #include <cctype>
->>>>>>> f9a455952d43009e297802f062e700ef226f742d
 #include <string>
 
 namespace ca_utils {
