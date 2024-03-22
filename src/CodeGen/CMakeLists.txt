@@ -15,6 +15,9 @@ add_definitions(${LLVM_DEFINITIONS})
 # Configure C++
 set(CMAKE_CXX_COMPILER /home/nakanomiku/CODES/modular_os/llvm-project-llvmorg-16.0.6/build/llvm16_install/bin/clang++)
 
+# Compile commands
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Source File
 add_executable(CodeGen src/cg_main.cpp)
 
@@ -24,3 +27,4 @@ target_link_libraries(CodeGen ${llvm_libs})
 
 # Output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
