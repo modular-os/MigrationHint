@@ -179,8 +179,9 @@ class ExternalDependencyJSONBackend
  public:
   ExternalDependencyJSONBackend(
       clang::SourceManager &SM,
+      std::string outputPath,
       std::map<std::string, std::string> &_MacroToExpansion)
-      : AST_SM(SM), MacroNameToExpansion(_MacroToExpansion) {}
+      : AST_SM(SM), filePath(outputPath), MacroNameToExpansion(_MacroToExpansion) {}
 
   void onStartOfTranslationUnit() override;
 
@@ -219,7 +220,9 @@ class ExternalDependencyJSONBackend
   std::map<std::string, ca::Ability *> SigToAbility;
   llvm::json::Array JSONRoot;
   clang::SourceManager &AST_SM;
-
+  // Save json file
+  std::string filePath;
+  std::error_code EC;
   /*Macro Name to Expansion*/
   std::map<std::string, std::string> &MacroNameToExpansion;
 };

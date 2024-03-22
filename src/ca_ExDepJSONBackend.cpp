@@ -99,13 +99,28 @@ void ExternalDependencyJSONBackend::run(
 }
 
 void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
-  // Traverse the ExternalDepToSignature
-  for (auto &it : SigToAbility) {
-    if (it.second != nullptr) {
-      JSONRoot.push_back(it.second->buildJSON(AST_SM));
-      // delete it.second;
-      // TODO & WARNING!: May leak the memory
-    }
+
+  // Create a file descriptor outstream
+  llvm::raw_fd_ostream fileOS(filePath, EC, llvm::sys::fs::OF_None);
+  if (EC) {
+    llvm::errs() << "Error opening file " << filePath << ": " << EC.message()
+                 << "\n";
+  } else {
+    llvm::json::OStream J(fileOS);
+    J.array([&] {
+      // Traverse the ExternalDepToSignature
+      for (auto &it : SigToAbility) {
+        if (it.second != nullptr) {
+          JSONRoot.push_back(it.second->buildJSON(AST_SM));
+          // delete it.second;
+          // TODO & WARNING!: May leak the memory
+
+          // Output JSON to file
+          J.value(it.second->buildJSON(AST_SM));
+          fileOS << '\n';
+        }
+      }
+    });
   }
 
   // Use Formatv to print the JSONRoot
