@@ -1,0 +1,8 @@
+#include <llvm/Support/raw_ostream.h>
+#include "llvm/Support/JSON.h"
+#include <fstream>
+
+
+namespace markdownGen {
+int run(std::string filename);
+}
