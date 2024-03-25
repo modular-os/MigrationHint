@@ -18,7 +18,7 @@ set(CMAKE_CXX_COMPILER /home/nakanomiku/CODES/modular_os/llvm-project-llvmorg-16
 # Compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(SRC_LIST src/headerGen.cpp src/markdownGen.cpp src/fp_main.cpp)
+set(SRC_LIST src/parser.cpp src/headerGen.cpp src/markdownGen.cpp src/fp_main.cpp)
 
 include_directories("include")
 # Source File

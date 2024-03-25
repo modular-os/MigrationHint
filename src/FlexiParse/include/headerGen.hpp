@@ -3,5 +3,5 @@
 #include <fstream>
 
 namespace headerGen {
-int run(std::string filename);
+int run(llvm::json::Array* JSONRoot, std::string filename);
 }

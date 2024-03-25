@@ -4,11 +4,10 @@
 #include <llvm/Support/MemoryBuffer.h>
 
 #include <iostream>
-#include <fstream>
 #include <filesystem>
 
-#include "markdownGen.hpp"
-#include "headerGen.hpp"
+#include "parser.hpp"
+
 
 static llvm::cl::opt<std::string> jsonFile("i", llvm::cl::desc("Select input JSON file"), llvm::cl::value_desc("Filename"));
 static llvm::cl::opt<std::string> outputFile("o", llvm::cl::Positional, llvm::cl::desc("Name of output file"), llvm::cl::value_desc("Filename"));
@@ -47,24 +46,28 @@ int main(int argc, const char **argv) {
   // 创建一个 filesystem::path 对象
   std::filesystem::path filepath(outputName);
 
-    // 使用 stem() 方法获取不带扩展名的文件名
-    outputName = filepath.stem().string();
+  // 使用 stem() 方法获取不带扩展名的文件名
+  outputName = filepath.stem().string();
 
   if(!markdown && !header) {
-      llvm::outs() << "Sepcify an output file type!\n";
-
+    llvm::outs() << "Sepcify an output file type!\n";
+    return 0;  
   }
-  if(markdown) {
-    outputName += ".md";
-    markdownGen::run(outputName);
-    llvm::outs() << "Name of output file: " << outputName << "\n";
-  } 
-  if(header) {
-    outputName += ".hpp";
-    markdownGen::run(outputName);
-    llvm::outs() << "Name of output file: " << outputName << "\n";
-  } 
-
+  // if(markdown) {
+  //   markdownGen::run(JSONRoot, outputName + ".md");
+  //   llvm::outs() << "Name of output file: " << outputName << ".md\n";
+  // } 
+  // if(header) {
+  //   markdownGen::run(JSONRoot, outputName + ".hpp");
+  //   llvm::outs() << "Name of output file: " << outputName << ".hpp\n";
+  // } 
+  parser::outputInfo info = {
+    .filename = outputName,
+    .is_markdown = markdown,
+    .is_header = header,
+  };
+  
+  parser::run(JSONRoot, &info);
   
 
 }

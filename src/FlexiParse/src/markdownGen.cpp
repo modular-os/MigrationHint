@@ -1,11 +1,15 @@
 #include "markdownGen.hpp"
-#include "llvm/Support/JSON.h"
 
 namespace markdownGen {
-int run(std::string filename) {
-    llvm::outs() << "makrdown called\n";
-    std::ofstream file(filename);
-    file << "test" << std::endl;
-    return 1;
+void signatureGen(std::string signature, std::ofstream& file) {
+    file << "### External Macro Integer:" << signature << "\n";
 }
+
+void definedLocationGen(std::string filePath, std::optional<int64_t> line, std::optional<int64_t> column, std::ofstream& file) {
+    file << "- Defined Location: " << filePath << " :" <<  "\n";
+}
+
+
+
+
 }
