@@ -50,25 +50,18 @@ int main(int argc, const char **argv) {
   outputName = filepath.stem().string();
 
   if(!markdown && !header) {
-    llvm::outs() << "Sepcify an output file type!\n";
+    llvm::errs() << "Sepcify an output file type!\n";
     return 0;  
   }
-  // if(markdown) {
-  //   markdownGen::run(JSONRoot, outputName + ".md");
-  //   llvm::outs() << "Name of output file: " << outputName << ".md\n";
-  // } 
-  // if(header) {
-  //   markdownGen::run(JSONRoot, outputName + ".hpp");
-  //   llvm::outs() << "Name of output file: " << outputName << ".hpp\n";
-  // } 
+
   parser::outputInfo info = {
     .filename = outputName,
-    .is_markdown = markdown,
-    .is_header = header,
+    .isMarkdown = markdown,
+    .isHeader = header,
   };
   
   parser::run(JSONRoot, &info);
   
-
+  return 1;
 }
 
