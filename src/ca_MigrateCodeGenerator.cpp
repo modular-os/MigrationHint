@@ -81,8 +81,10 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
                                              SM, "", -1);
     if (RetRTD != nullptr) {
       // llvm::outs() << "[Debug1]: ";
+      // llvm::outs() << "[debug1before]:" << StructDecl << "\n";
       RetRTD->print(StructDeclStream);
       StructDeclStream.flush();
+      // llvm::outs() << "[debug1after]:" << StructDecl << "\n";
 
       auto LocString_ = ca_utils::getLocationString(SM, RetRTD->getLocation());
       std::size_t colonPos = LocString_.find(':');
@@ -96,14 +98,22 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
       ExternalDepToSignature[Struct][LocString].insert(StructDecl);
     }
 
+    // Clear StuctDecl preventing duplications
+    StructDecl.clear();
+
     // Traverse the FuncDecl's ParamVarDecls
+    // int loop = 0;
     for (const auto &PVD : FD->parameters()) {
+      // llvm::outs() << "loop" << loop << "\n";
+      // loop++;
       ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
                                                  SM, "", -1);
       if (ParamRTD != nullptr) {
         // llvm::outs() << "[Debug2]: ";
+        // llvm::outs() << "[debug2before]:" << StructDecl << "\n";
         ParamRTD->print(StructDeclStream);
         StructDeclStream.flush();
+        // llvm::outs() << "[debug2after]:" << StructDecl << "\n";
 
         auto LocString_ =
             ca_utils::getLocationString(SM, ParamRTD->getLocation());
@@ -117,6 +127,8 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
         }
         ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
     }
   }
 }
@@ -147,6 +159,8 @@ void MigrateCodeGenerator::handleExternalTypeFD(const clang::RecordDecl *RD,
         }
         ExternalDepToSignature[Struct][LocString].insert(StructDecl);
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
     }
   }
 }
