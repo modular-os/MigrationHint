@@ -329,16 +329,33 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
         depth++;
       }
 
+      if (OutputIndent == -1) {
+        return nullptr;
+      }
+      
+#ifdef CHN
       output << ExtraInfo << "      - ddd外部类型名称: `" << Type.getAsString()
              << "`\n";
       output << "         - 位置: `"
              << getLocationString(SM, TTD->getLocation()) << "`\n";
-      output << "         - 是否为指针: ";
+      output << "      - 是否为指针: ";
       if (isPointer) {
         output << "`是`\n";
       } else {
         output << "`否`\n";
       }
+#else
+      output << ExtraInfo << "   - External Type Detailed Info: " << Type.getAsString()
+             << "`\n";
+      output << "      - Location: `"
+             << getLocationString(SM, TTD->getLocation()) << "`\n";
+      output << "         - Is Pointer: ";
+      if (isPointer) {
+        output << "`Yes`\n";
+      } else {
+        output << "`No`\n";
+      }
+#endif
     }
   }
   return nullptr;
