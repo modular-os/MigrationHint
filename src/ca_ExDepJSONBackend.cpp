@@ -138,7 +138,7 @@ void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
 void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
     const clang::FunctionDecl *FD, clang::SourceManager &SM,
     const clang::LangOptions &LO) {
-  std::string StructDecl;
+  std::string StructDecl = "test";
   llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (SM.isInMainFile(FD->getLocation())) {
     clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
@@ -159,6 +159,8 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
         SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
       }
     }
+    // Clear StuctDecl preventing duplications
+    StructDecl.clear();
 
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
@@ -178,6 +180,9 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
           SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
+
     }
   }
 }
@@ -206,6 +211,8 @@ void ExternalDependencyJSONBackend::handleExternalTypeFD(
           SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
     }
   }
 }
