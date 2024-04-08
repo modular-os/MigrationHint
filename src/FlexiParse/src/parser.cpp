@@ -21,7 +21,8 @@ static void macroExpander(llvm::json::Object* node, outputInfo* info, bool fromC
         std::string signature = node->getString("Signature")->str();
         if(info->isMarkdown) 
             markdownGen::signatureGen(signature, info->markdownfile);
-          
+        if(info->isHeader) 
+            headerGen::signatureGen(signature, info->headerfile);
     } 
 
     if(node->get("MacroLoc")) {
@@ -31,7 +32,8 @@ static void macroExpander(llvm::json::Object* node, outputInfo* info, bool fromC
         long columnNumber = macroLoc->getInteger("Column").value();
         if(info->isMarkdown) 
             markdownGen::definedLocationGen(filePath, lineNumber, columnNumber, fromCallLocs, info->markdownfile);
-        
+        if(info->isHeader) 
+            headerGen::definedLocationGen(filePath, lineNumber, columnNumber, fromCallLocs, info->headerfile);
     } 
 
     if(node->get("IsMacroFunction")) {
@@ -52,6 +54,8 @@ static void macroExpander(llvm::json::Object* node, outputInfo* info, bool fromC
             long columnNumber = callLoc->getInteger("Column").value();
             if(info->isMarkdown) 
                 markdownGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->markdownfile);
+            if(info->isHeader) 
+                headerGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->headerfile);
         }
     } 
 
@@ -59,7 +63,8 @@ static void macroExpander(llvm::json::Object* node, outputInfo* info, bool fromC
         std::string expansionTree = node->getString("ExpansionTree")->str();
         if(info->isMarkdown)
             markdownGen::expansionTreeGen(expansionTree, info->markdownfile);
-
+        if(info->isHeader)
+            headerGen::expansionTreeGen(expansionTree, info->headerfile);
     }
 }
 
@@ -67,24 +72,29 @@ static void macroExpander(llvm::json::Object* node, outputInfo* info, bool fromC
 static void functionExpander(llvm::json::Object* node, outputInfo* info, bool fromCallLocs) {
     if(info->isMarkdown)
         markdownGen::categoryGen("Function", info->markdownfile);
-    
+
     if(node->get("Signature")) {
         std::string signature = node->getString("Signature")->str();
         if(info->isMarkdown) 
             markdownGen::signatureGen(signature, info->markdownfile);
-
+        if(info->isHeader) 
+            headerGen::signatureGen(signature, info->headerfile);
     }
 
     if(node->get("FunctionName")) {
         std::string functionName = node->getString("FunctionName")->str();
         if(info->isMarkdown)
-        markdownGen::functionNameGen(functionName, info->markdownfile);
+            markdownGen::functionNameGen(functionName, info->markdownfile);
+        if(info->isHeader)
+            headerGen::functionNameGen(functionName, info->headerfile);
     }
 
     if(node->get("ReturnType")) {
         std::string returnType = node->getString("ReturnType")->str();
         if(info->isMarkdown)
             markdownGen::returnTypeGen(returnType, info->markdownfile);
+        if(info->isHeader)
+            headerGen::returnTypeGen(returnType, info->headerfile);
     }
 
     if(node->get("DefinedLoc")) {
@@ -94,6 +104,8 @@ static void functionExpander(llvm::json::Object* node, outputInfo* info, bool fr
         long columnNumber = macroLoc->getInteger("Column").value();
         if(info->isMarkdown) 
             markdownGen::definedLocationGen(filePath, lineNumber, columnNumber, fromCallLocs, info->markdownfile);
+        if(info->isHeader) 
+            headerGen::definedLocationGen(filePath, lineNumber, columnNumber, fromCallLocs, info->headerfile);
     }
 
     if(node->get("CallLocs")) {
@@ -108,6 +120,8 @@ static void functionExpander(llvm::json::Object* node, outputInfo* info, bool fr
             long columnNumber = callLoc->getInteger("Column").value();
             if(info->isMarkdown) 
                 markdownGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->markdownfile);
+            if(info->isHeader) 
+                headerGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->headerfile);
         }
 
     }
@@ -116,12 +130,13 @@ static void functionExpander(llvm::json::Object* node, outputInfo* info, bool fr
 static void typeExpander(llvm::json::Object* node, outputInfo* info, bool fromCallLocs) {
     if(info->isMarkdown)
         markdownGen::categoryGen("Type", info->markdownfile);
-
     
     if(node->get("Signature")) {
         std::string signature = node->getString("Signature")->str();
         if(info->isMarkdown)
             markdownGen::signatureGen(signature, info->markdownfile);
+        if(info->isHeader)
+            headerGen::signatureGen(signature, info->headerfile);
     }
 
     
@@ -144,6 +159,8 @@ static void typeExpander(llvm::json::Object* node, outputInfo* info, bool fromCa
         std::string fullDefinition = node->getString("FullDefinition")->str();
         if(info->isMarkdown)
             markdownGen::fullDefinitionGen(fullDefinition, info->markdownfile);
+        if(info->isHeader)
+            headerGen::fullDefinitionGen(fullDefinition, info->headerfile);
     }
 
     if(node->get("TypeName")) {
@@ -158,9 +175,15 @@ static void typeExpander(llvm::json::Object* node, outputInfo* info, bool fromCa
         
         for(auto &i: *callLocsJSON) {
             llvm::outs() << "Expanding callLocs ";
-            typeExpander(i.getAsObject(), info, true);
+            llvm::json::Object* callLoc = i.getAsObject();
+            std::string filePath = callLoc->getString("File")->str();
+            long lineNumber = callLoc->getInteger("Line").value();
+            long columnNumber = callLoc->getInteger("Column").value();
+            if(info->isMarkdown) 
+                markdownGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->markdownfile);
+            if(info->isHeader) 
+                headerGen::definedLocationGen(filePath, lineNumber, columnNumber, true, info->headerfile);
         }
-
     }
 }
 
