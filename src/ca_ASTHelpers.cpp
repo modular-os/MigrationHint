@@ -38,9 +38,12 @@
 #include <clang/AST/Decl.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/Stmt.h>
+#include <clang/AST/Type.h>
+#include <clang/Basic/LLVM.h>
 #include <clang/Basic/LLVM.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Tooling/CompilationDatabase.h>
+#include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <cmath>
@@ -800,6 +803,33 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
 #ifdef CHN
         llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
 #endif
+        // Recursively visiting every argument in the function
+        for (auto args : CE->arguments()) {
+          // TODO: Solve some boundary problems: 
+          // like function pointers in struct initialization
+
+          if (const clang::DeclRefExpr *DeclRef =
+                  dyn_cast<clang::DeclRefExpr>(args->IgnoreImplicit())) {
+            // Convert to FunctionDecl
+            auto argsFD = DeclRef->getFoundDecl()->getAsFunction();
+            // Get the type of the argument
+            clang::QualType ArgType = DeclRef->getType();
+            // Check if the argument type is a function type and if it is
+            // external
+            if (ArgType->isFunctionType() &&
+                !SM.isInMainFile(argsFD->getLocation())) {
+              // llvm::outs() << "\n\n  Argument is a function\n";
+              llvm::outs() << "   `" << ca_utils::getFuncDeclString(argsFD)
+                           << "`\n";
+              llvm::outs() << "   - 类型: `函数`\n"
+                           << "   - 定义路径: `" +
+                                  ca_utils::getLocationString(
+                                      SM, argsFD->getLocation()) +
+                                  "`\n";
+              llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
+            }
+          }
+        }
 
       } else {
         // !!! Handle macro operations
@@ -1171,6 +1201,6 @@ void ReportMatcher::run(
     }
   }
 }
-}  // namespace ca
+} // namespace ca
 
 // #endif  // !_CA_AST_HELPERS_HPP
