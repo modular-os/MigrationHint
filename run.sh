@@ -8,7 +8,7 @@ LIB=$BASE_PATH/lib
 INCLUDE=$BASE_PATH/include
 LOG=$BASE_PATH/log
 
-TARGET_KERNEL=/home/tz/test_kernel/kernel_source_code/linux-6.2.15
+TARGET_KERNEL=/home/tz/workspace/linux-kernel/linux-6.2.15
 if [ ! -d $TARGET_KERNEL ]; then
     TARGET_KERNEL=/home/data/linux-6.5
 fi
@@ -18,17 +18,17 @@ JSON_PATH=$BASE_PATH/tmp/tmp.json
 
 TARGET_SOURCE1=$TARGET_KERNEL/mm/zswap.c
 
-TARGET_PROJ_PATH=/home/tz/test_kernel/kernel_source_code/linux-6.2.15
-TARGET_SOURCE1=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
-# TARGET_SOURCE1=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/ksm.c
+TARGET_PROJ_PATH=/home/tz/workspace/linux-kernel/linux-6.2.15
+TARGET_SOURCE1=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/zswap.c
+# TARGET_SOURCE1=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/ksm.c
 # TARGET_SOURCE=/home/tz/MigrationHint/test/simple_test_case1/test1.c
-TARGET_SOURCE2=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb.c
-TARGET_SOURCE3=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/ksm.c
-TARGET_SOURCE4=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/huge_memory.c
-TARGET_SOURCE5=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/khugepaged.c
-TARGET_SOURCE6=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb_cgroup.c
-TARGET_SOURCE7=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/hugetlb_vmemmap.c
-TARGET_SOURCE8=/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/linux/ksm.h
+TARGET_SOURCE2=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/hugetlb.c
+TARGET_SOURCE3=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/ksm.c
+TARGET_SOURCE4=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/huge_memory.c
+TARGET_SOURCE5=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/khugepaged.c
+TARGET_SOURCE6=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/hugetlb_cgroup.c
+TARGET_SOURCE7=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/hugetlb_vmemmap.c
+TARGET_SOURCE8=/home/tz/workspace/linux-kernel/linux-6.2.15/include/linux/ksm.h
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
 # Make a build dir if there isn't one
@@ -48,16 +48,10 @@ pushd $BUILD
     # --generate-report \
     # --enable-module-analysis \
     # --enable-migrate-code-gen \
-<<<<<<< HEAD
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-    --enable-struct-analysis \
-    --enable-function-analysis  \
-=======
     # --enable-function-analysis  \
     # --enable-struct-analysis \
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
     --enable-json-gen \
->>>>>>> f9a455952d43009e297802f062e700ef226f742d
     --enable-pp-analysis \
     2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
@@ -76,20 +70,20 @@ popd
 #     ${TARGET_SOURCE} 2>&1 | tee log/zswap_ast.txt
 
 # clang -cc1 -ast-dump -fsyntax-only \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/generated  \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/uapi \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/arch/x86/include/generated/uapi \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/uapi \
-#     -I/home/tz/test_kernel/kernel_source_code/linux-6.2.15/include/generated/uapi \
-#     /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/arch/x86/include \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/arch/x86/include/generated  \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/include \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/arch/x86/include/uapi \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/arch/x86/include/generated/uapi \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/include/uapi \
+#     -I/home/tz/workspace/linux-kernel/linux-6.2.15/include/generated/uapi \
+#     /home/tz/workspace/linux-kernel/linux-6.2.15/mm/zswap.c \
 #     2>&1 | tee log/zswap_ast.txt
 
 # View CFG
 # clang -cc1 -analyze -analyzer-checker=debug.ViewCFG ${TARGET_SOURCE} 2>&1 | tee log/zswap_cfg.txt
 
-# clang-query /home/tz/test_kernel/kernel_source_code/linux-6.2.15/mm/zswap.c
+# clang-query /home/tz/workspace/linux-kernel/linux-6.2.15/mm/zswap.c
 # clang-query /home/tz/MigrationHint/test/simple_test_case1/test1.c
 
 # Summarize the number of lines of code
