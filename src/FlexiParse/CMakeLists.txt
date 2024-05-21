@@ -1,34 +1,42 @@
-cmake_minimum_required(VERSION 3.16.3)
-project(FlexiParse)
+#===============================================================================
+# 0. Configure utils
+# Set all the shared utils that will be used by the tools.
+# Notice: All the tools will be linked as STATIc libraries for easier release.
+#===============================================================================
 
-set(LLVM_DIR /home/nakanomiku/CODES/modular_os/llvm-project-llvmorg-16.0.6/build/llvm16_install/lib/cmake/llvm)
+#===============================================================================
+# 1. Configure the Actual binaries
+# Set all the tools that will be built.
+#===============================================================================
 
-# Error if commented out
-SET(CMAKE_CXX_FLAGS "-Wall -fno-rtti")
+set(CA_Frontend
+  CAFlexParse
+)
 
-find_package(LLVM REQUIRED CONFIG)
+set(CAFlexParse_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/fp_main.cpp
+)
 
-# Headers' path of LLVM
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
+# CONFIGURE THE TOOLS
+# ===================
+foreach(tool ${CA_Frontend})
+  # Create a library corresponding to 'plugin'
+  add_executable(
+    ${tool}
+    ${${tool}_SOURCES}
+  )
 
-# Configure C++
-set(CMAKE_CXX_COMPILER /home/nakanomiku/CODES/modular_os/llvm-project-llvmorg-16.0.6/build/llvm16_install/bin/clang++)
+  # Configure include directories for 'tool'
+  target_include_directories(
+    ${tool}
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  )
 
-# Compile commands
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-set(SRC_LIST src/parser.cpp src/headerGen.cpp src/markdownGen.cpp src/fp_main.cpp)
-
-include_directories("include")
-# Source File
-add_executable(FlexiParse ${SRC_LIST})
-
-
-# Link with LLVM libraries
-llvm_map_components_to_libnames(llvm_libs support core irreader)
-target_link_libraries(FlexiParse ${llvm_libs})
-
-# Output directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
+  # Link in the required libraries
+  target_link_libraries(
+    ${tool}
+    "clangTooling"
+  )
+endforeach()

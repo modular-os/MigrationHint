@@ -1,7 +1,7 @@
 #===============================================================================
 # 0. Configure utils
 # Set all the shared utils that will be used by the tools.
-# Notice: All the tools will be linked as STATIc libraries for easier release.
+# Notice: All the tools will be linked as STATIC libraries for easier release.
 #===============================================================================
 
 # Add ca_utils.cpp as a library
@@ -53,3 +53,5 @@ foreach(tool ${CodeAnalysis_TOOLS})
     ca_utils
   )
 endforeach()
+
+add_subdirectory(FlexiParse)
