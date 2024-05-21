@@ -881,7 +881,7 @@ void ExternalDependencyMatcher::handleExternalCall(const clang::CallExpr *CE,
               llvm::outs() << "   - 简介：`<Filled-By-AI>`\n";
             }
           }
-        }yongl
+        }
 
       } else {
         // !!! Handle macro operations
