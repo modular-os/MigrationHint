@@ -7,6 +7,7 @@ BUILD=$BASE_PATH/build
 LIB=$BASE_PATH/lib
 INCLUDE=$BASE_PATH/include
 LOG=$BASE_PATH/log
+DATE=`date +%Y%m%d-%H%M%S`
 
 TARGET_KERNEL=/home/tz/workspace/linux-kernel/linux-6.2.15
 if [ ! -d $TARGET_KERNEL ]; then
@@ -53,7 +54,8 @@ pushd $BUILD
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
     --enable-json-gen \
     --enable-pp-analysis \
-    2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
+    -o ${LOG}/${DATE}.json \
+    2>&1 | tee ${LOG}/${DATE}.log
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     # --enable-module-analysis \
     # 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log
