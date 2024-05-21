@@ -1,7 +1,12 @@
 #!/bin/bash
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 LLVM_BUILD=${BASE_DIR}/llvm-project/build
-LLVM_INSTALL=${BASE_DIR}/build/llvm16_install
+LLVM_INSTALL=${BASE_DIR}/build/llvm-16
+
+pushd ${BASE_DIR}
+    git submodule init
+    git submodule update
+popd
 
 # Remove duplicate build files
 if [ -d ${LLVM_BUILD} ]; then
