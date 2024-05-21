@@ -99,13 +99,28 @@ void ExternalDependencyJSONBackend::run(
 }
 
 void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
-  // Traverse the ExternalDepToSignature
-  for (auto &it : SigToAbility) {
-    if (it.second != nullptr) {
-      JSONRoot.push_back(it.second->buildJSON(AST_SM));
-      // delete it.second;
-      // TODO & WARNING!: May leak the memory
-    }
+
+  // Create a file descriptor outstream
+  llvm::raw_fd_ostream fileOS(filePath, EC, llvm::sys::fs::OF_None);
+  if (EC) {
+    llvm::errs() << "Error opening file " << filePath << ": " << EC.message()
+                 << "\n";
+  } else {
+    llvm::json::OStream J(fileOS);
+    J.array([&] {
+      // Traverse the ExternalDepToSignature
+      for (auto &it : SigToAbility) {
+        if (it.second != nullptr) {
+          JSONRoot.push_back(it.second->buildJSON(AST_SM));
+          // delete it.second;
+          // TODO & WARNING!: May leak the memory
+
+          // Output JSON to file
+          J.value(it.second->buildJSON(AST_SM));
+          fileOS << '\n';
+        }
+      }
+    });
   }
 
   // Use Formatv to print the JSONRoot
@@ -123,7 +138,7 @@ void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
 void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
     const clang::FunctionDecl *FD, clang::SourceManager &SM,
     const clang::LangOptions &LO) {
-  std::string StructDecl;
+  std::string StructDecl = "test";
   llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (SM.isInMainFile(FD->getLocation())) {
     clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
@@ -144,6 +159,8 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
         SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
       }
     }
+    // Clear StuctDecl preventing duplications
+    StructDecl.clear();
 
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
@@ -163,6 +180,9 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
           SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
+
     }
   }
 }
@@ -191,6 +211,8 @@ void ExternalDependencyJSONBackend::handleExternalTypeFD(
           SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
         }
       }
+      // Clear StuctDecl preventing duplications due to looping
+      StructDecl.clear();
     }
   }
 }

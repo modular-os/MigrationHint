@@ -21,6 +21,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "ca_ASTHelpers.hpp"
 #include "ca_PreprocessorHelpers.hpp"
@@ -121,6 +122,9 @@ llvm::cl::opt<bool> OptionGenerateMigrateCode(
 llvm::cl::opt<bool> OptionGenerateJSON(
     "enable-json-gen", llvm::cl::desc("Generate the json info."),
     llvm::cl::init(false));
+llvm::cl::opt<std::string> OptionJSONoutput("o",
+                                            llvm::cl::desc("Output of json."),
+                                            llvm::cl::value_desc("Filename"));
 
 llvm::cl::extrahelp MoreHelp(R"(
 Notice: 1. The compile_commands.json file should be in the same directory as the source file or in the parent directory of the source file.
@@ -291,8 +295,13 @@ int main(int argc, const char **argv) {
         ca::newFrontendActionFactory<ca::MacroPPOnlyAction>(NameToExpansion)
             .get());
 
-    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(),
-                                                  NameToExpansion);
+    // Translate relative path into absolute path
+    std::string outputPath = !OptionJSONoutput.empty() ? OptionJSONoutput : std::string("output.json");
+    auto base_path = std::filesystem::current_path();
+    if(outputPath[0] != '/')
+      outputPath = (base_path / outputPath).string();
+  
+    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(), outputPath, NameToExpansion);
 
     Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &jsonBackend);
     Finder.addMatcher(ExternalStructMatcherPattern, &jsonBackend);
