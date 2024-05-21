@@ -1,7 +1,7 @@
-#/bin/bash
-if [! -f linux-6.2.15.tar.xz]; then
-        wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.2.15.tar.xz
-    fi
+#!/bin/bash
+set -x
+if [ ! -f linux-6.2.15.tar.xz ]; then
+    wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.2.15.tar.xz
     tar xf linux-6.2.15.tar.xz
 fi
 
@@ -22,6 +22,10 @@ pushd linux-6.2.15
     ./scripts/config -e CONFIG_GDB_SCRIPTS
     # Notice! Disable address space layout randomization (ASLR), as this feature may prevent gdb from setting breakpoints.
     # It is recommended to disable this feature in 'make menuconfig'. It involves multiple configurations, which can be a bit cumbersome in the graphical interface, so I choose to explicitly disable it when starting the kernel in QEMU.
+
+    # Disable the following options to prevent unnecessary compilation errors
+    scripts/config --disable SYSTEM_TRUSTED_KEYS
+    scripts/config --disable SYSTEM_REVOCATION_KEYS
 
     # Choose the compression method for the kernel freely
     # ./scripts/config -d KERNEL_LZ4
@@ -56,3 +60,4 @@ pushd linux-6.2.15
     cp vmlinux `pwd`/../mykernel/install
 
 popd
+set +x
