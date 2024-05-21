@@ -12,7 +12,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <cctype>
-#include <ostream>
 #include <string>
 
 namespace ca_utils {
