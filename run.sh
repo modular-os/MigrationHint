@@ -51,11 +51,14 @@ pushd $BUILD
     # --enable-migrate-code-gen \
     # --enable-function-analysis  \
     # --enable-struct-analysis \
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-    --enable-json-gen \
-    --enable-pp-analysis \
-    -o ${LOG}/${DATE}.json \
-    2>&1 | tee ${LOG}/${DATE}.log
+    # ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
+    # --enable-json-gen \
+    # --enable-pp-analysis \
+    # -o ${LOG}/${DATE}.json \
+    # 2>&1 | tee ${LOG}/${DATE}.log
+    ./bin/CAFlexParse --header \
+        -i /home/tz/workspace/MigrationHint/log/20240522-030624.json \
+        2>&1 | tee ${LOG}/front/${DATE}.c
     # ./bin/CodeAnalysis -s ${TARGET_SOURCE1},${TARGET_SOURCE2},${TARGET_SOURCE3},${TARGET_SOURCE4},${TARGET_SOURCE5} \
     # --enable-module-analysis \
     # 2>&1 | tee ${LOG}/`date +%Y%m%d-%H%M%S`.log

@@ -3,6 +3,8 @@
 #include "llvm/Support/JSON.h"
 
 namespace ca_frontend {
+enum class abilityCategory { Macro, Type, Function };
+
 class CodeLocation {
  public:
   std::string file;
@@ -68,9 +70,9 @@ class MacroJsonAbility : public JsonAbility {
 
 class TypeJsonAbility : public JsonAbility {
  protected:
- std::string fullDefinition;
- std::string typeName;
- bool isPointer;
+  std::string fullDefinition;
+  std::string typeName;
+  bool isPointer;
 
  public:
   TypeJsonAbility(llvm::json::Object *obj) : JsonAbility(obj) {
@@ -79,7 +81,6 @@ class TypeJsonAbility : public JsonAbility {
     isPointer = obj->getBoolean("IsPointer").value();
   }
 };
-
 
 /* Format Factory 0: C Headers for kernel */
 class HeaderFunc : public FuncJsonAbility {

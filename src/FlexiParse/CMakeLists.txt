@@ -15,6 +15,7 @@ set(CA_Frontend
 
 set(CAFlexParse_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/fp_main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/jsonAbility.cpp
 )
 
 # CONFIGURE THE TOOLS
