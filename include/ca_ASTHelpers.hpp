@@ -178,16 +178,18 @@ class ExternalDependencyJSONBackend
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
   ExternalDependencyJSONBackend(
-      clang::SourceManager &SM,
-      std::string outputPath,
+      clang::SourceManager &SM, std::string outputPath,
       std::map<std::string, std::string> &_MacroToExpansion)
-      : AST_SM(SM), filePath(outputPath), MacroNameToExpansion(_MacroToExpansion) {}
+      : AST_SM(SM),
+        filePath(outputPath),
+        MacroNameToExpansion(_MacroToExpansion) {}
 
   void onStartOfTranslationUnit() override;
 
   void handleExternalTypeFuncD(const clang::FunctionDecl *FD,
                                clang::SourceManager &SM,
-                               const clang::LangOptions &LO);
+                               const clang::LangOptions &LO,
+                               bool internalMode = false);
 
   void handleExternalTypeFD(const clang::RecordDecl *RD,
                             clang::SourceManager &SM,

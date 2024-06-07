@@ -99,7 +99,6 @@ void ExternalDependencyJSONBackend::run(
 }
 
 void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
-
   // Create a file descriptor outstream
   llvm::raw_fd_ostream fileOS(filePath, EC, llvm::sys::fs::OF_None);
   if (EC) {
@@ -124,23 +123,23 @@ void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
   }
 
   // Use Formatv to print the JSONRoot
-  llvm::outs() << "[\n";
-  for (auto &it : JSONRoot) {
-    llvm::outs() << llvm::formatv("{0:2}", it);
-    if (it != JSONRoot.back()) {
-      llvm::outs() << ",";
-    }
-    llvm::outs() << "\n";
-  }
-  llvm::outs() << "]\n";
+  // llvm::outs() << "[\n";
+  // for (auto &it : JSONRoot) {
+  //   llvm::outs() << llvm::formatv("{0:2}", it);
+  //   if (it != JSONRoot.back()) {
+  //     llvm::outs() << ",";
+  //   }
+  //   llvm::outs() << "\n";
+  // }
+  // llvm::outs() << "]\n";
 }
 
 void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
     const clang::FunctionDecl *FD, clang::SourceManager &SM,
-    const clang::LangOptions &LO) {
+    const clang::LangOptions &LO, bool internalMode) {
   std::string StructDecl = "test";
   llvm::raw_string_ostream StructDeclStream(StructDecl);
-  if (SM.isInMainFile(FD->getLocation())) {
+  if (SM.isInMainFile(FD->getLocation()) || internalMode) {
     clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
     RetRTD = ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(),
                                              SM, "", -1);
@@ -164,6 +163,10 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
 
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
+      llvm::outs() << "--------------------------------\n";
+      llvm::outs() << "ParameterDecl: " << PVD->getNameAsString() << "("
+                   << ca_utils::getLocationString(SM, PVD->getLocation())
+                   << ")\n";
       ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
                                                  SM, "", -1);
       if (ParamRTD != nullptr) {
@@ -182,7 +185,6 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
       }
       // Clear StuctDecl preventing duplications due to looping
       StructDecl.clear();
-
     }
   }
 }
@@ -232,7 +234,33 @@ void ExternalDependencyJSONBackend::handleExternalTypeVD(
 
   } else
 #endif
-    assert("Run into the deprecated handle for variable decl!");
+    // assert("Run into the deprecated handle for variable decl!");
+    if (SM.isInMainFile(VD->getLocation())) {
+      llvm::outs() << "--------------------------------\n";
+      llvm::outs() << "VariableDecl: " << VD->getNameAsString() << "("
+                   << ca_utils::getLocationString(SM, VD->getLocation())
+                   << ")\n";
+      ca_utils::getExternalStructType(VD->getType(), llvm::outs(), SM, "", -1);
+      // std::string StructDecl;
+      // llvm::raw_string_ostream StructDeclStream(StructDecl);
+      // auto StructRTD = ca_utils::getExternalStructType(
+      //     VD->getType(), llvm::outs(), SM, "", -1);
+      // if (StructRTD != nullptr) {
+      //   // llvm::outs() << "[Debug3]: ";
+      //   StructRTD->print(StructDeclStream);
+      //   StructDeclStream.flush();
+
+      //   auto mapIterator = SigToAbility.find(StructDecl);
+
+      //   if (mapIterator != SigToAbility.end()) {
+      //     mapIterator->second->addCallLoc(VD->getLocation());
+      //   } else {
+      //     auto AbilityPTR = new ca::ExternalTypeAbility(
+      //         VD->getLocation(), StructDecl, VD->getType());
+      //     SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
+      //   }
+      // }
+    }
 }
 
 void ExternalDependencyJSONBackend::handleExternalMacroInt(
@@ -278,7 +306,8 @@ void ExternalDependencyJSONBackend::handleExternalMacroInt(
         if (mapIterator != SigToAbility.end()) {
           mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
         } else {
-          if (MacroNameToExpansion.find(MacroIdentifier) != MacroNameToExpansion.end()) {
+          if (MacroNameToExpansion.find(MacroIdentifier) !=
+              MacroNameToExpansion.end()) {
             ExpansionTree = MacroNameToExpansion[MacroIdentifier];
           }
           auto AbilityPTR = new ca::ExternalMacroAbility(
@@ -353,6 +382,11 @@ void ExternalDependencyJSONBackend::handleExternalCall(
           SigToAbility[FunctionDeclString] =
               static_cast<ca::Ability *>(AbilityPTR);
         }
+        llvm::outs() << "=============================\n";
+        llvm::outs() << "External Call parameters:\n";
+        llvm::outs() << "FunctionDecl: " << FunctionDeclString << "\n";
+
+        handleExternalTypeFuncD(FD, SM, FD->getASTContext().getLangOpts(), true);
 
       } else {
         // !!! Handle macro operations
@@ -394,7 +428,8 @@ void ExternalDependencyJSONBackend::handleExternalCall(
           if (mapIterator != SigToAbility.end()) {
             mapIterator->second->addCallLoc(tmpStack[tmpStack.size() - 1]);
           } else {
-            if (MacroNameToExpansion.find(MacroIdentifier) != MacroNameToExpansion.end()) {
+            if (MacroNameToExpansion.find(MacroIdentifier) !=
+                MacroNameToExpansion.end()) {
               ExpansionTree = MacroNameToExpansion[MacroIdentifier];
             }
             auto AbilityPTR = new ca::ExternalMacroAbility(
