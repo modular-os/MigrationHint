@@ -27,6 +27,14 @@ class Ability {
 
   void addCallLoc(clang::SourceLocation Loc) { CallLocs.push_back(Loc); }
 
+  void popCallLoc() {
+    if (CallLocs.size() > 0) {
+      CallLocs.pop_back();
+    }
+  }
+
+  std::string getSignature() const { return signature; }
+
   virtual llvm::json::Object buildJSON(const clang::SourceManager &SM) = 0;
 };
 
@@ -42,14 +50,26 @@ class ExternalCallAbility : public Ability {
   llvm::json::Object buildJSON(const clang::SourceManager &SM) override;
 };
 
+enum class ExternalTypeKind {
+  STRUCT,
+  TYPEDEF,
+  ENUM,
+  UNKNOWN
+  // UNION,
+  // POINTER,
+  // ARRAY,
+  // FUNCTION,
+};
+
 class ExternalTypeAbility : public Ability {
  private:
   clang::QualType CurrType;
+  ExternalTypeKind TypeKind;
 
  public:
   ExternalTypeAbility(clang::SourceLocation InitLoc, std::string _signature,
-                      clang::QualType QT)
-      : Ability(InitLoc, _signature), CurrType(QT) {}
+                      clang::QualType QT, ExternalTypeKind _TypeKind)
+      : Ability(InitLoc, _signature), CurrType(QT), TypeKind(_TypeKind) {}
 
   llvm::json::Object buildJSON(const clang::SourceManager &SM) override;
 };

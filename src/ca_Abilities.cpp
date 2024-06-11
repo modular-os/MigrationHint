@@ -44,25 +44,57 @@ llvm::json::Object ExternalTypeAbility::buildJSON(
   } else {
     AbilityJSON["IsPointer"] = false;
   }
+  switch (TypeKind) {
+    case ExternalTypeKind::STRUCT: {
+      AbilityJSON["TypeKind"] = "Struct";
+      const auto RT = CurrType->getAs<clang::RecordType>();
+      const auto RTD = RT->getDecl();
 
-  if (CurrType->isStructureOrClassType()) {
-    const auto RT = CurrType->getAs<clang::RecordType>();
-    const auto RTD = RT->getDecl();
+      AbilityJSON["DefinedLoc"] = getLocationValue(SM, RTD->getLocation());
 
-    AbilityJSON["DefinedLoc"] = getLocationValue(SM, RTD->getLocation());
-
-    if (!RTD->field_empty()) {
-      std::string FieldStr;
-      llvm::raw_string_ostream FieldStrSteam(FieldStr);
-      RTD->print(FieldStrSteam);
-      FieldStrSteam.flush();
-      AbilityJSON["FullDefinition"] = FieldStr;
-    } else {
-      AbilityJSON["FullDefinition"] = "Empty!";
+      if (!RTD->field_empty()) {
+        std::string FieldStr;
+        llvm::raw_string_ostream FieldStrSteam(FieldStr);
+        RTD->print(FieldStrSteam);
+        FieldStrSteam.flush();
+        AbilityJSON["FullDefinition"] = FieldStr;
+      } else {
+        AbilityJSON["FullDefinition"] = "Empty!";
+      }
+      break;
     }
-  } else {
-    // TODO: Add support for other types
-    // Merge the jl's code
+    case ExternalTypeKind::TYPEDEF: {
+      AbilityJSON["TypeKind"] = "Typedef";
+      // TODO: Weird bugs here
+      const auto TT = CurrType->getAs<clang::TypedefType>();
+      if (TT != nullptr){
+        const auto TTD = TT->getDecl();
+        AbilityJSON["DefinedLoc"] = getLocationValue(SM, TTD->getLocation());
+      } else {
+        AbilityJSON["DefinedLoc"] = "Empty!";
+      }
+      // AbilityJSON["DefinedLoc"] = getLocationValue(SM, TDD->getLocation());
+      AbilityJSON["FullDefinition"] = signature;
+      break;
+    }
+    case ExternalTypeKind::ENUM: {
+      AbilityJSON["TypeKind"] = "Enum";
+      // TODO: Weird bugs here
+      auto ET = CurrType->getAs<clang::EnumType>();
+      if (ET != nullptr){
+        auto ETD = ET->getDecl();
+        AbilityJSON["DefinedLoc"] = getLocationValue(SM, ETD->getLocation());
+      } else {
+        AbilityJSON["DefinedLoc"] = "Empty!";
+      }
+      // AbilityJSON["DefinedLoc"] = getLocationValue(SM, ED->getLocation());
+      AbilityJSON["FullDefinition"] = signature;
+      break;
+    }
+    default: {
+      AbilityJSON["TypeKind"] = "Unknown";
+      break;
+    }
   }
 
   AbilityJSON["Signature"] = signature;
@@ -91,7 +123,7 @@ llvm::json::Object ExternalMacroAbility::buildJSON(
 
 /* Utility functions */
 llvm::json::Object getLocationValue(const clang::SourceManager &SM,
-                                   clang::SourceLocation Loc) {
+                                    clang::SourceLocation Loc) {
   // Get the spelling location for Loc
   auto SLoc = SM.getSpellingLoc(Loc);
   std::string FilePath = SM.getFilename(SLoc).str();
