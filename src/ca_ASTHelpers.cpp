@@ -392,7 +392,7 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
                         "`\n";
 #endif
 
-    ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
+    // ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(), SM, "");
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
 #ifdef DEBUG
@@ -452,11 +452,11 @@ void ExternalDependencyMatcher::handleExternalTypeFuncD(
 #endif
         }
       }
-      auto isExternalType = ca_utils::getExternalStructType(
-          PVD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (isExternalType != nullptr) {
-        ++externalParamVarDeclCnt;
-      }
+      // auto isExternalType = ca_utils::getExternalStructType(
+      //     PVD->getType(), llvm::outs(), SM, ExtraInfo);
+      // if (isExternalType != nullptr) {
+      //   ++externalParamVarDeclCnt;
+      // }
     }
   }
 }
@@ -555,18 +555,18 @@ void ExternalDependencyMatcher::handleExternalTypeFD(
       ExtraInfo += "   - Member: `" + FD->getType().getAsString() + " " +
                    FD->getNameAsString() + "`\n";
 #endif
-      auto IsExternalType = ca_utils::getExternalStructType(
-          FD->getType(), llvm::outs(), SM, ExtraInfo);
-      if (IsExternalType != nullptr) {
-        ++externalStructCnt;
-      } else {
-// Recover the field control flag if the Decl is not external(so it
-// is passed).
-#ifdef DEBUG
-        llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
-#endif
-        isInFunction = isInFunctionOldValue;
-      }
+//       auto IsExternalType = ca_utils::getExternalStructType(
+//           FD->getType(), llvm::outs(), SM, ExtraInfo);
+//       if (IsExternalType != nullptr) {
+//         ++externalStructCnt;
+//       } else {
+// // Recover the field control flag if the Decl is not external(so it
+// // is passed).
+// #ifdef DEBUG
+//         llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+// #endif
+//         isInFunction = isInFunctionOldValue;
+//       }
     }
     llvm::outs() << "\n\n---\n\n\n";
   }
@@ -659,18 +659,18 @@ void ExternalDependencyMatcher::handleExternalTypeVD(
       }
     }
 
-    auto isExternalType = ca_utils::getExternalStructType(
-        VD->getType(), llvm::outs(), SM, ExtraInfo);
-    if (isExternalType != nullptr) {
-      ++externalVarDeclCnt;
-    } else {
-#ifdef DEBUG
-      llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
-#endif
-      // Recover the field control flag if the Decl is not external(so it
-      // is passed)
-      isInFunction = isInFunctionOldValue;
-    }
+//     auto isExternalType = ca_utils::getExternalStructType(
+//         VD->getType(), llvm::outs(), SM, ExtraInfo);
+//     if (isExternalType != nullptr) {
+//       ++externalVarDeclCnt;
+//     } else {
+// #ifdef DEBUG
+//       llvm::outs() << "Recovering... " << isInFunctionOldValue << "\n";
+// #endif
+//       // Recover the field control flag if the Decl is not external(so it
+//       // is passed)
+//       isInFunction = isInFunctionOldValue;
+//     }
   }
 }
 
@@ -760,11 +760,11 @@ void ExternalDependencyMatcher::handleExternalImplicitCE(
       ExtraInfo +=
           "   - CastKind: " + std::string(ICE->getCastKindName()) + "\n";
 #endif
-      auto isExternal = ca_utils::getExternalStructType(
-          ICE->getType(), llvm::outs(), SM, ExtraInfo);
-      if (isExternal != nullptr) {
-        ++externalImplicitExprCnt;
-      }
+      // auto isExternal = ca_utils::getExternalStructType(
+      //     ICE->getType(), llvm::outs(), SM, ExtraInfo);
+      // if (isExternal != nullptr) {
+      //   ++externalImplicitExprCnt;
+      // }
     }
   }
 }

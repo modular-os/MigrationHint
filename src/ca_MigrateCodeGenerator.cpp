@@ -76,60 +76,60 @@ void MigrateCodeGenerator::handleExternalTypeFuncD(
   std::string StructDecl;
   llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (SM.isInMainFile(FD->getLocation())) {
-    clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
-    RetRTD = ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(),
-                                             SM, "", -1);
-    if (RetRTD != nullptr) {
-      // llvm::outs() << "[Debug1]: ";
-      // llvm::outs() << "[debug1before]:" << StructDecl << "\n";
-      RetRTD->print(StructDeclStream);
-      StructDeclStream.flush();
-      // llvm::outs() << "[debug1after]:" << StructDecl << "\n";
+    // clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
+    // RetRTD = ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(),
+    //                                          SM, "", -1);
+    // if (RetRTD != nullptr) {
+    //   // llvm::outs() << "[Debug1]: ";
+    //   // llvm::outs() << "[debug1before]:" << StructDecl << "\n";
+    //   RetRTD->print(StructDeclStream);
+    //   StructDeclStream.flush();
+    //   // llvm::outs() << "[debug1after]:" << StructDecl << "\n";
 
-      auto LocString_ = ca_utils::getLocationString(SM, RetRTD->getLocation());
-      std::size_t colonPos = LocString_.find(':');
-      auto LocString = LocString_.substr(0, colonPos);
+    //   auto LocString_ = ca_utils::getLocationString(SM, RetRTD->getLocation());
+    //   std::size_t colonPos = LocString_.find(':');
+    //   auto LocString = LocString_.substr(0, colonPos);
 
-      // Insert into the ExternalDepToSignature
-      if (ExternalDepToSignature[Struct].find(LocString) ==
-          ExternalDepToSignature[Struct].end()) {
-        ExternalDepToSignature[Struct][LocString] = {};
-      }
-      ExternalDepToSignature[Struct][LocString].insert(StructDecl);
-    }
+    //   // Insert into the ExternalDepToSignature
+    //   if (ExternalDepToSignature[Struct].find(LocString) ==
+    //       ExternalDepToSignature[Struct].end()) {
+    //     ExternalDepToSignature[Struct][LocString] = {};
+    //   }
+    //   ExternalDepToSignature[Struct][LocString].insert(StructDecl);
+    // }
 
-    // Clear StuctDecl preventing duplications
-    StructDecl.clear();
+    // // Clear StuctDecl preventing duplications
+    // StructDecl.clear();
 
-    // Traverse the FuncDecl's ParamVarDecls
-    // int loop = 0;
-    for (const auto &PVD : FD->parameters()) {
-      // llvm::outs() << "loop" << loop << "\n";
-      // loop++;
-      ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
-                                                 SM, "", -1);
-      if (ParamRTD != nullptr) {
-        // llvm::outs() << "[Debug2]: ";
-        // llvm::outs() << "[debug2before]:" << StructDecl << "\n";
-        ParamRTD->print(StructDeclStream);
-        StructDeclStream.flush();
-        // llvm::outs() << "[debug2after]:" << StructDecl << "\n";
+    // // Traverse the FuncDecl's ParamVarDecls
+    // // int loop = 0;
+    // for (const auto &PVD : FD->parameters()) {
+    //   // llvm::outs() << "loop" << loop << "\n";
+    //   // loop++;
+    //   ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
+    //                                              SM, "", -1);
+    //   if (ParamRTD != nullptr) {
+    //     // llvm::outs() << "[Debug2]: ";
+    //     // llvm::outs() << "[debug2before]:" << StructDecl << "\n";
+    //     ParamRTD->print(StructDeclStream);
+    //     StructDeclStream.flush();
+    //     // llvm::outs() << "[debug2after]:" << StructDecl << "\n";
 
-        auto LocString_ =
-            ca_utils::getLocationString(SM, ParamRTD->getLocation());
-        std::size_t colonPos = LocString_.find(':');
-        auto LocString = LocString_.substr(0, colonPos);
+    //     auto LocString_ =
+    //         ca_utils::getLocationString(SM, ParamRTD->getLocation());
+    //     std::size_t colonPos = LocString_.find(':');
+    //     auto LocString = LocString_.substr(0, colonPos);
 
-        // Insert into the ExternalDepToSignature
-        if (ExternalDepToSignature[Struct].find(LocString) ==
-            ExternalDepToSignature[Struct].end()) {
-          ExternalDepToSignature[Struct][LocString] = {};
-        }
-        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
-      }
-      // Clear StuctDecl preventing duplications due to looping
-      StructDecl.clear();
-    }
+    //     // Insert into the ExternalDepToSignature
+    //     if (ExternalDepToSignature[Struct].find(LocString) ==
+    //         ExternalDepToSignature[Struct].end()) {
+    //       ExternalDepToSignature[Struct][LocString] = {};
+    //     }
+    //     ExternalDepToSignature[Struct][LocString].insert(StructDecl);
+    //   }
+    //   // Clear StuctDecl preventing duplications due to looping
+    //   StructDecl.clear();
+    // }
   }
 }
 
@@ -140,27 +140,27 @@ void MigrateCodeGenerator::handleExternalTypeFD(const clang::RecordDecl *RD,
   llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
     for (const auto &FD : RD->fields()) {
-      auto StructRTD =
-          ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, "", -1);
-      if (StructRTD != nullptr) {
-        // llvm::outs() << "[Debug2]: ";
-        StructRTD->print(StructDeclStream);
-        StructDeclStream.flush();
+      // auto StructRTD =
+      //     ca_utils::getExternalStructType(FD->getType(), llvm::outs(), SM, "", -1);
+      // if (StructRTD != nullptr) {
+      //   // llvm::outs() << "[Debug2]: ";
+      //   StructRTD->print(StructDeclStream);
+      //   StructDeclStream.flush();
 
-        auto LocString_ =
-            ca_utils::getLocationString(SM, StructRTD->getLocation());
-        std::size_t colonPos = LocString_.find(':');
-        auto LocString = LocString_.substr(0, colonPos);
+      //   auto LocString_ =
+      //       ca_utils::getLocationString(SM, StructRTD->getLocation());
+      //   std::size_t colonPos = LocString_.find(':');
+      //   auto LocString = LocString_.substr(0, colonPos);
 
-        // Insert into the ExternalDepToSignature
-        if (ExternalDepToSignature[Struct].find(LocString) ==
-            ExternalDepToSignature[Struct].end()) {
-          ExternalDepToSignature[Struct][LocString] = {};
-        }
-        ExternalDepToSignature[Struct][LocString].insert(StructDecl);
-      }
-      // Clear StuctDecl preventing duplications due to looping
-      StructDecl.clear();
+      //   // Insert into the ExternalDepToSignature
+      //   if (ExternalDepToSignature[Struct].find(LocString) ==
+      //       ExternalDepToSignature[Struct].end()) {
+      //     ExternalDepToSignature[Struct][LocString] = {};
+      //   }
+      //   ExternalDepToSignature[Struct][LocString].insert(StructDecl);
+      // }
+      // // Clear StuctDecl preventing duplications due to looping
+      // StructDecl.clear();
     }
   }
 }
