@@ -137,54 +137,52 @@ void ExternalDependencyJSONBackend::onEndOfTranslationUnit() {
 void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
     const clang::FunctionDecl *FD, clang::SourceManager &SM,
     const clang::LangOptions &LO, bool internalMode) {
-  std::string StructDecl = "test";
-  llvm::raw_string_ostream StructDeclStream(StructDecl);
+  std::string TypeSigString = "test";
+  // llvm::raw_string_ostream StructDeclStream(StructDecl);
   if (SM.isInMainFile(FD->getLocation()) || internalMode) {
-    clang::RecordDecl *RetRTD = nullptr, *ParamRTD = nullptr;
-    RetRTD = ca_utils::getExternalStructType(FD->getReturnType(), llvm::outs(),
-                                             SM, "", -1);
-    if (RetRTD != nullptr) {
+    ca::ExternalTypeAbility *RetTypeAbi = nullptr, *ParamTypeAbi = nullptr;
+    RetTypeAbi = ca_utils::getExternalType(FD->getReturnType(), SM);
+    if (RetTypeAbi != nullptr) {
       // llvm::outs() << "[Debug1]: ";
-      RetRTD->print(StructDeclStream);
-      StructDeclStream.flush();
+      TypeSigString = RetTypeAbi->getSignature();
 
-      auto mapIterator = SigToAbility.find(StructDecl);
+      auto mapIterator = SigToAbility.find(TypeSigString);
 
       if (mapIterator != SigToAbility.end()) {
         mapIterator->second->addCallLoc(FD->getLocation());
+        delete RetTypeAbi;
       } else {
-        auto AbilityPTR = new ca::ExternalTypeAbility(
-            FD->getLocation(), StructDecl, FD->getReturnType());
-        SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
+        RetTypeAbi->popCallLoc();
+        RetTypeAbi->addCallLoc(FD->getLocation());
+        SigToAbility[TypeSigString] = static_cast<ca::Ability *>(RetTypeAbi);
       }
     }
     // Clear StuctDecl preventing duplications
-    StructDecl.clear();
+    TypeSigString.clear();
 
     // Traverse the FuncDecl's ParamVarDecls
     for (const auto &PVD : FD->parameters()) {
-      llvm::outs() << "--------------------------------\n";
-      llvm::outs() << "ParameterDecl: " << PVD->getNameAsString() << "("
-                   << ca_utils::getLocationString(SM, PVD->getLocation())
-                   << ")\n";
-      ParamRTD = ca_utils::getExternalStructType(PVD->getType(), llvm::outs(),
-                                                 SM, "", -1);
-      if (ParamRTD != nullptr) {
-        ParamRTD->print(StructDeclStream);
-        StructDeclStream.flush();
+      // llvm::outs() << "--------------------------------\n";
+      // llvm::outs() << "ParameterDecl: " << PVD->getNameAsString() << "("
+      //              << ca_utils::getLocationString(SM, PVD->getLocation())
+      //              << ")\n";
+      ParamTypeAbi = ca_utils::getExternalType(PVD->getType(), SM);
+      if (ParamTypeAbi != nullptr) {
+        TypeSigString = ParamTypeAbi->getSignature();
 
-        auto mapIterator = SigToAbility.find(StructDecl);
+        auto mapIterator = SigToAbility.find(TypeSigString);
 
         if (mapIterator != SigToAbility.end()) {
           mapIterator->second->addCallLoc(PVD->getLocation());
+          delete ParamTypeAbi;
         } else {
-          auto AbilityPTR = new ca::ExternalTypeAbility(
-              PVD->getLocation(), StructDecl, PVD->getType());
-          SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
+          ParamTypeAbi->popCallLoc();
+          ParamTypeAbi->addCallLoc(PVD->getLocation());
+          SigToAbility[TypeSigString] = static_cast<ca::Ability *>(ParamTypeAbi);
         }
       }
       // Clear StuctDecl preventing duplications due to looping
-      StructDecl.clear();
+      TypeSigString.clear();
     }
   }
 }
@@ -192,29 +190,25 @@ void ExternalDependencyJSONBackend::handleExternalTypeFuncD(
 void ExternalDependencyJSONBackend::handleExternalTypeFD(
     const clang::RecordDecl *RD, clang::SourceManager &SM,
     int &isInFunctionOldValue) {
-  std::string StructDecl;
-  llvm::raw_string_ostream StructDeclStream(StructDecl);
+  std::string TypeSigString = "test";
   if (!RD->getName().empty() && SM.isInMainFile(RD->getLocation())) {
     for (const auto &FD : RD->fields()) {
-      auto StructRTD = ca_utils::getExternalStructType(
-          FD->getType(), llvm::outs(), SM, "", -1);
-      if (StructRTD != nullptr) {
-        // llvm::outs() << "[Debug2]: ";
-        StructRTD->print(StructDeclStream);
-        StructDeclStream.flush();
-
-        auto mapIterator = SigToAbility.find(StructDecl);
+      auto TypeAbi = ca_utils::getExternalType(FD->getType(), SM);
+      if (TypeAbi != nullptr) {
+        TypeSigString = TypeAbi->getSignature();
+        auto mapIterator = SigToAbility.find(TypeSigString);
 
         if (mapIterator != SigToAbility.end()) {
           mapIterator->second->addCallLoc(FD->getLocation());
+          delete TypeAbi;
         } else {
-          auto AbilityPTR = new ca::ExternalTypeAbility(
-              FD->getLocation(), StructDecl, FD->getType());
-          SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
+          TypeAbi->popCallLoc();
+          TypeAbi->addCallLoc(FD->getLocation());
+          SigToAbility[TypeSigString] = static_cast<ca::Ability *>(TypeAbi);
         }
       }
       // Clear StuctDecl preventing duplications due to looping
-      StructDecl.clear();
+      TypeSigString.clear();
     }
   }
 }
@@ -235,31 +229,26 @@ void ExternalDependencyJSONBackend::handleExternalTypeVD(
   } else
 #endif
     // assert("Run into the deprecated handle for variable decl!");
+    std::string TypeSigString = "test";
     if (SM.isInMainFile(VD->getLocation())) {
-      llvm::outs() << "--------------------------------\n";
-      llvm::outs() << "VariableDecl: " << VD->getNameAsString() << "("
-                   << ca_utils::getLocationString(SM, VD->getLocation())
-                   << ")\n";
-      ca_utils::getExternalStructType(VD->getType(), llvm::outs(), SM, "", -1);
-      // std::string StructDecl;
-      // llvm::raw_string_ostream StructDeclStream(StructDecl);
-      // auto StructRTD = ca_utils::getExternalStructType(
-      //     VD->getType(), llvm::outs(), SM, "", -1);
-      // if (StructRTD != nullptr) {
-      //   // llvm::outs() << "[Debug3]: ";
-      //   StructRTD->print(StructDeclStream);
-      //   StructDeclStream.flush();
+      // llvm::outs() << "--------------------------------\n";
+      // llvm::outs() << "VariableDecl: " << VD->getNameAsString() << "("
+      //              << ca_utils::getLocationString(SM, VD->getLocation())
+      //              << ")\n";
+      auto TypeAbi = ca_utils::getExternalType(VD->getType(), SM);
+      if (TypeAbi != nullptr) {
+        TypeSigString = TypeAbi->getSignature();
+        auto mapIterator = SigToAbility.find(TypeSigString);
 
-      //   auto mapIterator = SigToAbility.find(StructDecl);
-
-      //   if (mapIterator != SigToAbility.end()) {
-      //     mapIterator->second->addCallLoc(VD->getLocation());
-      //   } else {
-      //     auto AbilityPTR = new ca::ExternalTypeAbility(
-      //         VD->getLocation(), StructDecl, VD->getType());
-      //     SigToAbility[StructDecl] = static_cast<ca::Ability *>(AbilityPTR);
-      //   }
-      // }
+        if (mapIterator != SigToAbility.end()) {
+          mapIterator->second->addCallLoc(VD->getLocation());
+          delete TypeAbi;
+        } else {
+          TypeAbi->popCallLoc();
+          TypeAbi->addCallLoc(VD->getLocation());
+          SigToAbility[TypeSigString] = static_cast<ca::Ability *>(TypeAbi);
+        }
+      }
     }
 }
 
@@ -351,8 +340,8 @@ void ExternalDependencyJSONBackend::handleExternalImplicitCE(
       ExtraInfo +=
           "   - CastKind: " + std::string(ICE->getCastKindName()) + "\n";
 #endif
-      auto isExternal = ca_utils::getExternalStructType(
-          ICE->getType(), llvm::outs(), SM, ExtraInfo);
+      // auto isExternal = ca_utils::getExternalStructType(
+      //     ICE->getType(), llvm::outs(), SM, ExtraInfo);
       if (isExternal != nullptr) {
       }
     }
@@ -382,11 +371,12 @@ void ExternalDependencyJSONBackend::handleExternalCall(
           SigToAbility[FunctionDeclString] =
               static_cast<ca::Ability *>(AbilityPTR);
         }
-        llvm::outs() << "=============================\n";
-        llvm::outs() << "External Call parameters:\n";
-        llvm::outs() << "FunctionDecl: " << FunctionDeclString << "\n";
+        // llvm::outs() << "=============================\n";
+        // llvm::outs() << "External Call parameters:\n";
+        // llvm::outs() << "FunctionDecl: " << FunctionDeclString << "\n";
 
-        handleExternalTypeFuncD(FD, SM, FD->getASTContext().getLangOpts(), true);
+        handleExternalTypeFuncD(FD, SM, FD->getASTContext().getLangOpts(),
+                                true);
 
       } else {
         // !!! Handle macro operations
