@@ -12,6 +12,8 @@
 
 #include <string>
 
+#include "ca_Abilities.hpp"
+
 namespace ca_utils {
 std::string getCoreFileNameFromPath(const std::string &path);
 
@@ -30,6 +32,10 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
                                          clang::SourceManager &SM,
                                          const std::string &ExtraInfo,
                                          const int OutputIndent = 3);
+
+ca::ExternalTypeAbility *getExternalType(clang::QualType Type,
+                                         clang::SourceManager &SM);
+
 // Macro Utilities for Preprocessor
 std::string getMacroDeclString(const clang::MacroDefinition &MD,
                                const clang::SourceManager &SM,
@@ -40,7 +46,7 @@ std::string getMacroName(const clang::SourceManager &SM,
                          clang::SourceLocation Loc);
 
 clang::SourceLocation getMacroLoc(const clang::SourceManager &SM,
-                                      const clang::SourceLocation OriginalLoc);
+                                  const clang::SourceLocation OriginalLoc);
 
 bool isMacroInteger(const std::string &MacroText);
 

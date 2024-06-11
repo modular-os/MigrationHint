@@ -105,7 +105,7 @@ void printFuncDecl(const clang::FunctionDecl *FD,
   llvm::raw_string_ostream FuncDeclStream(FuncDeclStrBuffer);
   clang::LangOptions LangOpts;
   clang::PrintingPolicy PrintPolicy(LangOpts);
-  PrintPolicy.TerseOutput = true; // 设置为只打印函数签名
+  PrintPolicy.TerseOutput = true;  // 设置为只打印函数签名
   FD->print(FuncDeclStream, PrintPolicy);
   FuncDeclStr = FuncDeclStream.str();
   llvm::outs() << "---Found external function call: " << FuncDeclStr << "\n";
@@ -244,6 +244,16 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
 #ifdef DEBUG
   auto varType = Type;
 #endif
+  output << "Current Type: " << Type.getAsString() << "\n";
+  if (Type->isStructureOrClassType()) {
+    llvm::outs() << "isStructureOrClassType\n";
+  }
+  if (Type->isTypedefNameType()) {
+    llvm::outs() << "isTypedefNameType\n";
+  }
+  if (Type->isEnumeralType()) {
+    llvm::outs() << "isEnumeralType\n";
+  }
   bool isPointer = false;
   // Type: De-pointer the type and find the original type
   if (Type->isPointerType()) {
@@ -251,7 +261,7 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
     isPointer = true;
   }
 
-  if (Type->isStructureOrClassType()) {
+  if (Type->isStructureOrClassType() && !Type->isTypedefNameType()) {
     const auto RT = Type->getAs<clang::RecordType>();
     const auto RTD = RT->getDecl();
 
@@ -301,62 +311,194 @@ clang::RecordDecl *getExternalStructType(clang::QualType Type,
                    clang::PrintingPolicy(clang::LangOptions()), 3);
         output << "\n      ```\n";
       } else {
-        output << "       - Full Definition: "
-               << "**Empty Field!**\n";
+        output << "       - Full Definition: " << "**Empty Field!**\n";
       }
 #endif
       return RTD;
     }
+  } else if (Type->isTypedefNameType()) {
+    const clang::TypedefType *TT = Type->getAs<clang::TypedefType>();
+    const clang::TypedefNameDecl *TTD = TT->getDecl();
+    int depth = 0;
+    while (Type->isTypedefNameType()) {  // Constantly resolving Typedefs
+      // if (depth == 5)                   // Limit nesting depth to 5
+      //   break;
+      // output << "is Typedef\n";
+      TT = Type->getAs<clang::TypedefType>();
+      TTD = TT->getDecl();
+      Type = TTD->getTypeSourceInfo()->getTypeLoc().getType();
+      // if (Type->isBuiltinType())
+      //   output << "is builtin type\n";
+      output << ++depth << ": " << Type.getAsString() << " "
+             << getLocationString(SM, TTD->getLocation()) << "\n";
+      // depth++;
+    }
+    const auto Range = TTD->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+    llvm::outs() << InCurrentFile << "\n";
+    // if (!InCurrentFile) {
+
+    // if (OutputIndent == -1) {
+    //   return nullptr;
+    // }
+
+#ifdef CHN
+    output << ExtraInfo << "      - ddd外部类型名称: `" << Type.getAsString()
+           << "`\n";
+    output << "         - 位置: `" << getLocationString(SM, TTD->getLocation())
+           << "`\n";
+    output << "      - 是否为指针: ";
+    if (isPointer) {
+      output << "`是`\n";
+    } else {
+      output << "`否`\n";
+    }
+#else
+    output << ExtraInfo
+           << "   - External Type Detailed Info: " << Type.getAsString()
+           << "`\n";
+    output << "      - Location: `" << getLocationString(SM, TTD->getLocation())
+           << "`\n";
+    output << "         - Is Pointer: ";
+    if (isPointer) {
+      output << "`Yes`\n";
+    } else {
+      output << "`No`\n";
+    }
+#endif
+  } else if (Type->isEnumeralType()) {
+    const clang::EnumType *ET = Type->getAs<clang::EnumType>();
+    const clang::EnumDecl *ED = ET->getDecl();
+    output << "is Enum\n";
+    output << "Enum Name: " << ED->getNameAsString() << "\n";
+    output << getLocationString(SM, ED->getLocation()) << "\n";
+    const auto Range = ED->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+    llvm::outs() << InCurrentFile << "\n";
+
+    // if (!InCurrentFile) {
+    // if (OutputIndent == -1) {
+    //   return nullptr;
+    // }
   } else {
     // return nullptr;
     // TODO：Add support for other types
     // search for typedef
-    if (Type->isTypedefNameType()) {
-      const clang::TypedefType *TT = Type->getAs<clang::TypedefType>();
-      const clang::TypedefNameDecl *TTD = TT->getDecl();
-      int depth = 0;
-      while (Type->isTypedefNameType()) { // Constantly resolving Typedefs
-        if (depth == 5)                   // Limit nesting depth to 5
-          break;
-        // output << "is Typedef\n";
-        TT = Type->getAs<clang::TypedefType>();
-        TTD = TT->getDecl();
-        Type = TTD->getTypeSourceInfo()->getTypeLoc().getType();
-        // if (Type->isBuiltinType())
-        //   output << "is builtin type\n";
-        // output << Type.getAsString() << "\n"
-        //        << getLocationString(SM, TTD->getLocation()) << "\n";
-        depth++;
-      }
+    // output << "--------------------------------\n";
+    // }
+  }
+  return nullptr;
+}
 
-      if (OutputIndent == -1) {
-        return nullptr;
-      }
-      
-#ifdef CHN
-      output << ExtraInfo << "      - ddd外部类型名称: `" << Type.getAsString()
-             << "`\n";
-      output << "         - 位置: `"
-             << getLocationString(SM, TTD->getLocation()) << "`\n";
-      output << "      - 是否为指针: ";
-      if (isPointer) {
-        output << "`是`\n";
-      } else {
-        output << "`否`\n";
-      }
-#else
-      output << ExtraInfo << "   - External Type Detailed Info: " << Type.getAsString()
-             << "`\n";
-      output << "      - Location: `"
-             << getLocationString(SM, TTD->getLocation()) << "`\n";
-      output << "         - Is Pointer: ";
-      if (isPointer) {
-        output << "`Yes`\n";
-      } else {
-        output << "`No`\n";
-      }
+ca::ExternalTypeAbility *getExternalType(clang::QualType Type,
+                                         clang::SourceManager &SM) {
+#ifdef DEBUG
+  auto varType = Type;
 #endif
+  // llvm::outs() << "Current Type: " << Type.getAsString() << "\n";
+  // if (Type->isStructureOrClassType()) {
+  //   llvm::outs() << "isStructureOrClassType\n";
+  // }
+  // if (Type->isTypedefNameType()) {
+  //   llvm::outs() << "isTypedefNameType\n";
+  // }
+  // if (Type->isEnumeralType()) {
+  //   llvm::outs() << "isEnumeralType\n";
+  // }
+  bool isPointer = false;
+  // Type: De-pointer the type and find the original type
+  if (Type->isPointerType()) {
+    Type = Type->getPointeeType();
+    isPointer = true;
+  }
+
+  std::string TypeSigString = "";
+  llvm::raw_string_ostream TypeSigStream(TypeSigString);
+
+  if (Type->isStructureOrClassType() && !Type->isTypedefNameType()) {
+    const auto RT = Type->getAs<clang::RecordType>();
+    const auto RTD = RT->getDecl();
+
+    const auto Range = RTD->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+
+    if (!InCurrentFile) {
+#ifdef DEBUG
+      llvm::outs() << "   - Member: `" << varType.getAsString() << " "
+                   << ExtraInfo << "`\n";
+#endif
+      RTD->print(TypeSigStream);
+      TypeSigStream.flush();
+
+      return new ca::ExternalTypeAbility(RTD->getLocation(), TypeSigString,
+                                         Type, ca::ExternalTypeKind::STRUCT);
     }
+  } else if (Type->isTypedefNameType()) {
+    const clang::TypedefType *TT = Type->getAs<clang::TypedefType>();
+    const clang::TypedefNameDecl *TTD = TT->getDecl();
+    int depth = 0;
+    while (Type->isTypedefNameType()) {  // Constantly resolving Typedefs
+      // if (depth == 5)                   // Limit nesting depth to 5
+      //   break;
+      // llvm::outs() << "is Typedef\n";
+      TT = Type->getAs<clang::TypedefType>();
+      TTD = TT->getDecl();
+      Type = TTD->getTypeSourceInfo()->getTypeLoc().getType();
+      // if (Type->isBuiltinType())
+      //   llvm::outs() << "is builtin type\n";
+      // llvm::outs() << ++depth << ": " << Type.getAsString() << " "
+      //              << getLocationString(SM, TTD->getLocation()) << "\n";
+      // depth++;
+    }
+    const auto Range = TTD->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+    // llvm::outs() << InCurrentFile << "\n";
+
+    // llvm::outs() << "   - External Type Detailed Info: " << Type.getAsString()
+    //              << "`\n";
+    // llvm::outs() << "      - Location: `"
+    //              << getLocationString(SM, TTD->getLocation()) << "`\n";
+    // llvm::outs() << "         - Is Pointer: ";
+    // if (isPointer) {
+    //   llvm::outs() << "`Yes`\n";
+    // } else {
+    //   llvm::outs() << "`No`\n";
+    // }
+    if (!InCurrentFile) {
+      TTD->print(TypeSigStream);
+      TypeSigStream.flush();
+
+      return new ca::ExternalTypeAbility(TTD->getLocation(), TypeSigString,
+                                         Type, ca::ExternalTypeKind::TYPEDEF);
+    }
+  } else if (Type->isEnumeralType()) {
+    const clang::EnumType *ET = Type->getAs<clang::EnumType>();
+    const clang::EnumDecl *ED = ET->getDecl();
+    // llvm::outs() << "is Enum\n";
+    // llvm::outs() << "Enum Name: " << ED->getNameAsString() << "\n";
+    // llvm::outs() << getLocationString(SM, ED->getLocation()) << "\n";
+    const auto Range = ED->getSourceRange();
+    const bool InCurrentFile = SM.isWrittenInMainFile(Range.getBegin()) &&
+                               SM.isWrittenInMainFile(Range.getEnd());
+    // llvm::outs() << InCurrentFile << "\n";
+
+    if (!InCurrentFile) {
+      ED->print(TypeSigStream);
+      TypeSigStream.flush();
+      
+      return new ca::ExternalTypeAbility(ED->getLocation(), TypeSigString, Type,
+                                         ca::ExternalTypeKind::ENUM);
+    }
+  } else {
+    return nullptr;
+    // TODO：Add support for other types
+    // search for typedef
+    // llvm::outs() << "--------------------------------\n";
+    // }
   }
   return nullptr;
 }
@@ -412,7 +554,7 @@ std::string getMacroIdentifier(const std::string &MacroText) {
   std::string Identifier;
   for (auto &it : MacroText) {
     if (std::isalnum(it) || it == '_') {
-    Identifier += it;
+      Identifier += it;
     } else {
       break;
     }
