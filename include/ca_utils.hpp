@@ -1,6 +1,7 @@
 // Encode with UTF-8
 #pragma once
 
+#include <vector>
 #ifndef _CA_UTILS_HPP
 #define _CA_UTILS_HPP
 
@@ -10,6 +11,7 @@
 #include <clang/Basic/SourceManager.h>
 #include <clang/Lex/PPCallbacks.h>
 
+#include <filesystem>
 #include <string>
 
 #include "ca_Abilities.hpp"
@@ -51,6 +53,9 @@ clang::SourceLocation getMacroLoc(const clang::SourceManager &SM,
 bool isMacroInteger(const std::string &MacroText);
 
 std::string getMacroIdentifier(const std::string &MacroText);
+
+void traverseFolder(std::vector<std::string> &files,
+                    const std::string &directory);
 }  // namespace ca_utils
 
 #endif  // !_CA_UTILS_HPP

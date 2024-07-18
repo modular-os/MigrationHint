@@ -13,6 +13,7 @@
 
 #include <cctype>
 #include <string>
+#include <vector>
 
 namespace ca_utils {
 
@@ -458,7 +459,8 @@ ca::ExternalTypeAbility *getExternalType(clang::QualType Type,
                                SM.isWrittenInMainFile(Range.getEnd());
     // llvm::outs() << InCurrentFile << "\n";
 
-    // llvm::outs() << "   - External Type Detailed Info: " << Type.getAsString()
+    // llvm::outs() << "   - External Type Detailed Info: " <<
+    // Type.getAsString()
     //              << "`\n";
     // llvm::outs() << "      - Location: `"
     //              << getLocationString(SM, TTD->getLocation()) << "`\n";
@@ -489,7 +491,7 @@ ca::ExternalTypeAbility *getExternalType(clang::QualType Type,
     if (!InCurrentFile) {
       ED->print(TypeSigStream);
       TypeSigStream.flush();
-      
+
       return new ca::ExternalTypeAbility(ED->getLocation(), TypeSigString, Type,
                                          ca::ExternalTypeKind::ENUM);
     }
@@ -560,6 +562,23 @@ std::string getMacroIdentifier(const std::string &MacroText) {
     }
   }
   return Identifier;
+}
+
+void traverseFolder(std::vector<std::string> &files,
+                    const std::string &directory) {
+  namespace fs = std::filesystem;
+  try {
+    // Traverse Dierctory
+    for (const auto &entry : fs::recursive_directory_iterator(directory)) {
+      // Filter: Check whether is the C source code
+      if (entry.is_regular_file() && (entry.path().extension() == ".c" ||
+                                      entry.path().extension() == ".h")) {
+        files.push_back(entry.path().string());
+      }
+    }
+  } catch (const fs::filesystem_error &e) {
+    llvm::outs() << "Filesystem error: " << e.what() << "\n";
+  }
 }
 
 }  // namespace ca_utils
