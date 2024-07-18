@@ -17,11 +17,11 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 #include "ca_ASTHelpers.hpp"
 #include "ca_PreprocessorHelpers.hpp"
@@ -87,6 +87,11 @@ llvm::cl::opt<std::string> OptionSourceFilePath(
     "s",
     llvm::cl::desc("Path to the source file which is expected to be analyzed."),
     llvm::cl::value_desc("path-to-sourcefile"));
+llvm::cl::opt<std::string> OptionSourceDiretoryPath(
+    "d",
+    llvm::cl::desc(
+        "Path to the source file directory which is expected to be analyzed."),
+    llvm::cl::value_desc("path-to-sourcefile-directory"));
 llvm::cl::opt<bool> OptionEnableFunctionAnalysis(
     "enable-function-analysis",
     llvm::cl::desc("Enable external function analysis to source file"),
@@ -122,6 +127,9 @@ llvm::cl::opt<bool> OptionGenerateMigrateCode(
 llvm::cl::opt<bool> OptionGenerateJSON(
     "enable-json-gen", llvm::cl::desc("Generate the json info."),
     llvm::cl::init(false));
+llvm::cl::opt<bool> OptionZeng("enable-support-yang",
+                               llvm::cl::desc("Support for Phd. Zeng."),
+                               llvm::cl::init(false));
 llvm::cl::opt<std::string> OptionJSONoutput("o",
                                             llvm::cl::desc("Output of json."),
                                             llvm::cl::value_desc("Filename"));
@@ -168,12 +176,24 @@ int main(int argc, const char **argv) {
   } else {
     llvm::outs()
         << "Error! Missing critical option: No source file path found! You can "
-           "use option -S to specify the source file path.\n";
+           "use option -S to specify the source file path"
+           "or option -d to specify the source folder path.\n";
     exit(1);
   }
 
   if (OptionGenerateReport) {
     ca::generateReport(OptionSourceFilePath);
+    return 0;
+  }
+
+  if (OptionZeng && !OptionSourceDiretoryPath.empty()) {
+    llvm::outs() << "Report for Ph.D. Zeng.\n"
+                 << "Files: " << SourceFilePaths.front() << "\n";
+    // ca_utils::traverseFolder(SourceFilePaths, OptionSourceDiretoryPath);
+    // llvm::outs() << "CodeAnalsis: Found " << SourceFilePaths.size()
+    //              << " source files in" << OptionSourceDiretoryPath << "\n";
+
+    // ca::ZengAnalysisHelper(SourceFilePaths);
     return 0;
   }
 #ifdef DEPRECATED
@@ -199,31 +219,26 @@ int main(int argc, const char **argv) {
   auto fileLists = OptionsParser->getSourcePathList();
 
   // traverse compile_commands
-  llvm::outs() << "[Debug] Validating compile database: "
-               << "\n";
+  llvm::outs() << "[Debug] Validating compile database: " << "\n";
   for (auto &it : compileCommands) {
     // Output the filename and directory
     llvm::outs() << "[Debug] Filename: " << it.Filename << "\n";
     llvm::outs() << "[Debug] Directory: " << it.Directory << "\n";
     // llvm::outs() << it.CommandLine << "\n";
     // Output the command line content
-    llvm::outs() << "[Debug] Command Line: "
-                 << "\n";
+    llvm::outs() << "[Debug] Command Line: " << "\n";
     for (auto &it2 : it.CommandLine) {
       llvm::outs() << it2 << "\n";
     }
     break;
   }
-  llvm::outs() << "[Debug] End of compile database."
-               << "\n";
+  llvm::outs() << "[Debug] End of compile database." << "\n";
 
-  llvm::outs() << "[Debug] Validating source file lists: "
-               << "\n";
+  llvm::outs() << "[Debug] Validating source file lists: " << "\n";
   for (auto &it : fileLists) {
     llvm::outs() << it << "\n";
   }
-  llvm::outs() << "[Debug] End of source file lists"
-               << "\n";
+  llvm::outs() << "[Debug] End of source file lists" << "\n";
 #endif
 
   // Prepare the basic infrastructure
@@ -296,12 +311,14 @@ int main(int argc, const char **argv) {
             .get());
 
     // Translate relative path into absolute path
-    std::string outputPath = !OptionJSONoutput.empty() ? OptionJSONoutput : std::string("output.json");
+    std::string outputPath = !OptionJSONoutput.empty()
+                                 ? OptionJSONoutput
+                                 : std::string("output.json");
     auto base_path = std::filesystem::current_path();
-    if(outputPath[0] != '/')
-      outputPath = (base_path / outputPath).string();
-  
-    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(), outputPath, NameToExpansion);
+    if (outputPath[0] != '/') outputPath = (base_path / outputPath).string();
+
+    ca::ExternalDependencyJSONBackend jsonBackend(ASTs[0]->getSourceManager(),
+                                                  outputPath, NameToExpansion);
 
     Finder.addMatcher(BasicExternalFuncDeclMatcherPattern, &jsonBackend);
     Finder.addMatcher(ExternalStructMatcherPattern, &jsonBackend);

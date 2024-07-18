@@ -32,6 +32,11 @@ TARGET_SOURCE7=/home/tz/workspace/linux-kernel/linux-6.2.15/mm/hugetlb_vmemmap.c
 TARGET_SOURCE8=/home/tz/workspace/linux-kernel/linux-6.2.15/include/linux/ksm.h
 TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi"
 
+######################### For Zeng
+
+TARGET_FOLDER=/home/tz/workspace/glibcAnalysis/glibc-2.39
+TARGET_SOURCE1=/home/tz/workspace/glibcAnalysis/glibc-2.39/sysdeps/x86_64/tst-auditmod6b.c
+
 # Make a build dir if there isn't one
 if [ ! -d $BUILD ]; then
     mkdir $BUILD
@@ -51,10 +56,13 @@ pushd $BUILD
     # --enable-migrate-code-gen \
     # --enable-function-analysis  \
     # --enable-struct-analysis \
-    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
-        --enable-json-gen \
-        --enable-pp-analysis \
-        -o ${LOG}/${DATE}.json \
+    # ./bin/CodeAnalysis -s ${TARGET_SOURCE1} \
+    #     --enable-json-gen \
+    #     --enable-pp-analysis \
+    #     -o ${LOG}/${DATE}.json \
+    #     2>&1 | tee ${LOG}/${DATE}.log
+    ./bin/CodeAnalysis -s ${TARGET_SOURCE1} -d ${TARGET_FOLDER} \
+        --enable-support-yang \
         2>&1 | tee ${LOG}/${DATE}.log
     # ./bin/CAFlexParse --header \
     #     -i /home/tz/workspace/MigrationHint/log/20240522-030624.json \
