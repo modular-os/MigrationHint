@@ -229,6 +229,24 @@ class ExternalDependencyJSONBackend
   std::map<std::string, std::string> &MacroNameToExpansion;
 };
 
+/* Utilities for Ph.D. Zeng*/
+void ZengAnalysisHelper(std::vector<std::string> &files);
+
+class ZengExpressionMatcher
+    : public clang::ast_matchers::MatchFinder::MatchCallback {
+ public:
+  void run(
+      const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
+
+ private:
+  std::string getExpressionString(const clang::BinaryOperator *BinaryOp,
+                                  const clang::SourceManager &SourceManager);
+
+  std::string getOperatorString(clang::BinaryOperatorKind OpCode);
+
+  bool hasLinkMapMember(const clang::BinaryOperator *BinaryOp);
+};
+
 }  // namespace ca
 
 #endif  // !_CA_AST_HELPERS_HPP
