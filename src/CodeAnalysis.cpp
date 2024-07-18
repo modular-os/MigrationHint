@@ -193,7 +193,7 @@ int main(int argc, const char **argv) {
     // llvm::outs() << "CodeAnalsis: Found " << SourceFilePaths.size()
     //              << " source files in" << OptionSourceDiretoryPath << "\n";
 
-    // ca::ZengAnalysisHelper(SourceFilePaths);
+    ca::ZengAnalysisHelper(SourceFilePaths);
     return 0;
   }
 #ifdef DEPRECATED

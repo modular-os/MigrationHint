@@ -14,7 +14,7 @@ void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
   auto CompileDatabase =
       clang::tooling::CompilationDatabase::autoDetectFromSource(files.front(),
                                                                 ErrMsg);
-    llvm::outs() << "testing\n";
+  llvm::outs() << "testing\n";
   clang::tooling::ClangTool Tool(*CompileDatabase, files);
   ca::ZengExpressionMatcher Matcher;
   Finder.addMatcher(binaryOperator().bind("binaryOp"), &Matcher);
@@ -24,16 +24,20 @@ void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
 
 void ca::ZengExpressionMatcher::run(
     const clang::ast_matchers::MatchFinder::MatchResult &Result) {
+  auto &SM = *(Result.SourceManager);
   if (const auto *BinaryOp =
           Result.Nodes.getNodeAs<clang::BinaryOperator>("binaryOp")) {
-    std::string expression =
-        getExpressionString(BinaryOp, *(Result.SourceManager));
-    if (true || hasLinkMapMember(BinaryOp)) {
-      llvm::outs() << "Found expression: " << expression << "\n"
-                   << "\t at "
-                   << ca_utils::getLocationString(*(Result.SourceManager),
-                                                  BinaryOp->getExprLoc())
-                   << "\n";
+    /* TODO: In the main file may be wrong */
+    if (SM.isInMainFile(BinaryOp->getExprLoc()) &&
+        (BinaryOp->getOpcode() == clang::BO_Add ||
+         BinaryOp->getOpcode() == clang::BO_Sub)) {
+      std::string expression = getExpressionString(BinaryOp, SM);
+      if (true || hasLinkMapMember(BinaryOp)) {
+        llvm::outs() << "Found expression: " << expression << "\n"
+                     << "\t at "
+                     << ca_utils::getLocationString(SM, BinaryOp->getExprLoc())
+                     << "\n";
+      }
     }
   }
 }
@@ -42,15 +46,25 @@ std::string ca::ZengExpressionMatcher::getExpressionString(
     const clang::BinaryOperator *BinaryOp,
     const clang::SourceManager &SourceManager) {
   std::string expression;
+
+  // Utilities for printing the function declaration
+  std::string OprandBuffer, OprandStr;
+  llvm::raw_string_ostream FuncDeclStream(OprandBuffer);
+  clang::LangOptions LangOpts;
+  clang::PrintingPolicy PrintPolicy(LangOpts);
+  PrintPolicy.TerseOutput = true;
+
   const clang::Expr *Operand = BinaryOp->getLHS();
-  expression +=
-      Operand->getSourceRange().getBegin().printToString(SourceManager);
+  Operand->printPretty(FuncDeclStream, nullptr, PrintPolicy);
+  expression += FuncDeclStream.str();
+  FuncDeclStream.flush();
 
   while (true) {
     expression += " " + getOperatorString(BinaryOp->getOpcode()) + " ";
     Operand = BinaryOp->getRHS();
-    expression +=
-        Operand->getSourceRange().getBegin().printToString(SourceManager);
+    Operand->printPretty(FuncDeclStream, nullptr, PrintPolicy);
+    expression += FuncDeclStream.str();
+    FuncDeclStream.flush();
 
     if (const auto *NextBinaryOp = dyn_cast<clang::BinaryOperator>(Operand)) {
       BinaryOp = NextBinaryOp;

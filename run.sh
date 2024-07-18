@@ -35,7 +35,7 @@ TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I.
 ######################### For Zeng
 
 TARGET_FOLDER=/home/tz/workspace/glibcAnalysis/glibc-2.39
-TARGET_SOURCE1=/home/tz/workspace/glibcAnalysis/glibc-2.39/sysdeps/x86_64/tst-auditmod6b.c
+TARGET_SOURCE1=/home/tz/workspace/glibcAnalysis/glibc-2.39/sysdeps/hppa/dl-fptr.c
 
 # Make a build dir if there isn't one
 if [ ! -d $BUILD ]; then
