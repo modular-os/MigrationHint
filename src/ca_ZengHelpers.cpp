@@ -34,26 +34,32 @@ bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasMatchedExpression()
 }
 
 void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
-  clang::ast_matchers::MatchFinder Finder;
-  using namespace clang::ast_matchers;
-  std::string ErrMsg;
-  auto CompileDatabase =
-      clang::tooling::CompilationDatabase::autoDetectFromSource(files.front(),
-                                                                ErrMsg);
-  clang::tooling::ClangTool Tool(*CompileDatabase, files);
+  // Traverse file in files
+  for (int i = 0; i < files.size(); ++i) {
+    llvm::outs() << "\n=============================\n";
+    llvm::outs() << "[" << i + 1 << "/" << files.size() << "] " << "Analyzing "
+                 << files[i] << "...\n";
+    clang::ast_matchers::MatchFinder Finder;
+    using namespace clang::ast_matchers;
+    std::string ErrMsg;
+    auto CompileDatabase =
+        clang::tooling::CompilationDatabase::autoDetectFromSource(files[i],
+                                                                  ErrMsg);
+    clang::tooling::ClangTool Tool(*CompileDatabase, files[i]);
 
-  /*
-  To Be Continued
-  auto adjustArgumentsZeng = clang::tooling::getInsertArgumentAdjuster(
-      "-I/usr/include", clang::tooling::ArgumentInsertPosition::BEGIN);
+    /*
+    To Be Continued
+    auto adjustArgumentsZeng = clang::tooling::getInsertArgumentAdjuster(
+        "-I/usr/include", clang::tooling::ArgumentInsertPosition::BEGIN);
 
-  Tool.appendArgumentsAdjuster(adjustArgumentsZeng);
-  llvm::outs() << "Initialization finished\n";
-  */
-  ca::ZengExpressionMatcher Matcher;
-  Finder.addMatcher(binaryOperator().bind("binaryOp"), &Matcher);
+    Tool.appendArgumentsAdjuster(adjustArgumentsZeng);
+    llvm::outs() << "Initialization finished\n";
+    */
+    ca::ZengExpressionMatcher Matcher;
+    Finder.addMatcher(binaryOperator().bind("binaryOp"), &Matcher);
 
-  Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+    Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
+  }
 }
 
 void ca::ZengExpressionMatcher::run(
@@ -81,7 +87,7 @@ void ca::ZengExpressionMatcher::run(
         PrintPolicy.TerseOutput = true;
 
         llvm::outs() << "-----------------------------\n"
-                     << "" << locationString << "Expression: \n";
+                     << "Location: " << locationString << "\nExpression: \n";
         binExpr->printPretty(llvm::outs(), nullptr, PrintPolicy);
         llvm::outs() << "\n";
       }
@@ -113,7 +119,13 @@ bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasLinkMapMember(
       currType = currType->getPointeeType();
     }
     if (currType.getAsString() == "struct link_map") {
-      return true;
+      if (auto TypeDecl = currType->getAsRecordDecl()) {
+        if (ca_utils::getLocationString(context.getSourceManager(),
+                                        TypeDecl->getBeginLoc()) ==
+            "../include/link.h:95") {
+          return true;
+        }
+      }
     }
   }
   return false;
