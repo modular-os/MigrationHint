@@ -34,7 +34,7 @@ TARGET_SOURCE_COMMANDS="-I./arch/x86/include -I./arch/x86/include/generated  -I.
 
 ######################### For Zeng
 
-TARGET_FOLDER=/home/tz/workspace/glibcAnalysis/glibc-2.39
+TARGET_FOLDER=/home/tz/workspace/glibcAnalysis/glibc-2.39/elf
 TARGET_SOURCE1=/home/tz/workspace/glibcAnalysis/glibc-2.39/sysdeps/hppa/dl-fptr.c
 
 # Make a build dir if there isn't one
@@ -63,6 +63,7 @@ pushd $BUILD
     #     2>&1 | tee ${LOG}/${DATE}.log
     ./bin/CodeAnalysis -s ${TARGET_SOURCE1} -d ${TARGET_FOLDER} \
         --enable-support-yang \
+        -o ${LOG}/${DATE}_zeng.output \
         2>&1 | tee ${LOG}/${DATE}.log
     # ./bin/CAFlexParse --header \
     #     -i /home/tz/workspace/MigrationHint/log/20240522-030624.json \

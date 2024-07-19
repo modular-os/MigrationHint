@@ -230,19 +230,23 @@ class ExternalDependencyJSONBackend
 };
 
 /* Utilities for Ph.D. Zeng*/
-void ZengAnalysisHelper(std::vector<std::string> &files);
+void ZengAnalysisHelper(std::vector<std::string> &files,
+                        llvm::raw_fd_ostream &fileOS);
 
 class ZengExpressionMatcher
     : public clang::ast_matchers::MatchFinder::MatchCallback {
  public:
+  ZengExpressionMatcher(llvm::raw_fd_ostream &fileOS) : fileOS(fileOS) {}
   void run(
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
 
  private:
+  llvm::raw_fd_ostream &fileOS;
   class ZengExpressionVisitor
       : public clang::RecursiveASTVisitor<ZengExpressionVisitor> {
    public:
-    ZengExpressionVisitor(clang::ASTContext &context, const clang::Expr *rootExpr)
+    ZengExpressionVisitor(clang::ASTContext &context,
+                          const clang::Expr *rootExpr)
         : context(context), rootExpr(rootExpr), hasMatch(false) {}
 
     bool VisitExpr(clang::Expr *expr);

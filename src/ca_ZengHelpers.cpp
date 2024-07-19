@@ -33,11 +33,11 @@ bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasMatchedExpression()
   return hasMatch;
 }
 
-void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
+void ca::ZengAnalysisHelper(std::vector<std::string> &files, llvm::raw_fd_ostream &fileOS) {
   // Traverse file in files
   for (int i = 0; i < files.size(); ++i) {
-    llvm::outs() << "\n=============================\n";
-    llvm::outs() << "[" << i + 1 << "/" << files.size() << "] " << "Analyzing "
+    fileOS << "\n=============================\n";
+    fileOS << "[" << i + 1 << "/" << files.size() << "] " << "Analyzing "
                  << files[i] << "...\n";
     clang::ast_matchers::MatchFinder Finder;
     using namespace clang::ast_matchers;
@@ -55,7 +55,7 @@ void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
     Tool.appendArgumentsAdjuster(adjustArgumentsZeng);
     llvm::outs() << "Initialization finished\n";
     */
-    ca::ZengExpressionMatcher Matcher;
+    ca::ZengExpressionMatcher Matcher(fileOS);
     Finder.addMatcher(binaryOperator().bind("binaryOp"), &Matcher);
 
     Tool.run(clang::tooling::newFrontendActionFactory(&Finder).get());
@@ -86,10 +86,10 @@ void ca::ZengExpressionMatcher::run(
         clang::PrintingPolicy PrintPolicy(LangOpts);
         PrintPolicy.TerseOutput = true;
 
-        llvm::outs() << "-----------------------------\n"
-                     << "Location: " << locationString << "\nExpression: \n";
-        binExpr->printPretty(llvm::outs(), nullptr, PrintPolicy);
-        llvm::outs() << "\n";
+        fileOS << "-----------------------------\nLocation: "
+                     << locationString << "Expression: \n";
+        binExpr->printPretty(fileOS, nullptr, PrintPolicy);
+        fileOS << "\n";
       }
     }
   }

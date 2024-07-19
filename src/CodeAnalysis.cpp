@@ -166,7 +166,16 @@ int main(int argc, const char **argv) {
   // Begin parsing options.
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
-  if (OptionZeng && !OptionSourceDiretoryPath.empty()) {
+  if (OptionZeng && !OptionSourceDiretoryPath.empty() &&
+      !OptionJSONoutput.empty()) {
+    std::error_code EC;
+    llvm::raw_fd_ostream fileOS(OptionJSONoutput, EC, llvm::sys::fs::OF_None);
+    if (EC) {
+      llvm::errs() << "Error opening file " << OptionJSONoutput << ": "
+                   << EC.message() << "\n";
+      return 1;
+    }
+    
     ca_utils::traverseFolder(SourceFilePaths, OptionSourceDiretoryPath);
     llvm::outs() << "###############################################\n"
                  << "Report for Ph.D. Zeng.\n"
@@ -174,7 +183,7 @@ int main(int argc, const char **argv) {
                  << " source files in" << OptionSourceDiretoryPath << "\n"
                  << "###############################################\n\n";
 
-    ca::ZengAnalysisHelper(SourceFilePaths);
+    ca::ZengAnalysisHelper(SourceFilePaths, fileOS);
     return 0;
   }
 
