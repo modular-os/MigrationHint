@@ -33,12 +33,13 @@ bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasMatchedExpression()
   return hasMatch;
 }
 
-void ca::ZengAnalysisHelper(std::vector<std::string> &files, llvm::raw_fd_ostream &fileOS) {
+void ca::ZengAnalysisHelper(std::vector<std::string> &files,
+                            llvm::raw_fd_ostream &fileOS) {
   // Traverse file in files
   for (int i = 0; i < files.size(); ++i) {
     fileOS << "\n=============================\n";
     fileOS << "[" << i + 1 << "/" << files.size() << "] " << "Analyzing "
-                 << files[i] << "...\n";
+           << files[i] << "...\n";
     clang::ast_matchers::MatchFinder Finder;
     using namespace clang::ast_matchers;
     std::string ErrMsg;
@@ -86,8 +87,8 @@ void ca::ZengExpressionMatcher::run(
         clang::PrintingPolicy PrintPolicy(LangOpts);
         PrintPolicy.TerseOutput = true;
 
-        fileOS << "-----------------------------\nLocation: "
-                     << locationString << "Expression: \n";
+        fileOS << "-----------------------------\nLocation: " << locationString
+               << "\nExpression: ";
         binExpr->printPretty(fileOS, nullptr, PrintPolicy);
         fileOS << "\n";
       }
@@ -97,33 +98,38 @@ void ca::ZengExpressionMatcher::run(
 
 bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasLinkMapMember(
     const clang::Expr *Operand) {
-  while (true) {
-    if (auto memberExpr = clang::dyn_cast<clang::MemberExpr>(Operand)) {
-      Operand = memberExpr->getBase();
-    } else if (auto arraySubscriptExpr =
-                   clang::dyn_cast<clang::ArraySubscriptExpr>(Operand)) {
-      Operand = arraySubscriptExpr->getBase();
-    } else if (auto ImpliExpr =
-                   clang::dyn_cast<clang::ImplicitCastExpr>(Operand)) {
-      Operand = ImpliExpr->getSubExpr();
-    } else if (auto DeclRExpr = clang::dyn_cast<clang::DeclRefExpr>(Operand)) {
-      break;
-    } else if (auto ParExpr = clang::dyn_cast<clang::ParenExpr>(Operand)) {
-      Operand = ParExpr->getSubExpr();
-    } else {
-      break;
-    }
+  if (clang::dyn_cast<clang::MemberExpr>(Operand)) {
+    // Should be member expr at first, or this function would mistakenly
+    // consider linkmap struct itself
+    while (true) {
+      if (auto memberExpr = clang::dyn_cast<clang::MemberExpr>(Operand)) {
+        Operand = memberExpr->getBase();
+      } else if (auto arraySubscriptExpr =
+                     clang::dyn_cast<clang::ArraySubscriptExpr>(Operand)) {
+        Operand = arraySubscriptExpr->getBase();
+      } else if (auto ImpliExpr =
+                     clang::dyn_cast<clang::ImplicitCastExpr>(Operand)) {
+        Operand = ImpliExpr->getSubExpr();
+      } else if (auto DeclRExpr =
+                     clang::dyn_cast<clang::DeclRefExpr>(Operand)) {
+        break;
+      } else if (auto ParExpr = clang::dyn_cast<clang::ParenExpr>(Operand)) {
+        Operand = ParExpr->getSubExpr();
+      } else {
+        break;
+      }
 
-    auto currType = Operand->getType();
-    if (currType->isPointerType()) {
-      currType = currType->getPointeeType();
-    }
-    if (currType.getAsString() == "struct link_map") {
-      if (auto TypeDecl = currType->getAsRecordDecl()) {
-        if (ca_utils::getLocationString(context.getSourceManager(),
-                                        TypeDecl->getBeginLoc()) ==
-            "../include/link.h:95") {
-          return true;
+      auto currType = Operand->getType();
+      if (currType->isPointerType()) {
+        currType = currType->getPointeeType();
+      }
+      if (currType.getAsString() == "struct link_map") {
+        if (auto TypeDecl = currType->getAsRecordDecl()) {
+          if (ca_utils::getLocationString(context.getSourceManager(),
+                                          TypeDecl->getBeginLoc()) ==
+              "../include/link.h:95") {
+            return true;
+          }
         }
       }
     }

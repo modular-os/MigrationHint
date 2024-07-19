@@ -177,10 +177,10 @@ int main(int argc, const char **argv) {
     }
     
     ca_utils::traverseFolder(SourceFilePaths, OptionSourceDiretoryPath);
-    llvm::outs() << "###############################################\n"
+    fileOS << "###############################################\n"
                  << "Report for Ph.D. Zeng.\n"
                  << "CodeAnalsis: Found " << SourceFilePaths.size()
-                 << " source files in" << OptionSourceDiretoryPath << "\n"
+                 << " source files in " << OptionSourceDiretoryPath << "\n"
                  << "###############################################\n\n";
 
     ca::ZengAnalysisHelper(SourceFilePaths, fileOS);
