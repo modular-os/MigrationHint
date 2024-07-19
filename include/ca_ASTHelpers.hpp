@@ -243,10 +243,9 @@ class ZengExpressionMatcher
                                   const clang::SourceManager &SourceManager);
 
   std::string getOperatorString(clang::BinaryOperatorKind OpCode);
-
-  bool hasLinkMapMember(const clang::BinaryOperator *BinaryOp);
 };
 
+bool hasLinkMapMember(const clang::Expr *Operand);
 }  // namespace ca
 
 #endif  // !_CA_AST_HELPERS_HPP
