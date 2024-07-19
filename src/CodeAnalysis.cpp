@@ -166,6 +166,18 @@ int main(int argc, const char **argv) {
   // Begin parsing options.
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
+  if (OptionZeng && !OptionSourceDiretoryPath.empty()) {
+    ca_utils::traverseFolder(SourceFilePaths, OptionSourceDiretoryPath);
+    llvm::outs() << "###############################################\n"
+                 << "Report for Ph.D. Zeng.\n"
+                 << "CodeAnalsis: Found " << SourceFilePaths.size()
+                 << " source files in" << OptionSourceDiretoryPath << "\n"
+                 << "###############################################\n\n";
+
+    ca::ZengAnalysisHelper(SourceFilePaths);
+    return 0;
+  }
+
   if (!OptionSourceFilePath.empty()) {
     // llvm::outs() << "Source File Path: " << OptionSourceFilePath << "\n";
     SourceFilePaths.push_back(OptionSourceFilePath);
@@ -186,16 +198,6 @@ int main(int argc, const char **argv) {
     return 0;
   }
 
-  if (OptionZeng && !OptionSourceDiretoryPath.empty()) {
-    llvm::outs() << "Report for Ph.D. Zeng.\n"
-                 << "Files: " << SourceFilePaths.front() << "\n";
-    // ca_utils::traverseFolder(SourceFilePaths, OptionSourceDiretoryPath);
-    // llvm::outs() << "CodeAnalsis: Found " << SourceFilePaths.size()
-    //              << " source files in" << OptionSourceDiretoryPath << "\n";
-
-    ca::ZengAnalysisHelper(SourceFilePaths);
-    return 0;
-  }
 #ifdef DEPRECATED
   // Deprecated, now we use llvm::cl::opt to parse the options.
   llvm::Expected<clang::tooling::CommonOptionsParser> OptionsParser =
