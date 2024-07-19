@@ -10,36 +10,28 @@
 #include "ca_ASTHelpers.hpp"
 #include "ca_utils.hpp"
 
-class ExpressionVisitor : public clang::RecursiveASTVisitor<ExpressionVisitor> {
- public:
-  ExpressionVisitor(clang::ASTContext &context, const clang::Expr *rootExpr)
-      : context(context), rootExpr(rootExpr), hasMatch(false) {}
-
-  bool VisitExpr(clang::Expr *expr) {
-    // Check if the current expression has a link_map member
-    if (ca::hasLinkMapMember(expr)) {
-      hasMatch = true;
-      return false;  // 停止遍历,因为已经找到一个满足条件的节点
-    }
-
-    // 递归访问子表达式
-    for (const auto *child : expr->children()) {
-      if (auto *childExpr = clang::dyn_cast<clang::Expr>(child)) {
-        return TraverseStmt(
-            static_cast<clang::Stmt *>((clang::Expr *)childExpr));
-      }
-    }
-
-    return true;
+bool ca::ZengExpressionMatcher::ZengExpressionVisitor::VisitExpr(
+    clang::Expr *expr) {
+  // Check if the current expression has a link_map member
+  if (hasLinkMapMember(expr)) {
+    hasMatch = true;
+    return false;  // 停止遍历,因为已经找到一个满足条件的节点
   }
 
-  bool hasMatchedExpression() const { return hasMatch; }
+  // 递归访问子表达式
+  for (const auto *child : expr->children()) {
+    if (auto *childExpr = clang::dyn_cast<clang::Expr>(child)) {
+      return TraverseStmt(static_cast<clang::Stmt *>((clang::Expr *)childExpr));
+    }
+  }
 
- private:
-  clang::ASTContext &context;
-  const clang::Expr *rootExpr;
-  bool hasMatch;
-};
+  return true;
+}
+
+bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasMatchedExpression()
+    const {
+  return hasMatch;
+}
 
 void ca::ZengAnalysisHelper(std::vector<std::string> &files) {
   clang::ast_matchers::MatchFinder Finder;
@@ -81,7 +73,7 @@ void ca::ZengExpressionMatcher::run(
         return;
       }
       auto binExpr = BinaryOp->getExprStmt();
-      ExpressionVisitor visitor(*Result.Context, binExpr);
+      ZengExpressionVisitor visitor(*Result.Context, binExpr);
       visitor.TraverseStmt(static_cast<clang::Stmt *>((clang::Expr *)binExpr));
       if (visitor.hasMatchedExpression()) {
         clang::LangOptions LangOpts;
@@ -97,65 +89,8 @@ void ca::ZengExpressionMatcher::run(
   }
 }
 
-std::string ca::ZengExpressionMatcher::getExpressionString(
-    const clang::BinaryOperator *BinaryOp,
-    const clang::SourceManager &SourceManager) {
-  std::string expression;
-  bool hasLinkMap = false;
-
-  // Utilities for printing the function declaration
-  std::string OprandBuffer, OprandStr;
-  llvm::raw_string_ostream FuncDeclStream(OprandBuffer);
-  clang::LangOptions LangOpts;
-  clang::PrintingPolicy PrintPolicy(LangOpts);
-  PrintPolicy.TerseOutput = true;
-
-  const clang::Expr *Operand = BinaryOp->getLHS();
-  hasLinkMap |= hasLinkMapMember(Operand);
-  Operand->printPretty(FuncDeclStream, nullptr, PrintPolicy);
-  FuncDeclStream.flush();
-  expression += FuncDeclStream.str();
-  OprandBuffer.clear();
-
-  while (true) {
-    expression += " " + getOperatorString(BinaryOp->getOpcode()) + " ";
-    Operand = BinaryOp->getRHS();
-    hasLinkMap |= hasLinkMapMember(Operand);
-    Operand->printPretty(FuncDeclStream, nullptr, PrintPolicy);
-    FuncDeclStream.flush();
-    expression += FuncDeclStream.str();
-    OprandBuffer.clear();
-
-    if (const auto *NextBinaryOp = dyn_cast<clang::BinaryOperator>(Operand)) {
-      BinaryOp = NextBinaryOp;
-    } else {
-      break;
-    }
-  }
-
-  if (hasLinkMap) {
-    return expression;
-  } else {
-    return "";
-  }
-}
-
-std::string ca::ZengExpressionMatcher::getOperatorString(
-    clang::BinaryOperatorKind OpCode) {
-  switch (OpCode) {
-    case clang::BO_Add:
-      return "+";
-    case clang::BO_Sub:
-      return "-";
-    // case clang::BO_Mul:
-    //   return "*";
-    // case clang::BO_Div:
-    //   return "/";
-    default:
-      return "";
-  }
-}
-bool ca::hasLinkMapMember(const clang::Expr *Operand) {
+bool ca::ZengExpressionMatcher::ZengExpressionVisitor::hasLinkMapMember(
+    const clang::Expr *Operand) {
   while (true) {
     if (auto memberExpr = clang::dyn_cast<clang::MemberExpr>(Operand)) {
       Operand = memberExpr->getBase();

@@ -239,13 +239,23 @@ class ZengExpressionMatcher
       const clang::ast_matchers::MatchFinder::MatchResult &Result) override;
 
  private:
-  std::string getExpressionString(const clang::BinaryOperator *BinaryOp,
-                                  const clang::SourceManager &SourceManager);
+  class ZengExpressionVisitor
+      : public clang::RecursiveASTVisitor<ZengExpressionVisitor> {
+   public:
+    ZengExpressionVisitor(clang::ASTContext &context, const clang::Expr *rootExpr)
+        : context(context), rootExpr(rootExpr), hasMatch(false) {}
 
-  std::string getOperatorString(clang::BinaryOperatorKind OpCode);
+    bool VisitExpr(clang::Expr *expr);
+    bool hasMatchedExpression() const;
+    bool hasLinkMapMember(const clang::Expr *Operand);
+
+   private:
+    clang::ASTContext &context;
+    const clang::Expr *rootExpr;
+    bool hasMatch;
+  };
 };
 
-bool hasLinkMapMember(const clang::Expr *Operand);
 }  // namespace ca
 
 #endif  // !_CA_AST_HELPERS_HPP
